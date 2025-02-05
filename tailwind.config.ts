@@ -11,6 +11,10 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        cornflowerBlue: "var(--cornflower-blue)",
+        juneBud: "var(--june-bud)",
+        signalBlack: "var(--signal-black)",
+        linen: "var(--linen)",
       },
       fontFamily: {
         sans: "var(--font-geist-sans)",
