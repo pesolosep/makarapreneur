@@ -1,12 +1,14 @@
 import Footer from "@/components/Footer";
-import Home from "@/components/homepage/Home";
+import AboutUs from "@/components/homepage/AboutUs";
+import Hero from "@/components/homepage/Hero";
 import Navbar from "@/components/Navbar";
 
 export default function page() {
     return (
         <div className="font-poppins">
             <Navbar />
-            <Home />
+            <Hero />
+            <AboutUs />
             <Footer />
         </div>
     );
