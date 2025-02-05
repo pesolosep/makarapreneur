@@ -28,4 +28,8 @@ body {
   .link {
     @apply hover:brightness-75 duration-200;
   }
+
+  .linkFooter {
+    @apply hover:text-cornflowerBlue duration-200;
+  }
 }

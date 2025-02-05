@@ -1,4 +1,5 @@
-import Home from "@/components/Home";
+import Footer from "@/components/Footer";
+import Home from "@/components/homepage/Home";
 import Navbar from "@/components/Navbar";
 
 export default function page() {
@@ -6,6 +7,7 @@ export default function page() {
         <div className="font-poppins">
             <Navbar />
             <Home />
+            <Footer />
         </div>
     );
 }
