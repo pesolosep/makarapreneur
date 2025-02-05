@@ -4,8 +4,11 @@ import Image from "next/image";
 
 export default function Navbar() {
     return (
-        <header>
-            <nav className="flex justify-between items-center p-4 bg-signalBlack text-linen font-medium min-h-[83px] text-md px-8">
+        <header className="sticky top-0 z-50">
+            <nav
+                className="flex justify-between items-center p-4 bg-signalBlack text-linen font-medium min-h-[83px] text-md px-8
+                w-full"
+            >
                 <Link href={"/"} className="link flex gap-3 items-center">
                     <h1 className="text-juneBud text-xl">Makarapreneur</h1>
                     <Image src={logo} alt="logo" />

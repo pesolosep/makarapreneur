@@ -21,6 +21,10 @@ body {
   .linkFooter {
     @apply hover:text-cornflowerBlue duration-200;
   }
+
+  .headerText {
+    @apply text-2xl tracking-widest font-semibold;
+  }
 }
 
 @layer base {
