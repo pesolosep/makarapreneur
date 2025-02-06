@@ -42,7 +42,7 @@ export default function Dashboard() {
     };
     
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 font-poppins">
       <Navbar />
 
       <InformationCard

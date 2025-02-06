@@ -7,7 +7,7 @@ export default function Speakers() {
             <h2 className="headerText w-min text-nowrap text-linen [text-shadow:0px_0px_10px_#6E8EEC;]">
                 PREVIOUS SPEAKERS
             </h2>
-            <div className="flex gap-4 mt-8">
+            <div className="flex gap-12 mt-8">
                 <div className="flex flex-col items-center">
                     <div className="relative mt-5">
                         <Image

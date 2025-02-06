@@ -10,7 +10,7 @@ export default function Hero() {
                 </h1>
                 <h2 className="w-min font-medium z-20 bg-cornflowerBlue text-linen">#ForTheFuture</h2>
             </div>
-            <Image src={team} alt="team" className="object-cover w-full h-[450px] [filter:blur(0.5px)]"/>
+            <Image src={team} alt="team" className="object-cover w-full h-[450px] [filter:blur(0.5px)]" priority/>
         </div>
     );
 }
