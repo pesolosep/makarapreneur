@@ -2,6 +2,16 @@
 import { useState } from 'react';
 import { Clock, Download, Upload, ChevronUp, ChevronDown } from 'lucide-react';
 
+interface Assignment {
+  id: string;
+  title: string;
+  deadline: string;
+  description: string;
+  status: string;
+  submitterName?: string;
+  submissionTime?: string;
+}
+
 interface AssignmentCardProps {
   assignment: Assignment;
   onDownload: (id: string) => void;

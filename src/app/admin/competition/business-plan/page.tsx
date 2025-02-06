@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Footer from "@/components/Footer";
 import AboutUs from "@/components/homepage/AboutUs";
-import Hero from "@/components/homepage/Hero";
 import Navbar from "@/components/Navbar";
 import InformationCard from "@/components/competition/InformationCard"; // Corrected import
 import { AssignmentList } from "@/components/competition/AssignmentCard";
@@ -32,12 +31,12 @@ export default function Dashboard() {
           status: 'Belum dikerjakan'
         }
       ];
-    const handleDownload = (id) => {
+    const handleDownload = (id: string) => {
     console.log('Downloading assignment:', id);
     // Implement download logic here
     };
 
-    const handleUpload = (id) => {
+    const handleUpload = (id: string) => {
     console.log('Uploading assignment:', id);
     // Implement upload logic here
     };
@@ -46,7 +45,8 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100">
       <Navbar />
 
-      <InformationCard 
+      <InformationCard
+        deadlineDate='5 Mei 2021'
         isRegistered={isRegistered}
         toggleRegistration={toggleRegistration}
       />
