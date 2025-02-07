@@ -14,10 +14,10 @@ export default function Navbar() {
                     <Image src={logo} alt="logo" />
                 </Link>
                 <ul className="flex gap-10">
-                    <Link href={"#"} className="link">
+                    <Link href={"/"} className="link">
                         <li>Home</li>
                     </Link>
-                    <Link href={"#"} className="link">
+                    <Link href={"/aboutus"} className="link">
                         <li>About</li>
                     </Link>
                     <Link href={"#"} className="link">

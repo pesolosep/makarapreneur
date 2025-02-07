@@ -2,13 +2,16 @@ import Image from "next/image";
 import { Button } from "../ui/button";
 import aboutUsDummy from "@/assets/aboutUsDummy.svg";
 
-export default function AboutUs() {
+interface Variant {
+    variant ?: string;
+}
+
+export default function AboutUs({ variant }: Variant) {
     return (
-        <div className="bg-signalBlack text-linen p-12 flex justify-between items-center">
+        <div className={`text-linen p-12 flex justify-between items-center ${variant === 'secondary' ? 'text-signalBlack bg-linen' : 'bg-signalBlack'}`} >
             <div className="flex flex-col w-[500px] gap-8">
                 <h1
-                    className="headerText text-lg bg-gradient-to-r from-cornflowerBlue w-min text-nowrap py-2 rounded-2xl
-                px-8"
+                    className={`headerText ${variant !== 'secondary' ? 'bg-gradient-to-r from-cornflowerBlue px-8 rounded-2xl py-2 text-lg' : 'text-2xl'} w-min text-nowrap`}
                 >
                     ABOUT US
                 </h1>
@@ -22,7 +25,7 @@ export default function AboutUs() {
                     occaecat cupidatat non proident, sunt in culpa qui officia
                     deserunt mollit anim id est laborum.
                 </p>
-                <div>
+                <div className={`${variant === 'secondary' ? 'hidden' : 'block'}`}>
                     <Button className="rounded-3xl px-6">Learn More</Button>
                 </div>
             </div>
