@@ -8,7 +8,7 @@ interface Variant {
 
 export default function AboutUs({ variant }: Variant) {
     return (
-        <div className={`text-linen p-12 flex justify-between items-center ${variant === 'secondary' ? 'text-signalBlack bg-linen' : 'bg-signalBlack'}`} >
+        <div className={`text-linen p-12 flex justify-between items-center ${variant === 'secondary' ? 'text-signalBlack bg-linen py-12' : 'bg-signalBlack'}`} >
             <div className="flex flex-col w-[500px] gap-8">
                 <h1
                     className={`headerText ${variant !== 'secondary' ? 'bg-gradient-to-r from-cornflowerBlue px-8 rounded-2xl py-2 text-lg' : 'text-2xl'} w-min text-nowrap`}
@@ -30,7 +30,7 @@ export default function AboutUs({ variant }: Variant) {
                 </div>
             </div>
             <div>
-                <Image src={aboutUsDummy} alt="aboutUsDummy" />
+                <Image src={aboutUsDummy} alt="aboutUsDummy" className={`${variant === 'secondary' && 'h-[300px]'}`} />
             </div>
         </div>
     );
