@@ -20,10 +20,10 @@ export default function Navbar() {
                     <Link href={"/aboutus"} className="link">
                         <li>About</li>
                     </Link>
-                    <Link href={"#"} className="link">
+                    <Link href={"/competition"} className="link">
                         <li>Competition</li>
                     </Link>
-                    <Link href={"#"} className="link">
+                    <Link href={"/event"} className="link">
                         <li>Event</li>
                     </Link>
                     <Link href={"#"} className="link">

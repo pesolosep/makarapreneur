@@ -5,7 +5,7 @@ import Banner from "@/components/Banner";
 import Footer from "@/components/Footer";
 import AboutUs from "@/components/homepage/AboutUs";
 import Navbar from "@/components/Navbar";
-import Slideshow from "@/components/Slideshow";
+import Slideshow from "@/components/UseCarousel";
 
 export default function page() {
     return (
