@@ -26,10 +26,10 @@ export default function Navbar() {
                     <Link href={"/event"} className="link">
                         <li>Event</li>
                     </Link>
-                    <Link href={"#"} className="link">
+                    <Link href={"/makarainspires"} className="link">
                         <li>Makara Inspires</li>
                     </Link>
-                    <Link href={"#"} className="link">
+                    <Link href={"/contact"} className="link">
                         <li>Contact</li>
                     </Link>
                 </ul>

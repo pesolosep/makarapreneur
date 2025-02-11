@@ -8,14 +8,21 @@ import {
 } from "@/components/ui/card";
 import { Button } from "../ui/button";
 import Image from "next/image";
+import { twJoin, twMerge } from "tailwind-merge";
 
-export default function Inspires() {
+interface inspireProps { 
+    variant?: string;
+}
+
+export default function Inspires({ variant }: inspireProps) {
+    const secondary = variant === 'secondary';
+
     return (
-        <div className="bg-juneBud py-10 bg-gradient-to-b from-juneBud to-[#5E76BF]">
-            <h2 className="headerText text-cornflowerBlue text-center">
+        <div className={twMerge("bg-juneBud py-10 bg-gradient-to-b from-juneBud to-[#5E76BF]", secondary && 'bg-signalBlack')}>
+            <h2 className={twJoin("headerText text-cornflowerBlue text-center", secondary && "hidden")}>
                 MAKARA INSPIRES
             </h2>
-            <div className="flex px-12 mt-8 w-full justify-center gap-8">
+            <div className={twMerge("flex px-12 mt-8 w-full justify-center gap-8", secondary && 'mt-0')}>
                 <Card className="w-[290px] bg-linen text-signalBlack">
                     <CardContent className="pt-6 pb-1">
                         <Image src={'https://picsum.photos/280/220'} alt="image" width={280} height={220} className="rounded-lg"/>
