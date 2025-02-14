@@ -13,7 +13,7 @@ import { Button } from "./ui/button";
 export default function Slideshow() {
     return (
         <div className="px-12 bg-signalBlack text-linen py-12">
-            <div className="w-full flex justify-center items-center">
+            <div className="w-full flex justify-center items-center px-4">
                 <Carousel
                     opts={{
                         align: "start",
@@ -33,7 +33,7 @@ export default function Slideshow() {
                                                 <p className="headerText text-linen">
                                                     COMPETITION
                                                 </p>
-                                                <p className="text-center text-signalBlack bg-juneBud font-medium text-sm mx-20">
+                                                <p className="text-center text-signalBlack bg-juneBud font-medium text-sm mx-2 lg:mx-20">
                                                     Lorem ipsum dolor sit amet
                                                     consectetur adipisicing
                                                     elit. Quisquam soluta.

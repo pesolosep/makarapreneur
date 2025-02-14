@@ -45,7 +45,7 @@ export default function AboutUs({ variant }: Variant) {
                 <Image
                     src={aboutUsDummy}
                     alt="aboutUsDummy"
-                    className={`${variant === "secondary" ? "h-[300px]" : "w-[350px]"}`}
+                    className="h-[300px] w-[350px]"
                 />
             </div>
         </div>
