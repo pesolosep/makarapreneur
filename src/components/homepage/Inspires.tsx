@@ -22,7 +22,7 @@ export default function Inspires({ variant }: inspireProps) {
             <h2 className={twJoin("headerText text-cornflowerBlue text-center", secondary && "hidden")}>
                 MAKARA INSPIRES
             </h2>
-            <div className={twMerge("flex px-12 mt-8 w-full justify-center gap-8", secondary && 'mt-0')}>
+            <div className={twMerge("flex px-12 mt-8 w-full justify-center gap-8 flex-wrap", secondary && 'mt-0')}>
                 <Card className="w-[290px] bg-linen text-signalBlack">
                     <CardContent className="pt-6 pb-1">
                         <Image src={'https://picsum.photos/280/220'} alt="image" width={280} height={220} className="rounded-lg"/>

@@ -16,7 +16,7 @@ export default function Sponsors() {
                     opts={{
                         align: "start",
                     }}
-                    className="w-full max-w-sm text-signalBlack mt-8"
+                    className="w-full max-w-[180px] lg:max-w-sm text-signalBlack mt-8"
                 >
                     <CarouselContent>
                         {Array.from({ length: 5 }).map((_, index) => (
@@ -46,7 +46,7 @@ export default function Sponsors() {
                     opts={{
                         align: "start",
                     }}
-                    className="w-full max-w-sm text-signalBlack mt-8"
+                    className="w-full max-w-[180px] lg:max-w-sm text-signalBlack mt-8"
                 >
                     <CarouselContent>
                         {Array.from({ length: 5 }).map((_, index) => (

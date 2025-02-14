@@ -25,6 +25,10 @@ body {
   .headerText {
     @apply text-2xl tracking-widest font-semibold;
   }
+
+  .hoverEffect {
+    @apply hover:bg-black/10 duration-200 cursor-pointer;
+  }
 }
 
 @layer base {

@@ -1,36 +1,52 @@
 import Image from "next/image";
 import { Button } from "../ui/button";
 import aboutUsDummy from "@/assets/aboutUsDummy.svg";
+import { twMerge } from "tailwind-merge";
 
 interface Variant {
-    variant ?: string;
+    variant?: string;
 }
 
 export default function AboutUs({ variant }: Variant) {
+    const isSecondary = variant === "secondary";
+
     return (
-        <div className={`text-linen p-12 flex justify-between items-center ${variant === 'secondary' ? 'text-signalBlack bg-linen py-12W' : 'bg-signalBlack'}`} >
+        <div
+            className={twMerge(
+                "text-linen p-12 flex justify-evenly items-center bg-signalBlack flex-wrap gap-y-10",
+                isSecondary && "text-signalBlack bg-linen py-12"
+            )}
+        >
             <div className="flex flex-col w-[500px] gap-8">
                 <h1
-                    className={`headerText ${variant !== 'secondary' ? 'bg-gradient-to-r from-cornflowerBlue px-8 rounded-2xl py-2 text-lg' : 'text-2xl'} w-min text-nowrap`}
+                    className={twMerge(
+                        "headerText text-2xl w-min text-nowrap",
+                        !isSecondary &&
+                            "bg-gradient-to-r from-cornflowerBlue px-8 rounded-2xl py-2 text-lg"
+                    )}
                 >
                     ABOUT US
                 </h1>
-                <p className="text-sm">
+                <p className="text-sm max-w-[380px]">
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
                     do eiusmod tempor incididunt ut labore et dolore magna
                     aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-                    ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                    Duis aute irure dolor in reprehenderit in voluptate velit
-                    esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-                    occaecat cupidatat non proident, sunt in culpa qui officia
-                    deserunt mollit anim id est laborum.
+                    ullamco laboris nisi ut aliquip ex ea. Lorem ipsum dolor sit amet consectetur adipisicing elit.
                 </p>
-                <div className={`${variant === 'secondary' ? 'hidden' : 'block'}`}>
+                <div
+                    className={`${
+                        variant === "secondary" ? "hidden" : "block"
+                    }`}
+                >
                     <Button className="rounded-3xl px-6">Learn More</Button>
                 </div>
             </div>
             <div>
-                <Image src={aboutUsDummy} alt="aboutUsDummy" className={`${variant === 'secondary' && 'h-[300px]'}`} />
+                <Image
+                    src={aboutUsDummy}
+                    alt="aboutUsDummy"
+                    className={`${variant === "secondary" ? "h-[300px]" : "w-[350px]"}`}
+                />
             </div>
         </div>
     );

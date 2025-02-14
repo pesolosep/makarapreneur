@@ -4,10 +4,10 @@ import profile from "@/assets/profile.svg";
 export default function Speakers() {
     return (
         <div className="bg-juneBud flex flex-col items-center justify-center py-16 px-12">
-            <h2 className="headerText w-min text-nowrap text-linen [text-shadow:0px_0px_10px_#6E8EEC;]">
+            <h2 className="headerText text-center text-linen [text-shadow:0px_0px_10px_#6E8EEC;]">
                 PREVIOUS SPEAKERS
             </h2>
-            <div className="flex gap-12 mt-8">
+            <div className="flex gap-12 mt-8 flex-wrap justify-evenly">
                 <div className="flex flex-col items-center">
                     <div className="relative mt-5">
                         <Image

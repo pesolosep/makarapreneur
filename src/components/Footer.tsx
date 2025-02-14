@@ -6,12 +6,12 @@ export default function Footer() {
     return (
         <footer>
             <div className="min-h-[389px] w-full bg-linen text-signalBlack bottom-0 pt-8 flex flex-col">
-                <div className="flex justify-between w-full mt-5 h-[250px] px-12">
+                <div className="flex justify-between w-full mt-5 min-h-[250px] px-12 flex-wrap gap-y-5 mb-5">
                     <div>
                         <h3 className="text-cornflowerBlue font-semibold text-lg mb-5">
                             About Us
                         </h3>
-                        <p className="w-[292px] font-medium">
+                        <p className="max-w-[292px] font-medium">
                             Lorem ipsum dolor sit amet, consectetur adipiscing
                             elit. Sed do eiusmod tempor incididunt ut labore et
                             dolore magna aliqua.
