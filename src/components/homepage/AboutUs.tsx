@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Button } from "../ui/button";
 import aboutUsDummy from "@/assets/aboutUsDummy.svg";
 import { twMerge } from "tailwind-merge";
+import Link from "next/link";
 
 interface Variant {
     variant?: string;
@@ -31,14 +32,17 @@ export default function AboutUs({ variant }: Variant) {
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
                     do eiusmod tempor incididunt ut labore et dolore magna
                     aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-                    ullamco laboris nisi ut aliquip ex ea. Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                    ullamco laboris nisi ut aliquip ex ea. Lorem ipsum dolor sit
+                    amet consectetur adipisicing elit.
                 </p>
                 <div
                     className={`${
                         variant === "secondary" ? "hidden" : "block"
                     }`}
                 >
-                    <Button className="rounded-3xl px-6">Learn More</Button>
+                    <Link href={"/aboutus"}>
+                        <Button className="rounded-3xl px-6">Learn More</Button>
+                    </Link>
                 </div>
             </div>
             <div>

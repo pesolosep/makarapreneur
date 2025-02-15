@@ -6,6 +6,12 @@ import Footer from "@/components/Footer";
 import AboutUs from "@/components/homepage/AboutUs";
 import Navbar from "@/components/Navbar";
 import Slideshow from "@/components/UseCarousel";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "About Us | Makarapreneur",
+    description: "About Us Page",
+};
 
 export default function page() {
     return (

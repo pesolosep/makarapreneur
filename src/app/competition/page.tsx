@@ -4,6 +4,12 @@ import Testimonial from "@/components/competitionComprof/Testimonial";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import ShowCard from "@/components/EventCompList";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Competition | Makarapreneur",
+    description: "Competition Page",
+};
 
 export default function page() {
     return (

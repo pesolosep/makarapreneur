@@ -2,6 +2,12 @@ import Banner from "@/components/Banner";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import ShowCard from "@/components/EventCompList";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Event | Makarapreneur",
+    description: "Event Page",
+};
 
 export default function page() {
     return (
