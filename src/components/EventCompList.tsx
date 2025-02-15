@@ -22,7 +22,7 @@ export default function ShowCard({ title, variant }: ShowCardProps) {
             )}
         >
             <h2 className="headerText text-center">{title}</h2>
-            <div className="flex justify-center items-center gap-6 flex-wrap">
+            <div className="flex justify-center items-center gap-6 flex-wrap px-2">
                 <Card className="border-0 shadow-none bg-signalBlack mt-8 w-[310px]">
                     <CardContent className="flex aspect-video items-center justify-center p-6 relative">
                         <div className="z-10 flex flex-col items-center gap-2 justify-center">

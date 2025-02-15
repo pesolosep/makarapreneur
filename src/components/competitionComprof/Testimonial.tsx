@@ -4,7 +4,7 @@ export default function Testimonial() {
             <h2 className="headerText text-juneBud text-center">
                 WHY SHOULD I JOIN?
             </h2>
-            <p className="w-[400px] text-center text-linen mx-auto text-sm">
+            <p className="max-w-[400px] text-center text-linen mx-auto text-sm px-4">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
                 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
                 enim ad minim veniam, quis nostrud exercitation ullamco laboris
