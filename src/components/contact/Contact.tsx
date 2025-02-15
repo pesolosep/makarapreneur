@@ -3,8 +3,8 @@ import { Button } from "../ui/button";
 export default function Contact() {
     return (
         <div className="bg-signalBlack py-12">
-            <div className="bg-linen px-12 py-12 flex flex-wrap justify-between">
-                <div className="w-[400px] bg-signalBlack rounded-xl p-6 gap-5 flex flex-col justify-center font-medium text-linen">
+            <div className="bg-linen px-12 py-12 flex flex-wrap justify-evenly gap-6">
+                <div className="w-[400px] bg-signalBlack rounded-xl p-6 gap-5 flex flex-col h-full font-medium text-linen text-sm">
                     <div className="flex flex-col gap-2">
                         <label htmlFor="name" className="text-juneBud">
                             Name
@@ -50,7 +50,7 @@ export default function Contact() {
                     </div>
                     <Button className="mt-3">Submit</Button>
                 </div>
-                <div>
+                <div className="text-sm">
                     <h2 className="headerText">
                         FOR MORE DETAILS <br />
                         <span className="text-cornflowerBlue">CONTACT US!</span>
@@ -58,7 +58,7 @@ export default function Contact() {
                     <div className="bg-signalBlack w-full h-[2px] my-4"></div>
                     <div className="flex flex-col gap-6">
                         <div className="flex gap-6">
-                            <div className="w-16 h-16 rounded-xl bg-juneBud"></div>
+                            <div className="w-12 h-12 rounded-xl bg-juneBud"></div>
                             <div className="flex flex-col justify-center">
                                 <p className="font-semibold">Sponsorship</p>
                                 <p>
@@ -68,9 +68,12 @@ export default function Contact() {
                             </div>
                         </div>
                         <div className="flex gap-6">
-                            <div className="w-16 h-16 rounded-xl bg-juneBud"></div>
+                            <div className="w-12 h-12 rounded-xl bg-cornflowerBlue"></div>
+
                             <div className="flex flex-col justify-center">
-                                <p className="font-semibold">Media Partnership</p>
+                                <p className="font-semibold">
+                                    Media Partnership
+                                </p>
                                 <p>
                                     Lorem ipsum dolor sit amet, consectetur
                                     adipiscing elit.
@@ -78,7 +81,8 @@ export default function Contact() {
                             </div>
                         </div>
                         <div className="flex gap-6">
-                            <div className="w-16 h-16 rounded-xl bg-juneBud"></div>
+                            <div className="w-12 h-12 rounded-xl bg-juneBud"></div>
+
                             <div className="flex flex-col justify-center">
                                 <p className="font-semibold">Public Relation</p>
                                 <p>
@@ -88,7 +92,7 @@ export default function Contact() {
                             </div>
                         </div>
                         <div className="flex gap-6">
-                            <div className="w-16 h-16 rounded-xl bg-juneBud"></div>
+                            <div className="w-12 h-12 rounded-xl bg-cornflowerBlue"></div>
                             <div className="flex flex-col justify-center">
                                 <p className="font-semibold">Contact Person</p>
                                 <p>
@@ -101,10 +105,10 @@ export default function Contact() {
                     <div className="mt-4">
                         <p>Connect with us!</p>
                         <div className="flex mt-2 gap-3">
-                            <div className="w-8 h-8 bg-cornflowerBlue rounded-lg"></div>
-                            <div className="w-8 h-8 bg-cornflowerBlue rounded-lg"></div>
-                            <div className="w-8 h-8 bg-cornflowerBlue rounded-lg"></div>
-                            <div className="w-8 h-8 bg-cornflowerBlue rounded-lg"></div>
+                            <div className="w-8 h-8 bg-juneBud rounded-lg"></div>
+                            <div className="w-8 h-8 bg-juneBud rounded-lg"></div>
+                            <div className="w-8 h-8 bg-juneBud rounded-lg"></div>
+                            <div className="w-8 h-8 bg-juneBud rounded-lg"></div>
                         </div>
                     </div>
                 </div>
