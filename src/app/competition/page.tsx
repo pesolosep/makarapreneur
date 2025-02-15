@@ -18,9 +18,9 @@ export default function page() {
             <Banner title="COMPETITION" />
             <ShowCard title="ARE YOU READY TO COMPETE?" />
             <Testimonial />
-            <Description />
-            <Description variant="secondary"/>
-            <Description />
+            <Description  number={1}/>
+            <Description variant="secondary" number={2}/>
+            <Description  number={3}/>
             <Footer />
         </div>
     );

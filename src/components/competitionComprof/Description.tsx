@@ -5,9 +5,10 @@ import { twMerge } from "tailwind-merge";
 
 interface VariantProps {
     variant?: string;
+    number: number;
 }
 
-export default function Description({ variant }: VariantProps) {
+export default function Description({ variant, number }: VariantProps) {
     const secondary = variant === "secondary";
 
     return (
@@ -16,6 +17,8 @@ export default function Description({ variant }: VariantProps) {
                 "bg-juneBud flex justify-evenly gap-x-6 items-center py-12 px-12 flex-wrap gap-y-10",
                 secondary && "flex-row-reverse bg-signalBlack text-linen",
             )}
+
+            id={number.toString()}
         >
             <div className="space-y-8">
                 <p className="headerText text-lg">Lorem ipsum dolor sit amet</p>

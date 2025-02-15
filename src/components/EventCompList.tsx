@@ -11,14 +11,13 @@ interface ShowCardProps {
 }
 
 export default function ShowCard({ title, variant }: ShowCardProps) {
-    const secondary = variant === "secondary";
-    const link = secondary ? '/event/1' : '#';
+    const isSecondary = variant === "secondary";
 
     return (
         <div
             className={twMerge(
                 "bg-linen py-12",
-                secondary && "bg-signalBlack text-juneBud"
+                isSecondary && "bg-signalBlack text-juneBud"
             )}
         >
             <h2 className="headerText text-center">{title}</h2>
@@ -29,7 +28,7 @@ export default function ShowCard({ title, variant }: ShowCardProps) {
                             <p className="headerText text-sm text-linen text-center">
                                 BUSINESS CASE COMPETITION
                             </p>
-                            <Link href={link}>
+                            <Link href={isSecondary ? "/event/1" : "#1"}>
                                 <Button className="text-xs h-7 rounded-xl">
                                     Learn More
                                 </Button>
@@ -49,7 +48,7 @@ export default function ShowCard({ title, variant }: ShowCardProps) {
                             <p className="headerText text-sm text-linen text-center">
                                 BUSINESS CASE COMPETITION
                             </p>
-                            <Link href={link}>
+                            <Link href={isSecondary ? "/event/1" : "#2"}>
                                 <Button className="text-xs h-7 rounded-xl">
                                     Learn More
                                 </Button>
@@ -69,7 +68,7 @@ export default function ShowCard({ title, variant }: ShowCardProps) {
                             <p className="headerText text-sm text-linen text-center">
                                 BUSINESS CASE COMPETITION
                             </p>
-                            <Link href={link}>
+                            <Link href={isSecondary ? "/event/1" : "#3"}>
                                 <Button className="text-xs h-7 rounded-xl">
                                     Learn More
                                 </Button>
