@@ -1,7 +1,16 @@
 // lib/competitionService.ts
 import { db, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  updateDoc, 
+  getDoc, 
+  getDocs, 
+  query, 
+  where 
+} from 'firebase/firestore';
 import { Competition } from '@/models/Competition';
 import { Team } from '@/models/Team';
 
@@ -116,5 +125,61 @@ export const adminService = {
       [`stages.${stageNumber}.description`]: description,
       updatedAt: new Date()
     });
+  },
+
+  // Retrieve all teams data
+  async getAllTeams() {
+    try {
+      const teamsCollection = collection(db, 'teams');
+      const teamsSnapshot = await getDocs(teamsCollection);
+      
+      const teams: Team[] = teamsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Team));
+      
+      return teams;
+    } catch (error) {
+      console.error('Error retrieving teams:', error);
+      throw new Error('Failed to retrieve teams data');
+    }
+  },
+
+  // Retrieve teams for a specific competition
+  async getTeamsByCompetition(competitionId: string) {
+    try {
+      const teamsCollection = collection(db, 'teams');
+      const q = query(teamsCollection, where('competitionId', '==', competitionId));
+      const teamsSnapshot = await getDocs(q);
+      
+      const teams: Team[] = teamsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Team));
+      
+      return teams;
+    } catch (error) {
+      console.error('Error retrieving teams for competition:', error);
+      throw new Error('Failed to retrieve teams for the specified competition');
+    }
+  },
+
+  // Retrieve teams by registration status
+  async getTeamsByRegistrationStatus(status: 'pending' | 'approved' | 'rejected') {
+    try {
+      const teamsCollection = collection(db, 'teams');
+      const q = query(teamsCollection, where('registrationStatus', '==', status));
+      const teamsSnapshot = await getDocs(q);
+      
+      const teams: Team[] = teamsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Team));
+      
+      return teams;
+    } catch (error) {
+      console.error('Error retrieving teams by registration status:', error);
+      throw new Error('Failed to retrieve teams with specified registration status');
+    }
   }
 };
