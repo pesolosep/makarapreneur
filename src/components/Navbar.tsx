@@ -1,89 +1,190 @@
 'use client'
 
-import Link from "next/link";
-import logo from "@/assets/logoMakarapreneur.svg";
-import Image from "next/image";
-import { RxHamburgerMenu } from "react-icons/rx";
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import { Menu, X } from 'lucide-react'
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+} from '@/components/ui/navigation-menu'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+
+const navigationItems = [
+  { name: 'Home', href: '/' },
+  { name: 'About', href: '/aboutus' },
+  { name: 'Competition', href: '/competition' },
+  { name: 'Event', href: '/event' },
+  { name: 'Makara Inspires', href: '/makarainspires' },
+  { name: 'Contact', href: '/contact' },
+]
 
 export default function Navbar() {
-    const [isOpen, setIsOpen] = useState(false);
-    const ref = useRef<HTMLUListElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [lastScrollY, setLastScrollY] = useState(0)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [hasScrolled, setHasScrolled] = useState(false)
+  const pathname = usePathname()
 
-    useEffect(() => { 
-        const handleClickOutside = (e: MouseEvent) => { 
-            if (ref.current && !ref.current.contains(e.target as Node)) { 
-                setIsOpen(false);
-            }
-        }
-        window.addEventListener("click", handleClickOutside);
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    let lastKnownScrollY = window.scrollY
+    let ticking = false
 
-        return () => { 
-            window.removeEventListener("click", handleClickOutside);
+    const resetScrollState = () => {
+      setHasScrolled(false)
+      setIsVisible(true)
+    }
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+
+      // Jangan proses kalau masih "ticking"
+      if (ticking) return
+
+      // Set flag ticking
+      ticking = true
+
+      // Update di next frame
+      requestAnimationFrame(() => {
+        // Reset ticking
+        ticking = false
+
+        // Update state scroll
+        setIsScrolled(currentScrollY > 0)
+        setHasScrolled(true)
+
+        // Logic untuk show/hide navbar
+        if (currentScrollY < 100) {
+          setIsVisible(true)
+        } else if (currentScrollY > lastKnownScrollY) {
+          setIsVisible(false)
+        } else if (currentScrollY < lastKnownScrollY) {
+          setIsVisible(true)
         }
-    })
-    
-    return (
-        <header className="sticky top-0 z-50">
-            <nav
-                className="flex justify-between items-center p-4 bg-signalBlack text-linen font-medium min-h-[83px] text-md px-8
-                w-full"
+
+        // Update last known scroll position
+        lastKnownScrollY = currentScrollY
+        setLastScrollY(currentScrollY)
+
+        // Clear existing timeout
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
+
+        // Set new timeout untuk reset state
+        timeoutId = setTimeout(resetScrollState, 150)
+      })
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [])
+
+  return (
+    <header
+      className={`fixed top-0 z-50 left-0 w-full transition-all duration-500 transform ${
+        isVisible ? 'translate-y-0' : '-translate-y-full'
+      } ${
+        isScrolled
+          ? 'bg-zinc-900'
+          : 'bg-zinc-900/80 backdrop-blur-sm'
+      }`}
+    >
+      <nav className="mx-auto flex h-24 items-center justify-between px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-3">
+          <Image 
+            src="/icon.svg" 
+            alt="logo" 
+            width={40} 
+            height={40} 
+            className="mr-2"
+          />
+          <h1 className="text-2xl font-bold text-juneBud transition-colors hover:text-juneBud/80">
+            Makarapreneur
+          </h1>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <div className="hidden lg:flex lg:items-center lg:gap-8">
+          <NavigationMenu>
+            <NavigationMenuList className="gap-2">
+              {navigationItems.map((item) => (
+                <NavigationMenuItem key={item.name}>
+                  <Link href={item.href} legacyBehavior passHref>
+                    <NavigationMenuLink
+                      className={`group relative inline-flex h-12 w-max items-center justify-center rounded-md px-6 py-3 text-lg font-medium text-linen transition-colors hover:bg-white/10 focus:bg-white/10 focus:outline-none disabled:pointer-events-none disabled:opacity-50
+                        ${pathname === item.href ? 'after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-2/3 after:-translate-x-1/2 after:bg-juneBud' : ''}`}
+                    >
+                      {item.name}
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="lg:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="rounded-md p-3 text-linen hover:bg-white/10">
+                <Menu className="h-8 w-8" />
+              </button>
+            </SheetTrigger>
+            <SheetContent 
+              side="right" 
+              className="[&>button:first-child]:hidden w-80 border-0 bg-zinc-900 text-linen p-0 [&_[data-radix-collection-item]]:hidden"
             >
-                <Link href={"/"} className="link flex gap-3 items-center">
-                    <h1 className="text-juneBud text-xl">Makarapreneur</h1>
-                    <Image src={logo} alt="logo" />
-                </Link>
-
-                {/* Mobile navbar */}
-                <ul className="relative" ref={ref}>
-                    <li className="block lg:hidden p-3 hover:bg-black/10 rounded-xl duration-200"
-                    onClick={() => setIsOpen((prev) => !prev)}>
-                        <RxHamburgerMenu className="text-juneBud text-2xl" />
-                    </li>
-                    {isOpen && <ul className="absolute bg-linen flex flex-col right-0 text-signalBlack py-2 gap-1 w-max rounded-lg">
-                        <Link href={"/"} className="link hoverEffect px-4">
-                            <li>Home</li>
-                        </Link>
-                        <Link href={"/aboutus"} className="link hoverEffect px-4">
-                            <li>About</li>
-                        </Link>
-                        <Link href={"/competition"} className="link hoverEffect px-4">
-                            <li>Competition</li>
-                        </Link>
-                        <Link href={"/event"} className="link hoverEffect px-4">
-                            <li>Event</li>
-                        </Link>
-                        <Link href={"/makarainspires"} className="link hoverEffect px-4">
-                            <li>Makara Inspires</li>
-                        </Link>
-                        <Link href={"/contact"} className="link hoverEffect px-4">
-                            <li>Contact</li>
-                        </Link>
-                    </ul>}
-                </ul>
-
-                {/* Desktop Navbar */}
-                <ul className="hidden lg:flex gap-10">
-                    <Link href={"/"} className="link">
-                        <li>Home</li>
-                    </Link>
-                    <Link href={"/aboutus"} className="link">
-                        <li>About</li>
-                    </Link>
-                    <Link href={"/competition"} className="link">
-                        <li>Competition</li>
-                    </Link>
-                    <Link href={"/event"} className="link">
-                        <li>Event</li>
-                    </Link>
-                    <Link href={"/makarainspires"} className="link">
-                        <li>Makara Inspires</li>
-                    </Link>
-                    <Link href={"/contact"} className="link">
-                        <li>Contact</li>
-                    </Link>
-                </ul>
-            </nav>
-        </header>
-    );
+              <VisuallyHidden>
+                <SheetTitle>
+                  Menu
+                </SheetTitle>
+              </VisuallyHidden>
+              <div className="flex h-24 items-center justify-between px-6">
+                <h2 className="text-2xl font-bold text-juneBud">
+                  Menu
+                </h2>
+                <SheetTrigger asChild>
+                  <button className="rounded-md p-3 text-linen hover:bg-white/10">
+                    <X className="h-8 w-8" />
+                  </button>
+                </SheetTrigger>
+              </div>
+              <div className="px-6 flex flex-col gap-4">
+                {navigationItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`rounded-md px-4 py-3 text-base font-medium text-linen transition-colors hover:bg-white/10
+                      ${pathname === item.href ? 'bg-white/5 text-juneBud' : ''}`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </nav>
+    </header>
+  )
 }
