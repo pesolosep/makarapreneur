@@ -19,6 +19,7 @@ export default function Slideshow() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [api, setApi] = useState<any>();
     const sectionRef = useRef<HTMLDivElement>(null);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -41,16 +42,38 @@ export default function Slideshow() {
         };
     }, []);
 
+    const startAutoSlide = () => {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+        }
+
+        intervalRef.current = setInterval(() => {
+            api?.scrollNext();
+        }, 5000);
+    };
+
     // Auto-slide functionality
     useEffect(() => {
         if (!api || !isVisible) return;
 
-        const interval = setInterval(() => {
-            api.scrollNext();
-        }, 5000);
+        startAutoSlide();
 
-        return () => clearInterval(interval);
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
     }, [api, isVisible]);
+
+    const handlePrevClick = () => {
+        api?.scrollPrev();
+        startAutoSlide();
+    };
+
+    const handleNextClick = () => {
+        api?.scrollNext();
+        startAutoSlide();
+    };
 
     return (
         <div 
@@ -103,16 +126,16 @@ export default function Slideshow() {
                                                     elit. Quisquam soluta.
                                                 </p>
                                                 <Button 
-                                                                                className="group/btn relative overflow-hidden bg-transparent border-linen text-linen hover:text-white transition-all duration-300 hover:pr-12"
-                                                                            >
-                                                                                <span className="relative z-10 transition-transform duration-300 group-hover/btn:-translate-x-2">
-                                                                                    Learn More
-                                                                                </span>
-                                                                                <ArrowRight 
-                                                                                    className="absolute z-10 right-4 h-4 w-4 transition-all duration-300 transform opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 translate-x-4" 
-                                                                                />
-                                                                                <div className="absolute inset-0 bg-cornflowerBlue transform transition-transform duration-300 origin-left scale-x-0 group-hover/btn:scale-x-100" />
-                                                                            </Button>
+                                                    className="group/btn relative overflow-hidden bg-transparent border-linen text-linen hover:text-white transition-all duration-300 hover:pr-12"
+                                                >
+                                                    <span className="relative z-10 transition-transform duration-300 group-hover/btn:-translate-x-2">
+                                                        Learn More
+                                                    </span>
+                                                    <ArrowRight 
+                                                        className="absolute z-10 right-4 h-4 w-4 transition-all duration-300 transform opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 translate-x-4" 
+                                                    />
+                                                    <div className="absolute inset-0 bg-cornflowerBlue transform transition-transform duration-300 origin-left scale-x-0 group-hover/btn:scale-x-100" />
+                                                </Button>
                                             </div>
 
                                             {/* Background Image */}
@@ -129,8 +152,14 @@ export default function Slideshow() {
                             </CarouselItem>
                         ))}
                     </CarouselContent>
-                    <CarouselPrevious className="border-2 border-linen text-linen bg-signalBlack hover:bg-linen/20 hover:text-linen transition-colors" />
-<CarouselNext className="border-2 border-linen text-linen bg-signalBlack hover:bg-linen/20 hover:text-linen transition-colors" />
+                    <CarouselPrevious 
+                        onClick={handlePrevClick}
+                        className="border-2 border-linen text-linen bg-signalBlack hover:bg-linen/20 hover:text-linen transition-colors" 
+                    />
+                    <CarouselNext 
+                        onClick={handleNextClick}
+                        className="border-2 border-linen text-linen bg-signalBlack hover:bg-linen/20 hover:text-linen transition-colors" 
+                    />
                 </Carousel>
             </div>
         </div>

@@ -40,7 +40,10 @@ export default function AboutUs({ variant, height }: Variant) {
         }
     }, [hasAnimated])
 
-    const isAutoHeight = !height
+    const containerStyle = {
+        height: isActive ? (height || 700) : 200,
+        transition: 'all 1000ms ease-in-out'
+    }
 
     return (
         <section
@@ -51,10 +54,10 @@ export default function AboutUs({ variant, height }: Variant) {
                 isSecondary && "text-signalBlack bg-linen"
             )}
         >
-            <div className={twMerge(
-                "container mx-auto px-6 relative transition-all duration-1000 ease-in-out overflow-hidden backdrop-blur-sm",
-                isActive ? isAutoHeight? "h-[700px]" : `h-[${height}px]` : "h-[200px]"
-            )}>
+            <div 
+                style={containerStyle}
+                className="container mx-auto px-6 relative overflow-hidden backdrop-blur-sm"
+            >
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full px-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                         <div className="space-y-8">
