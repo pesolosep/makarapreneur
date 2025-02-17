@@ -78,7 +78,7 @@ const config: Config = {
   			cornflowerBlue: 'var(--cornflower-blue)',
   			juneBud: 'hsl(var(--june-bud))',
   			signalBlack: 'var(--signal-black)',
-  			linen: 'var(--linen)',
+  			linen: 'hsl(var(--linen))',
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
