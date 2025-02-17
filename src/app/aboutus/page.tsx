@@ -19,9 +19,11 @@ export default function page() {
             <Navbar />
             <Banner title="ABOUT US" />
             <AboutUs variant="secondary" height={600} />
+            <div className=" max-h-screen overflow-x-hidden">
             <Prinsip />
             <Vision />
             <Mission />
+            </div>
             <Slideshow />
             <Footer />
         </div>

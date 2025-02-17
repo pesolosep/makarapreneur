@@ -27,7 +27,6 @@ const navigationItems = [
     { name: "Event", href: "/event" },
     { name: "Makara Inspires", href: "/makarainspires" },
     { name: "Contact", href: "/contact" },
-    { name: "Login", href: "/login" },
 ];
 
 export default function Navbar() {
@@ -74,7 +73,7 @@ export default function Navbar() {
                 </Link>
 
                 {/* Desktop Navigation */}
-                <div className="hidden lg:flex lg:items-center lg:gap-8">
+                <div className="hidden lg:flex lg:items-center">
                     <NavigationMenu>
                         <NavigationMenuList className="gap-2">
                             {navigationItems.map((item) => (
@@ -88,9 +87,7 @@ export default function Navbar() {
                                             className={twMerge(
                                                 "group relative inline-flex h-12 w-max items-center justify-center rounded-md px-3 py-2 text-md font-medium text-linen transition-colors hover:bg-white/10 focus:bg-white/10 focus:outline-none disabled:pointer-events-none disabled:opacity-50",
                                                 pathname === item.href &&
-                                                    "after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-2/3 after:-translate-x-1/2 after:bg-juneBud",
-                                                item.name === "Login" &&
-                                                    "bg-juneBud text-zinc-900 hover:bg-linen focus:text-signalBlack focus:bg-linen"
+                                                    "after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-2/3 after:-translate-x-1/2 after:bg-juneBud"
                                             )}
                                         >
                                             {item.name}
@@ -100,6 +97,14 @@ export default function Navbar() {
                             ))}
                         </NavigationMenuList>
                     </NavigationMenu>
+                    
+                    {/* Separated Login Button */}
+                    <Link
+                        href="/login"
+                        className="ml-8 px-6 py-2.5 bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+                    >
+                        Login
+                    </Link>
                 </div>
 
                 {/* Mobile Navigation */}
@@ -135,13 +140,18 @@ export default function Navbar() {
                                         className={twMerge(
                                             "rounded-md px-4 py-3 font-poppins text-base font-medium text-linen transition-colors hover:bg-white/10",
                                             pathname === item.href &&
-                                          "bg-white/5 text-juneBud",
-                                            item.name === "Login" && "bg-juneBud text-zinc-900 hover:bg-linen"
+                                                "bg-white/5 text-juneBud"
                                         )}
                                     >
                                         {item.name}
                                     </Link>
                                 ))}
+                                <Link
+                                    href="/login"
+                                    className="bg-juneBud text-zinc-900 rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-linen transition-colors text-center"
+                                >
+                                    Login
+                                </Link>
                             </div>
                         </SheetContent>
                     </Sheet>
