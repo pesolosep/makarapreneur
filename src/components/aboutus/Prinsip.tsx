@@ -13,7 +13,7 @@ export default function Prinsip() {
                     setIsVisible(true);
                 }
             },
-            { threshold: 0.7 }
+            { threshold: 0.9}
         );
 
         if (sectionRef.current) {
