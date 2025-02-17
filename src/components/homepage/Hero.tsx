@@ -14,7 +14,7 @@ export default function Hero() {
     return (
         <div className="bg-signalBlack text-signalBlack flex flex-col items-center text-center justify-center h-screen relative">
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center animate-fade-in">
-                <h1 className="font-semibold text-3xl lg:text-5xl tracking-widest mb-4 lg:mb-6 z-20 bg-juneBud px-8 py-4 animate-slide-down">
+                <h1 className="font-semibold text-2xl lg:text-5xl tracking-widest mb-4 lg:mb-6 z-20 bg-juneBud px-8 py-4 animate-slide-down">
                     MAKARAPRENEUR
                 </h1>
                 <h2 className="font-medium z-20 bg-cornflowerBlue text-linen text-base lg:text-lg px-6 py-3 animate-slide-up">

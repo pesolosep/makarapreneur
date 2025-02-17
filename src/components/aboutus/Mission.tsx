@@ -31,7 +31,7 @@ export default function Mission() {
     return (
         <div 
             ref={sectionRef}
-            className="relative bg-linen px-6 lg:px-12 py-24"
+            className="relative bg-linen px-6 lg:px-12 py-24 overflow-hidden"
         >
             {/* Animated background elements */}
             <div className="absolute inset-0">
