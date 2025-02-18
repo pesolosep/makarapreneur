@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/competitionService.ts
 import { db, storage } from './firebase';
 import { Timestamp } from 'firebase/firestore';

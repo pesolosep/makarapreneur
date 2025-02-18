@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -65,6 +66,7 @@ export default function Dashboard() {
 
           // Transform stages into assignments
           const stageAssignments = Object.entries(competitionData.stages)
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             .filter(([_, stage]) => stage.visibility)
             .map(([stageNum, stage]) => ({
               id: stageNum,

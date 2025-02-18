@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { db } from '@/lib/firebase/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {

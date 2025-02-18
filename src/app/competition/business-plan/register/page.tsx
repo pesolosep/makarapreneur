@@ -9,7 +9,6 @@ import { competitionService } from '@/lib/firebase/competitionService';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from '@/contexts/AuthContext';
-import { User } from 'firebase/auth';
 
 interface FormData {
   teamName: string;

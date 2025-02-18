@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Calendar } from '@/components/ui/calendar';
-import { Eye, EyeOff, Pencil, Upload } from 'lucide-react';
+import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { Competition, Stage } from '@/models/Competition';
 
 interface CompetitionEditorProps {
@@ -59,6 +59,7 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
     stages: competition.stages
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleUpdate = async (field: keyof Competition, value: any) => {
     try {
       await onUpdateCompetition(competition.id, { [field]: value });

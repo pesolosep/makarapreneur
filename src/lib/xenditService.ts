@@ -5,7 +5,7 @@ const x = new Xendit({
   secretKey: process.env.XENDIT_SECRET_KEY!,
 });
 
-const { Invoice } = x;
+const {  } = x;
 const invoiceClient = new InvoiceClient({
     secretKey: process.env.XENDIT_SECRET_KEY!,
 });

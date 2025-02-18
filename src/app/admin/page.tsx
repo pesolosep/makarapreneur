@@ -1,10 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Check, X, Clock } from 'lucide-react';
 import { Competition } from "@/models/Competition";
@@ -113,6 +112,7 @@ const AdminDashboard: React.FC = () => {
       const teamsData = await adminService.getTeamsByCompetition(competitionId);
       setTeams(teamsData);
       setError('');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       setError('Failed to fetch teams');
     } finally {
@@ -124,6 +124,7 @@ const AdminDashboard: React.FC = () => {
     try {
       await adminService.updateRegistrationStatus(teamId, status);
       await loadTeamsForCompetition(selectedCompetition);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       setError('Failed to update status');
     }
