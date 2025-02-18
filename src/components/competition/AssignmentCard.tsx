@@ -1,15 +1,12 @@
-// components/AssignmentCard.tsx
+// components/competition/AssignmentCard.tsx
 import { useState } from 'react';
 import { Clock, Download, Upload, ChevronUp, ChevronDown } from 'lucide-react';
+import { Stage } from '@/models/Competition';
+import { TeamStageSubmission } from '@/models/Team';
 
-interface Assignment {
+interface Assignment extends Stage {
   id: string;
-  title: string;
-  deadline: string;
-  description: string;
-  status: string;
-  submitterName?: string;
-  submissionTime?: string;
+  submission?: TeamStageSubmission;
 }
 
 interface AssignmentCardProps {
@@ -21,19 +18,32 @@ interface AssignmentCardProps {
 export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Helper function to format the status with proper styling
+  const getStatusDisplay = (status: string) => {
+    const statusColors = {
+      pending: 'text-yellow-600',
+      cleared: 'text-green-600',
+      rejected: 'text-red-600'
+    };
+    return <span className={statusColors[status as keyof typeof statusColors]}>{status.toUpperCase()}</span>;
+  };
+
   return (
-    <div  className="bg-gray-500">
-    <div className="bg-juneBud  rounded-lg shadow-lg mb-6 min-h-[200px]">
+    <div className="bg-juneBud rounded-lg shadow-lg mb-6">
       {/* Header - Always visible */}
       <div 
         className="p-6 flex justify-between items-center cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex-1">
-          <h3 className="font-semibold text-3xl tracking-widest text-signalBlack">{assignment.title}</h3>
+          <h3 className="font-semibold text-3xl tracking-widest text-signalBlack">
+            {assignment.title}
+          </h3>
           <div className="flex items-center text-base text-signalBlack mt-3">
             <Clock className="w-5 h-5 mr-2" />
-            <span className="font-medium">Deadline: {assignment.deadline}</span>
+            <span className="font-medium">
+              Deadline: {new Date(assignment.deadline).toLocaleString()}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -51,20 +61,28 @@ export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentC
           <div className="mt-4">
             <h4 className="text-xl font-semibold tracking-wide text-signalBlack mb-3">Status</h4>
             <div className="space-y-3">
-              {assignment.submitterName && (
+              {assignment.submission?.submissionURL && (
                 <p className="text-base">
-                  <span className="font-medium">Nama Berkas:</span> {assignment.submitterName}
+                  <span className="font-medium">Submission File:</span>{' '}
+                  {assignment.submission.submissionURL.split('/').pop()}
                 </p>
               )}
-              {assignment.submissionTime && (
+              {assignment.submission?.submissionDate && (
                 <p className="text-base">
-                  <span className="font-medium">Terkirim Dunggan:</span> {assignment.submissionTime}
+                  <span className="font-medium">Submitted On:</span>{' '}
+                  {new Date(assignment.submission.submissionDate).toLocaleString()}
                 </p>
               )}
               <p className="text-base">
                 <span className="font-medium">Status:</span>{' '}
-                <span className="text-signalBlack font-semibold">{assignment.status}</span>
+                {getStatusDisplay(assignment.submission?.status || 'pending')}
               </p>
+              {assignment.submission?.feedback && (
+                <p className="text-base">
+                  <span className="font-medium">Feedback:</span>{' '}
+                  {assignment.submission.feedback}
+                </p>
+              )}
             </div>
           </div>
 
@@ -82,24 +100,23 @@ export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentC
               className="flex items-center gap-2 px-6 py-3 text-base font-medium text-signalBlack bg-white/80 rounded-md hover:bg-white transition-colors"
             >
               <Download className="w-5 h-5" />
-              Unduh soal selesai
+              Download Guidelines
             </button>
             <button
               onClick={() => onUpload(assignment.id)}
               className="flex items-center gap-2 px-6 py-3 text-base font-medium text-white bg-signalBlack rounded-md hover:bg-signalBlack/80 transition-colors"
+              disabled={assignment.submission?.status === 'cleared'}
             >
               <Upload className="w-5 h-5" />
-              Unggah jawaban
+              Upload Submission
             </button>
           </div>
         </div>
       )}
     </div>
-    </div>
   );
 }
 
-// components/AssignmentList.tsx
 interface AssignmentListProps {
   assignments: Assignment[];
   onDownload: (id: string) => void;
@@ -108,7 +125,7 @@ interface AssignmentListProps {
 
 export function AssignmentList({ assignments, onDownload, onUpload }: AssignmentListProps) {
   return (
-    <div className="max-w-5xl mx-auto px-6 bg-gray-500">
+    <div className="max-w-5xl mx-auto px-6">
       {assignments.map((assignment) => (
         <AssignmentCard
           key={assignment.id}
