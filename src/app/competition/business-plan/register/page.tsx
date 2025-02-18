@@ -201,13 +201,14 @@ export default function RegistrationPage() {
     <div className="min-h-screen bg-gray-100 font-poppins">
       <Navbar />
 
-      <div className="max-w-3xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-center mb-8">Team Registration</h1>
+      <div className="max-w-3xl mx-auto px-4 py-20">
+        <div className = "py-3"> </div>
+        <h1 className="text-3xl font-bold text-center mb-8 ">Team Registration</h1>
 
         <form onSubmit={onSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
           {/* Team Information */}
           <div>
-            <h2 className="text-xl font-semibold mb-4">Team Information</h2>
+            <h2 className="text-xl font-semibold mb-4">Team Name</h2>
             <Input
               name="teamName"
               value={formData.teamName}

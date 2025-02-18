@@ -55,8 +55,8 @@ export default function InformationCard({
   };
 
   return (
-    <div className="bg-juneBud p-4">
-      <div className="w-full">
+    <div className="bg-juneBud p-4 py-20">
+      <div className="w-full py-9">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 text-signalBlack text-left">
             <h1 className="font-semibold text-3xl tracking-widest mb-5">

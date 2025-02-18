@@ -12,7 +12,7 @@ import { Team } from "@/models/Team";
 import { adminService } from '@/lib/firebase/competitionService';
 import { db } from '@/lib/firebase/firebase';
 import { doc, collection, getDoc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
-import { COMPETITION_NAMES, STAGE_NAMES, initialCompetitions } from '@/lib/competitionData';
+import {initialCompetitions } from '@/lib/competitionData';
 import CompetitionEditor from '@/components/competition/CompetitionEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';

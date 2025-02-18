@@ -27,7 +27,6 @@ export default function Dashboard() {
   // Get authenticated user
   const { user } = useAuth();
 
-  // Get competitionId from wherever you're storing it
   const competitionId = 'business-plan';
   
   // Get teamId based on authenticated user
@@ -185,13 +184,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-poppins">
-      <Navbar />
+      <div className="min-h-screen bg-gray-100 font-poppins">
+        <Navbar />
 
       <InformationCard
         competition={competition}
         team={team}
-        onRegister={() => router.push('/competition/register')}
+        onRegister={() => router.push('/competition/business-plan/register')}
         onEdit={() => router.push('/competition/edit')}
       />
 
