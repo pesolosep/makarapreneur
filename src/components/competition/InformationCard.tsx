@@ -1,9 +1,14 @@
+// components/competition/InformationCard.tsx
 import { useState, useEffect } from 'react';
+import { Competition } from '@/models/Competition';
+import { Team } from '@/models/Team';
+import { Button } from '@/components/ui/button';
 
 interface InformationCardProps {
-  isRegistered: boolean;
-  toggleRegistration: () => void;
-  deadlineDate: string; // Expected format: "YYYY-MM-DD HH:mm:ss"
+  competition?: Competition | null;
+  team?: Team | null;
+  onRegister: () => void;
+  onEdit?: () => void;
 }
 
 interface TimeLeft {
@@ -14,15 +19,18 @@ interface TimeLeft {
 }
 
 export default function InformationCard({ 
-  isRegistered, 
-  toggleRegistration,
-  deadlineDate = "2025-12-31 23:59:59" // Default deadline
+  competition,
+  team,
+  onRegister,
+  onEdit
 }: InformationCardProps) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
+    if (!competition?.registrationDeadline) return;
+
     const calculateTimeLeft = () => {
-      const difference = new Date(deadlineDate).getTime() - new Date().getTime();
+      const difference = new Date(competition.registrationDeadline).getTime() - new Date().getTime();
       
       if (difference > 0) {
         setTimeLeft({
@@ -40,7 +48,7 @@ export default function InformationCard({
     calculateTimeLeft(); // Initial calculation
 
     return () => clearInterval(timer);
-  }, [deadlineDate]);
+  }, [competition?.registrationDeadline]);
 
   const formatNumber = (num: number): string => {
     return num < 10 ? `0${num}` : num.toString();
@@ -51,29 +59,44 @@ export default function InformationCard({
       <div className="w-full">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 text-signalBlack text-left">
-            <h1 className="font-semibold text-3xl tracking-widest mb-5">LOREM IPSUM</h1>
+            <h1 className="font-semibold text-3xl tracking-widest mb-5">
+              {competition?.name || 'Competition Name'}
+            </h1>
             <p className="font-medium max-w-[500px]">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
-              ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-              aliquip ex ea commodo consequat.
+              {competition?.description || 'Competition description loading...'}
             </p>
           </div>
           <div className="w-full md:w-1/3 bg-gray-700 text-white p-6 rounded-lg shadow-none">
-            <h2 className="text-xl font-semibold mb-4">Member Information</h2>
-            {isRegistered ? (
+            <h2 className="text-xl font-semibold mb-4">Team Information</h2>
+            {team ? (
               <div className="space-y-3">
-                <p><span className="font-medium">Member 1:</span> John Doe</p>
-                <p><span className="font-medium">Member 2:</span> Jane Doe</p>
-                <p><span className="font-medium">Member 3:</span> John Smith</p>
-                <p><span className="font-medium">Member 4:</span> Jane Smith</p>
-
-                <button
-                  onClick={toggleRegistration}
-                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
-                >
-                  Ceritanya tombol edit registration </button>
-
+                <p><span className="font-medium">Team Name:</span> {team.teamName}</p>
+                <p><span className="font-medium">Team Leader:</span> {team.teamLeader.name}</p>
+                {team.members.member1 && (
+                  <p><span className="font-medium">Member 1:</span> {team.members.member1.name}</p>
+                )}
+                {team.members.member2 && (
+                  <p><span className="font-medium">Member 2:</span> {team.members.member2.name}</p>
+                )}
+                <p>
+                  <span className="font-medium">Registration Status:</span>{' '}
+                  <span className={`
+                    ${team.registrationStatus === 'approved' ? 'text-green-400' : ''}
+                    ${team.registrationStatus === 'rejected' ? 'text-red-400' : ''}
+                    ${team.registrationStatus === 'pending' ? 'text-yellow-400' : ''}
+                  `}>
+                    {team.registrationStatus.toUpperCase()}
+                  </span>
+                </p>
+                {onEdit && (
+                  <Button
+                    onClick={onEdit}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    Edit Team Information
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
@@ -98,13 +121,17 @@ export default function InformationCard({
                   </div>
                 </div>
                 <p><span className="font-medium">Status:</span> Not Registered</p>
-                <p><span className="font-medium">Deadline Registration:</span> {deadlineDate}</p>
-                <button
-                  onClick={toggleRegistration}
-                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
+                <p>
+                  <span className="font-medium">Registration Deadline:</span>{' '}
+                  {competition?.registrationDeadline.toLocaleString()}
+                </p>
+                <Button
+                  onClick={onRegister}
+                  className="w-full bg-green-500 hover:bg-green-600"
+                  disabled={new Date() > new Date(competition?.registrationDeadline || 0)}
                 >
                   Register Now!
-                </button>
+                </Button>
               </div>
             )}
           </div>

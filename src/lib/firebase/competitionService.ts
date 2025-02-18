@@ -1,5 +1,6 @@
 // lib/competitionService.ts
 import { db, storage } from './firebase';
+import { Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
@@ -15,21 +16,23 @@ import { Competition } from '@/models/Competition';
 import { Team } from '@/models/Team';
 
 export const competitionService = {
-  // Team Registration
   async registerTeam(
+    userId: string,
     competitionId: string, 
-    teamData: Omit<Team, 'id' | 'stages' | 'registrationStatus' | 'createdAt'>,
+    teamData: Omit<Team,  'competitionId'| 'userId'| 'id' | 'stages' | 'registrationStatus' | 'createdAt' | 'updatedAt' | 'registrationDocURL'>,
     registrationFile: File
   ) {
     const teamId = crypto.randomUUID();
-    const storageRef = ref(storage, `registrations/${teamId}/${registrationFile.name}`);
+    const storageRef = ref(storage, `competitions/${competitionId}/registrations/${teamId}/${registrationFile.name}`);
     
     // Upload registration file
     await uploadBytes(storageRef, registrationFile);
     const registrationDocURL = await getDownloadURL(storageRef);
     
-    // Create team document
+    // Create team document with competitionId
     const team: Team = {
+      userId,
+      competitionId,
       id: teamId,
       ...teamData,
       registrationStatus: 'pending',
@@ -39,13 +42,18 @@ export const competitionService = {
         2: { status: 'pending' },
         3: { status: 'pending' }
       },
-      createdAt: new Date()
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
     
+    // Store in competitions/[competitionId]/teams/[teamId]
+    await setDoc(doc(db, 'competitions', competitionId, 'teams', teamId), team);
+    
+    // Also store in teams collection for easy querying
     await setDoc(doc(db, 'teams', teamId), team);
+    
     return team;
   },
-
   // Stage Submission
   async submitStageWork(
     teamId: string,
@@ -74,14 +82,65 @@ export const competitionService = {
   }
 };
 
+
+const convertDatesToTimestamps = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (obj instanceof Date) {
+    return Timestamp.fromDate(obj);
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertDatesToTimestamps(item));
+  }
+
+  const converted: any = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      converted[key] = convertDatesToTimestamps(obj[key]);
+    }
+  }
+  return converted;
+};
+
+
+
 // Admin functions
 export const adminService = {
-  // Update competition details
-  async updateCompetition(competitionId: string, updates: Partial<Competition>) {
+
+  async updateStageVisibility(
+    competitionId: string,
+    stageNumber: number,
+    visibility: boolean
+  ) {
     await updateDoc(doc(db, 'competitions', competitionId), {
-      ...updates,
+      [`stages.${stageNumber}.visibility`]: visibility,
       updatedAt: new Date()
     });
+  },
+  
+  async updateCompetition(competitionId: string, updates: Partial<Competition>) {
+    try {
+      // Create a copy of the updates to avoid modifying the original
+      const updateData = {
+        ...updates,
+        updatedAt: new Date()
+      };
+
+      // Convert all Date objects to Firestore Timestamps, including nested objects
+      const convertedData = convertDatesToTimestamps(updateData);
+
+      // Get reference to the competition document
+      const competitionRef = doc(db, 'competitions', competitionId);
+
+      // Perform the update
+      await updateDoc(competitionRef, convertedData);
+    } catch (error) {
+      console.error('Error updating competition:', error);
+      throw new Error('Failed to update competition');
+    }
   },
 
   // Update team registration status
@@ -182,4 +241,6 @@ export const adminService = {
       throw new Error('Failed to retrieve teams with specified registration status');
     }
   }
+
+  
 };

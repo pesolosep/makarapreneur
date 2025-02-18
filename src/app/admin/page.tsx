@@ -11,68 +11,91 @@ import { Competition } from "@/models/Competition";
 import { Team } from "@/models/Team";
 import { adminService } from '@/lib/firebase/competitionService';
 import { db } from '@/lib/firebase/firebase';
-import { doc, collection, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { doc, collection, getDoc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import { COMPETITION_NAMES, STAGE_NAMES, initialCompetitions } from '@/lib/competitionData';
+import CompetitionEditor from '@/components/competition/CompetitionEditor';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
-const AdminDashboard = () => {
+const AdminDashboard: React.FC = () => {
   const [selectedCompetition, setSelectedCompetition] = useState<string>(initialCompetitions[0].id);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
+  const {user, isAdmin} = useAuth();
+  const router = useRouter();
 
-// Add function to initialize competitions in Firebase if they don't exist
-const initializeCompetitions = async () => {
-  try {
-    setLoading(true);
-    const completedCompetitions = initialCompetitions.map(comp => ({
-      ...comp,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }));
-
-    // Add competitions to Firebase if they don't exist
-    for (const competition of completedCompetitions) {
-      const docRef = doc(db, 'competitions', competition.id);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        console.log(`Initializing competition ${competition.id} in Firebase...`);
-        await setDoc(docRef, competition);
-      } else {
-        console.log(`Competition ${competition.id} already exists in Firebase.`);
+  
+  useEffect(() => {
+    if (loading) return;
+    if (user) {
+      if (isAdmin) {
+        console.log("ini user " + user)
+      } else{
+        router.push('/')
       }
     }
+  }, [user, isAdmin, router,loading]);
+  const initializeCompetitions = async () => {
+    try {
+      setLoading(true);
+      const completedCompetitions = initialCompetitions.map(comp => ({
+        ...comp,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
 
-    // Get all competitions from Firebase
-    const competitionsRef = collection(db, 'competitions');
-    const competitionsSnapshot = await getDocs(competitionsRef);
-    const competitionsData = competitionsSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        ...data,
-        id: doc.id,
-        registrationDeadline: data.registrationDeadline?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate(),
-        stages: Object.entries(data.stages || {}).reduce((acc, [key, value]: [string, any]) => ({
-          ...acc,
-          [key]: {
-            ...value,
-            deadline: value.deadline?.toDate() || new Date()
-          }
-        }), {})
-      };
-    }) as Competition[];
+      for (const competition of completedCompetitions) {
+        const docRef = doc(db, 'competitions', competition.id);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+          console.log(`Initializing competition ${competition.id} in Firebase...`);
+          await setDoc(docRef, {
+            ...competition,
+            createdAt: Timestamp.fromDate(new Date()),
+            updatedAt: Timestamp.fromDate(new Date()),
+            registrationDeadline: Timestamp.fromDate(competition.registrationDeadline),
+            stages: Object.entries(competition.stages).reduce((acc, [key, stage]) => ({
+              ...acc,
+              [key]: {
+                ...stage,
+                deadline: Timestamp.fromDate(stage.deadline)
+              }
+            }), {})
+          });
+        }
+      }
 
-    setCompetitions(competitionsData);
-  } catch (error) {
-    console.error('Error initializing competitions:', error);
-    setError('Failed to initialize competitions');
-  } finally {
-    setLoading(false);
-  }
-};
+      const competitionsRef = collection(db, 'competitions');
+      const competitionsSnapshot = await getDocs(competitionsRef);
+      const competitionsData = competitionsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id,
+          registrationDeadline: data.registrationDeadline?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          stages: Object.entries(data.stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+            ...acc,
+            [key]: {
+              ...value,
+              deadline: value.deadline?.toDate() || new Date()
+            }
+          }), {})
+        };
+      }) as Competition[];
+
+      setCompetitions(competitionsData);
+    } catch (error) {
+      console.error('Error initializing competitions:', error);
+      setError('Failed to initialize competitions');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     initializeCompetitions();
@@ -97,21 +120,6 @@ const initializeCompetitions = async () => {
     }
   };
 
-  const handleUpdateDescription = async (description: string) => {
-    try {
-      await adminService.updateCompetition(selectedCompetition, { description });
-      setCompetitions(prevState => 
-        prevState.map(comp => 
-          comp.id === selectedCompetition 
-            ? { ...comp, description } 
-            : comp
-        )
-      );
-    } catch (err) {
-      setError('Failed to update competition description');
-    }
-  };
-
   const handleUpdateStatus = async (teamId: string, status: 'approved' | 'rejected') => {
     try {
       await adminService.updateRegistrationStatus(teamId, status);
@@ -121,50 +129,7 @@ const initializeCompetitions = async () => {
     }
   };
 
-  const handleUpdateStage = async (
-    teamId: string,
-    stageNumber: number,
-    status: 'cleared' | 'rejected',
-    feedback?: string
-  ) => {
-    try {
-      await adminService.updateStageClearance(teamId, stageNumber, status, feedback);
-      await loadTeamsForCompetition(selectedCompetition);
-    } catch (err) {
-      setError('Failed to update stage');
-    }
-  };
-
-  const handleGuidelineUpload = async (
-    stageNumber: number,
-    file: File,
-    description: string
-  ) => {
-    try {
-      await adminService.updateStageGuideline(selectedCompetition, stageNumber, file, description);
-      // Update local state
-      setCompetitions(prevState =>
-        prevState.map(comp =>
-          comp.id === selectedCompetition
-            ? {
-                ...comp,
-                stages: {
-                  ...comp.stages,
-                  [stageNumber]: {
-                    ...comp.stages[stageNumber],
-                    description,
-                  },
-                },
-              }
-            : comp
-        )
-      );
-    } catch (err) {
-      setError('Failed to upload guideline');
-    }
-  };
-
-  const getCurrentCompetition = () => 
+  const getCurrentCompetition = (): Competition | undefined => 
     competitions.find(comp => comp.id === selectedCompetition);
 
   if (loading) {
@@ -182,7 +147,6 @@ const initializeCompetitions = async () => {
           <CardTitle>Competition Management Dashboard</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Competition Selector */}
           <div className="mb-6">
             <select
               value={selectedCompetition}
@@ -201,32 +165,28 @@ const initializeCompetitions = async () => {
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="teams">Teams</TabsTrigger>
-              <TabsTrigger value="stages">Stages</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{getCurrentCompetition()?.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-medium mb-2">Description</h3>
-                      <Textarea
-                        value={getCurrentCompetition()?.description}
-                        onChange={(e) => handleUpdateDescription(e.target.value)}
-                        placeholder="Enter competition description..."
-                        className="h-32"
-                      />
+              {(() => {
+                const competition = getCurrentCompetition();
+                if (!competition) {
+                  return (
+                    <div className="p-4 text-center">
+                      <p>No competition selected</p>
                     </div>
-                    <div>
-                      <h3 className="font-medium mb-2">Registration Deadline</h3>
-                      <p>{new Date(getCurrentCompetition()?.registrationDeadline || '').toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  );
+                }
+                
+                return (
+                  <CompetitionEditor
+                  competition={competition}
+                  onUpdateCompetition={adminService.updateCompetition}
+                  onUpdateStageVisibility={adminService.updateStageVisibility}
+                  onUpdateStageGuideline={adminService.updateStageGuideline}
+                />
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="teams">
@@ -291,70 +251,6 @@ const initializeCompetitions = async () => {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="stages">
-              <div className="space-y-6">
-                {Object.entries(getCurrentCompetition()?.stages || {}).map(([stageNumber, stage]) => (
-                  <Card key={stageNumber}>
-                    <CardHeader>
-                      <CardTitle>Stage {stageNumber}: {stage.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Deadline</h4>
-                          <p>{new Date(stage.deadline).toLocaleDateString()}</p>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Guidelines</h4>
-                          <Input
-                            type="file"
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                handleGuidelineUpload(
-                                  parseInt(stageNumber),
-                                  e.target.files[0],
-                                  stage.description
-                                );
-                              }
-                            }}
-                            className="mb-2"
-                          />
-                          <Textarea
-                            value={stage.description}
-                            placeholder="Stage guidelines description..."
-                            onChange={(e) => {
-                              const file = new File([""], "placeholder.txt", { type: "text/plain" });
-                              handleGuidelineUpload(parseInt(stageNumber), file, e.target.value);
-                            }}
-                            className="h-24"
-                          />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Visibility</h4>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              adminService.updateCompetition(selectedCompetition, {
-                                stages: {
-                                  ...getCurrentCompetition()?.stages,
-                                  [stageNumber]: {
-                                    ...stage,
-                                    visibility: !stage.visibility
-                                  }
-                                }
-                              });
-                            }}
-                          >
-                            {stage.visibility ? 'Hide Stage' : 'Show Stage'}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
               </div>
             </TabsContent>
           </Tabs>

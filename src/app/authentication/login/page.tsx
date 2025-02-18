@@ -18,7 +18,8 @@ export default function LoginPage() {
       if (isAdmin) {
         router.push('/admin');
       } else {
-        router.push('/admin');
+        console.log("ini user " + user)
+        router.push('/');
       }
     }
   }, [user, isAdmin, router]);
