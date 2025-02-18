@@ -1,15 +1,28 @@
+// Banner.tsx (Server Component)
 import Image from "next/image";
 import dummyBanner from '@/assets/dummyBanner.svg';
+import { BannerTitle } from './BannerTitle';
 
-interface BannerProp {
+interface BannerProps {
     title: string;
 }
 
-export default function Banner({ title }: BannerProp) {
+export default function Banner({ title }: BannerProps) {
     return (
-        <div className=" flex items-center h-[200px]">
-            <h2 className="z-20 text-linen px-12 headerText [text-shadow:_0px_0px_10px_#BADE4F;]">{title}</h2>
-            <Image className="object-cover w-full h-[200px] absolute z-0" src={dummyBanner} alt="banner" priority/>
+        <div className="relative flex items-center h-[300px] overflow-hidden">
+            {/* Background Image with Overlay */}
+            <div className="absolute inset-0 w-full h-full">
+                <Image 
+                    className="object-cover w-full h-full" 
+                    src={dummyBanner} 
+                    alt="banner" 
+                    priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
+            </div>
+
+            {/* Animated Title Component */}
+            <BannerTitle title={title} />
         </div>
     );
 }

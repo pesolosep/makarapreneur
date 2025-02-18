@@ -1,3 +1,4 @@
+import ShowCard from "@/components/EventCompList";
 import Footer from "@/components/Footer";
 import AboutUs from "@/components/homepage/AboutUs";
 import Hero from "@/components/homepage/Hero";
@@ -13,6 +14,7 @@ export default function page() {
             <Navbar />
             <Hero />
             <AboutUs />
+            <ShowCard title="UPCOMING EVENTS" />
             <Timeline />
             <Speakers />
             <Sponsors />

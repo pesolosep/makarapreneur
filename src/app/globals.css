@@ -6,7 +6,7 @@
   --cornflower-blue: #6E8EEC;
   --june-bud: 75 68% 59%;
   --signal-black: #282B26;
-  --linen: #F0ECE5;
+  --linen: 38 27% 92%;
 }
 
 body {
@@ -95,3 +95,12 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.clip-path-collapsed {
+  clip-path: polygon(0 40%, 100% 40%, 100% 60%, 0 60%);
+}
+
+.clip-path-expanded {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
