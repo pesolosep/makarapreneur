@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import aboutUsDummy from "@/assets/aboutUsDummy.svg";
 import { twMerge } from "tailwind-merge";
@@ -10,9 +11,21 @@ import { ArrowRight } from "lucide-react";
 interface VariantProps {
     variant?: string;
     number: number;
+    title: string;
+    description: string;
+    registerLink: string;
+    buttonText?: string;
 }
 
-export default function Description({ variant, number }: VariantProps) {
+export default function Description({ 
+    variant, 
+    number, 
+    title,
+    description,
+    registerLink,
+    buttonText = "Register Now"
+}: VariantProps) {
+    const router = useRouter();
     const secondary = variant === "secondary";
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);
@@ -92,16 +105,13 @@ export default function Description({ variant, number }: VariantProps) {
                     }
                 `}>
                     <p className="text-2xl lg:text-3xl font-bold">
-                        Lorem ipsum dolor sit amet
+                        {title}
                     </p>
                     <p className="text-base lg:text-lg leading-relaxed max-w-[500px] font-medium">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                        do eiusmod tempor incididunt ut labore et dolore magna
-                        aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-                        ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                        {description}
                     </p>
                     <Button 
-                    
+                        onClick={() => router.push(registerLink)}
                         className={`
                             group relative overflow-hidden rounded-2xl px-6 h-12
                             ${secondary 
@@ -112,7 +122,7 @@ export default function Description({ variant, number }: VariantProps) {
                         `}
                     >
                         <span className="relative z-10 transition-transform duration-300 group-hover:-translate-x-2">
-                            Register Now
+                            {buttonText}
                         </span>
                         <ArrowRight 
                             className="absolute z-10 right-4 h-5 w-5 transition-all duration-300 

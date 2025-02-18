@@ -2,20 +2,26 @@
 import { useState } from 'react';
 import { Clock, Download, Upload, ChevronUp, ChevronDown } from 'lucide-react';
 import { Stage } from '@/models/Competition';
-import { TeamStageSubmission } from '@/models/Team';
+import { TeamStageSubmission, Team } from '@/models/Team';
+import { Timestamp } from 'firebase/firestore';
 
 interface Assignment extends Stage {
   id: string;
+  stageNumber: number; // Add this to track stage number
   submission?: TeamStageSubmission;
+  submissionEnabled: boolean;
 }
 
 interface AssignmentCardProps {
   assignment: Assignment;
   onDownload: (id: string) => void;
   onUpload: (id: string) => void;
+  team?: Team | null;
 }
 
-export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentCardProps) {
+
+
+export function AssignmentCard({ assignment, onDownload, onUpload, team }: AssignmentCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Helper function to format the status with proper styling
@@ -23,9 +29,27 @@ export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentC
     const statusColors = {
       pending: 'text-yellow-600',
       cleared: 'text-green-600',
-      rejected: 'text-red-600'
+      rejected: 'text-red-400'
     };
     return <span className={statusColors[status as keyof typeof statusColors]}>{status.toUpperCase()}</span>;
+  };
+
+  // Check if submission should be hidden based on stage rules
+  const shouldHideSubmission = () => {
+    if (!team) return true;
+    
+    switch (assignment.stageNumber) {
+      case 1:
+        return false; // Always shown
+      case 2:
+        // Hide if stage 1 not cleared or team not paid
+        return team.stages[1]?.status !== 'cleared' || !team.stages[1]?.paidStatus;
+      case 3:
+        // Hide if stage 2 not cleared
+        return team.stages[2]?.status !== 'cleared';
+      default:
+        return false;
+    }
   };
 
   return (
@@ -41,9 +65,12 @@ export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentC
           </h3>
           <div className="flex items-center text-base text-signalBlack mt-3">
             <Clock className="w-5 h-5 mr-2" />
+            <p className="text-sm">
             <span className="font-medium">
-              Deadline: {new Date(assignment.deadline).toLocaleString()}
-            </span>
+              Deadline:  </span>
+               {assignment?.deadline ? (assignment.deadline instanceof Date ? assignment.deadline.toLocaleDateString() : assignment.deadline) : 'Loading...'}
+          
+          </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -59,7 +86,7 @@ export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentC
         <div className="px-6 pb-6 border-t border-signalBlack/10">
           {/* Status Section */}
           <div className="mt-4">
-            <h4 className="text-xl font-semibold tracking-wide text-signalBlack mb-3">Status</h4>
+            {/* <h4 className="text-xl font-semibold tracking-wide text-signalBlack mb-3">Status</h4> */}
             <div className="space-y-3">
               {assignment.submission?.submissionURL && (
                 <p className="text-base">
@@ -70,7 +97,7 @@ export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentC
               {assignment.submission?.submissionDate && (
                 <p className="text-base">
                   <span className="font-medium">Submitted On:</span>{' '}
-                  {new Date(assignment.submission.submissionDate).toLocaleString()}
+                  {assignment.submission.submissionDate instanceof Date ? assignment.submission.submissionDate.toLocaleDateString() : assignment.submission.submissionDate}
                 </p>
               )}
               <p className="text-base">
@@ -102,14 +129,19 @@ export function AssignmentCard({ assignment, onDownload, onUpload }: AssignmentC
               <Download className="w-5 h-5" />
               Download Guidelines
             </button>
-            <button
-              onClick={() => onUpload(assignment.id)}
-              className="flex items-center gap-2 px-6 py-3 text-base font-medium text-white bg-signalBlack rounded-md hover:bg-signalBlack/80 transition-colors"
-              disabled={assignment.submission?.status === 'cleared'}
-            >
-              <Upload className="w-5 h-5" />
-              Upload Submission
-            </button>
+            {!shouldHideSubmission() && (
+              <button
+                onClick={() => onUpload(assignment.id)}
+                className="flex items-center gap-2 px-6 py-3 text-base font-medium text-white bg-signalBlack rounded-md hover:bg-signalBlack/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={
+                  assignment.submission?.status === 'cleared' || 
+                  !assignment.submissionEnabled
+                }
+              >
+                <Upload className="w-5 h-5" />
+                Upload Submission
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -121,9 +153,10 @@ interface AssignmentListProps {
   assignments: Assignment[];
   onDownload: (id: string) => void;
   onUpload: (id: string) => void;
+  team?: Team | null;
 }
 
-export function AssignmentList({ assignments, onDownload, onUpload }: AssignmentListProps) {
+export function AssignmentList({ assignments, onDownload, onUpload, team }: AssignmentListProps) {
   return (
     <div className="max-w-5xl mx-auto px-6">
       {assignments.map((assignment) => (
@@ -132,6 +165,7 @@ export function AssignmentList({ assignments, onDownload, onUpload }: Assignment
           assignment={assignment}
           onDownload={onDownload}
           onUpload={onUpload}
+          team={team}
         />
       ))}
     </div>

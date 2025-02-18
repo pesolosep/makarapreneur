@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import Footer from "@/components/Footer";
@@ -9,49 +9,37 @@ import AboutUs from "@/components/homepage/AboutUs";
 import Navbar from "@/components/Navbar";
 import InformationCard from "@/components/competition/InformationCard";
 import { AssignmentList } from "@/components/competition/AssignmentCard";
-import { Competition } from '@/models/Competition';
+import { Competition, Stage } from '@/models/Competition';
 import { Team } from '@/models/Team';
 import { competitionService } from '@/lib/firebase/competitionService';
-import { useTeamId } from '@/hooks/useTeamId';
 import { useToast } from '@/hooks/use-toast';
 import SemifinalPaymentButton from '@/components/competition/SemifinalPaymentButton';
 
 export default function Dashboard() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, loading} = useAuth();
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Get authenticated user
-  const { user } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
 
   const competitionId = 'business-plan';
-  
-  // Get teamId based on authenticated user
-  const { teamId, loading: teamIdLoading } = useTeamId(competitionId);
 
   useEffect(() => {
-    // Redirect if not authenticated
+    if (loading) return;
+    
     if (!user) {
-
-      // router.push('/login');
-      console.log("ini user " + user)
+    //   router.push('/login');
       return;
+    }else{
+        console.log("ini user " + user)
     }
 
     const fetchData = async () => {
       try {
-        // Wait for teamId to be available
-        if (teamIdLoading) return;
-
-        // Fetch competition and team data if teamId exists
-        const [competitionDoc, teamDoc] = await Promise.all([
-          getDoc(doc(db, 'competitions', competitionId)),
-          teamId ? getDoc(doc(db, 'teams', teamId)) : null
-        ]);
-
+        // Fetch competition data
+        const competitionDoc = await getDoc(doc(db, 'competitions', competitionId));
         if (!competitionDoc.exists()) {
           throw new Error('Competition not found');
         }
@@ -59,17 +47,51 @@ export default function Dashboard() {
         const competitionData = competitionDoc.data() as Competition;
         setCompetition(competitionData);
 
-        if (teamDoc?.exists()) {
+        // Fetch team data if exists
+        const teamsQuery = query(
+          collection(db, 'teams'),
+          where('userId', '==', user.uid),
+          where('competitionId', '==', competitionId)
+        );
+        const teamSnapshot = await getDocs(teamsQuery);
+        const teamDoc = teamSnapshot.docs[0];
+
+        if (teamDoc) {
           const teamData = teamDoc.data() as Team;
           setTeam(teamData);
 
-          // Transform stages into assignments
+          // Transform visible stages into assignments
+          const stageAssignments = Object.entries(competitionData.stages)
+            .filter(([_, stage]) => stage.visibility) // Only show visible stages
+            .map(([stageNum, stage]) => {
+              const stageNumber = parseInt(stageNum);
+              const previousStage = teamData.stages[stageNumber - 1];
+              const currentStage = teamData.stages[stageNumber];
+
+              // Determine if submission should be enabled
+              const isSubmissionEnabled = 
+                teamData.registrationStatus === 'approved' && // Team is approved
+                (stageNumber === 1 || previousStage?.status !== 'rejected') && // Previous stage not rejected
+                stage.visibility; // Stage is visible
+
+              return {
+                id: stageNum,
+                ...stage,
+                submission: currentStage,
+                submissionEnabled: isSubmissionEnabled
+              };
+            });
+
+          setAssignments(stageAssignments);
+        } else {
+          // If no team, still show visible stages but without submission capability
           const stageAssignments = Object.entries(competitionData.stages)
             .filter(([_, stage]) => stage.visibility)
             .map(([stageNum, stage]) => ({
               id: stageNum,
               ...stage,
-              submission: teamData.stages[parseInt(stageNum)]
+              submission: null,
+              submissionEnabled: false
             }));
 
           setAssignments(stageAssignments);
@@ -82,12 +104,12 @@ export default function Dashboard() {
           description: error instanceof Error ? error.message : "Failed to load competition data",
         });
       } finally {
-        setLoading(false);
+        setSubmitting(false);
       }
     };
 
     fetchData();
-  }, [user, teamId, teamIdLoading, competitionId, toast, router]);
+  }, [user, competitionId, toast, router]);
 
   const handleDownload = async (stageId: string) => {
     try {
@@ -96,7 +118,6 @@ export default function Dashboard() {
         throw new Error('Guidelines not available');
       }
 
-      // Create a temporary anchor element to trigger download
       const link = document.createElement('a');
       link.href = stage.guidelineFileURL;
       link.target = '_blank';
@@ -116,7 +137,7 @@ export default function Dashboard() {
   const handleUpload = async (stageId: string) => {
     try {
       if (!team) {
-        throw new Error('Team not found');
+        throw new Error('You must be registered to submit');
       }
 
       const stage = competition?.stages[parseInt(stageId)];
@@ -124,12 +145,27 @@ export default function Dashboard() {
         throw new Error('Stage not found');
       }
 
-      // Check if past deadline
+      // Check if submission is enabled for this stage
+      const stageNumber = parseInt(stageId);
+      const previousStage = team.stages[stageNumber - 1];
+      
+      if (team.registrationStatus !== 'approved') {
+        throw new Error('Your team registration must be approved first');
+      }
+
+      if (stageNumber > 1 && previousStage?.status === 'rejected') {
+        throw new Error('Previous stage submission was rejected');
+      }
+
+      if (!stage.visibility) {
+        throw new Error('This stage is not currently available');
+      }
+
+      // Check deadline
       if (new Date() > new Date(stage.deadline)) {
         throw new Error('Submission deadline has passed');
       }
 
-      // Create file input element
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.pdf,.doc,.docx';
@@ -138,24 +174,28 @@ export default function Dashboard() {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
 
-        await competitionService.submitStageWork(team.id, parseInt(stageId), file);
+        await competitionService.submitStageWork(team.id, stageNumber, file);
         
         toast({
           title: "Success",
           description: "Submission uploaded successfully",
         });
 
-        // Refresh the data
+        // Refresh team data
         const teamDoc = await getDoc(doc(db, 'teams', team.id));
         if (teamDoc.exists()) {
           const updatedTeam = teamDoc.data() as Team;
           setTeam(updatedTeam);
           
-          // Update assignments with new submission data
+          // Update assignments
           setAssignments(prev => 
             prev.map(assignment => 
               assignment.id === stageId 
-                ? { ...assignment, submission: updatedTeam.stages[parseInt(stageId)] }
+                ? { 
+                    ...assignment, 
+                    submission: updatedTeam.stages[stageNumber],
+                    submissionEnabled: true
+                  }
                 : assignment
             )
           );
@@ -172,7 +212,7 @@ export default function Dashboard() {
     }
   };
 
-  if (loading || teamIdLoading) {
+  if (submitting) {
     return (
       <div className="min-h-screen bg-gray-100 font-poppins">
         <Navbar />
@@ -184,37 +224,34 @@ export default function Dashboard() {
   }
 
   return (
-      <div className="min-h-screen bg-gray-100 font-poppins">
-        <Navbar />
+    <div className="min-h-screen bg-gray-100 font-poppins">
+      <Navbar />
 
       <InformationCard
         competition={competition}
         team={team}
-        onRegister={() => router.push('/competition/business-plan/register')}
-        onEdit={() => router.push('/competition/edit')}
+        registrationUrl={`/competition/${competitionId}/register`}
       />
 
-      {team && (
-        <div className="bg-gray-500 py-8">
-          <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-2xl font-bold mb-6 text-white">Your Assignments</h2>
-            <AssignmentList
-              assignments={assignments}
-              onDownload={handleDownload}
-              onUpload={handleUpload}
-            />
-            
-            {team.stages[2]?.status === 'cleared' && !team.stages[2]?.paidStatus && (
-              <div className="mt-8">
-                <SemifinalPaymentButton 
-                  teamId={team.id} 
-                  disabled={!competition?.stages[3]?.visibility}
-                />
-              </div>
-            )}
-          </div>
+      <div className="bg-gray-500 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-2xl font-bold mb-6 text-white">Competition Stages</h2>
+          <AssignmentList
+            assignments={assignments}
+            onDownload={handleDownload}
+            onUpload={handleUpload}
+          />
+          
+          {team?.stages[2]?.status === 'cleared' && !team.stages[2]?.paidStatus && (
+            <div className="mt-8">
+              <SemifinalPaymentButton 
+                teamId={team.id} 
+                disabled={!competition?.stages[3]?.visibility}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <AboutUs />
       <Footer />

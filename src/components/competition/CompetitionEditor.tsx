@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,34 +9,59 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 import { Calendar } from '@/components/ui/calendar';
-import { Eye, EyeOff, Pencil, Upload } from 'lucide-react';
-import { Competition, Stage } from '@/models/Competition';
+import { Eye, EyeOff, Pencil, Upload, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface CompetitionEditorProps {
-  competition: Competition;
-  onUpdateCompetition: (competitionId: string, updates: Partial<Competition>) => Promise<void>;
-  onUpdateStageVisibility: (competitionId: string, stageNumber: number, visibility: boolean) => Promise<void>;
-  onUpdateStageGuideline: (competitionId: string, stageNumber: number, file: File, description: string) => Promise<void>;
+interface Stage {
+  title: string;
+  description: string;
+  deadline: Date;
+  isVisible?: boolean;
+  guidelines?: string;
 }
 
-interface EditModeState {
-  name: boolean;
-  description: boolean;
-  deadline: boolean;
-  stages: Record<string, {
-    description: boolean;
-    deadline: boolean;
-  }>;
-}
-
-interface FormDataState {
+interface Competition {
+  id: string;
   name: string;
   description: string;
   registrationDeadline: Date;
   stages: Record<string, Stage>;
+}
+
+interface FormData {
+  name: string;
+  description: string;
+  registrationDeadline: Date;
+  stages: Record<string, Stage>;
+}
+
+interface CompetitionEditorProps {
+  competition: Competition;
+  onUpdateCompetition: (id: string, updates: Partial<Competition>) => Promise<void>;
+  onUpdateStageVisibility: (stageId: string, isVisible: boolean) => Promise<void>;
+  onUpdateStageGuideline: (stageId: string, file: File) => Promise<void>;
+}
+
+interface EditMode {
+  [key: string]: boolean;
+}
+
+interface LoadingState {
+  [key: string]: boolean;
 }
 
 const CompetitionEditor: React.FC<CompetitionEditorProps> = ({ 
@@ -45,154 +70,317 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
   onUpdateStageVisibility,
   onUpdateStageGuideline
 }) => {
-  const [editMode, setEditMode] = useState<EditModeState>({
-    name: false,
-    description: false,
-    deadline: false,
-    stages: {}
-  });
-  
-  const [formData, setFormData] = useState<FormDataState>({
+  const [editMode, setEditMode] = useState<EditMode>({});
+  const [formData, setFormData] = useState<FormData>({
     name: competition.name,
     description: competition.description,
     registrationDeadline: competition.registrationDeadline,
-    stages: competition.stages
+    stages: { ...competition.stages }
   });
+  const [loading, setLoading] = useState<LoadingState>({});
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+  const [tempDate, setTempDate] = useState<Date | null>(null);
 
-  const handleUpdate = async (field: keyof Competition, value: any) => {
+  useEffect(() => {
+    setFormData({
+      name: competition.name,
+      description: competition.description,
+      registrationDeadline: competition.registrationDeadline,
+      stages: { ...competition.stages }
+    });
+  }, [competition]);
+
+  const showSuccess = useCallback((message: string) => {
+    setSuccess(message);
+    setTimeout(() => setSuccess(''), 3000);
+  }, []);
+
+  const handleUpdate = async (field: keyof FormData, value: any, path?: string) => {
+    const loadingKey = path || field;
     try {
-      await onUpdateCompetition(competition.id, { [field]: value });
-      setEditMode({ ...editMode, [field]: false });
+      setLoading(prev => ({ ...prev, [loadingKey]: true }));
+      setError('');
+
+      const updates = path 
+        ? { [path]: value }
+        : { [field]: value };
+
+      await onUpdateCompetition(competition.id, updates);
+      
+      setFormData(prev => ({
+        ...prev,
+        ...(path ? { [path]: value } : { [field]: value })
+      }));
+      
+      setEditMode(prev => ({ ...prev, [loadingKey]: false }));
+      showSuccess(`${field} updated successfully`);
     } catch (error) {
-      console.error(`Failed to update ${field}:`, error);
+      setError(`Failed to update ${field}`);
+    } finally {
+      setLoading(prev => ({ ...prev, [loadingKey]: false }));
     }
   };
 
   const handleStageUpdate = async (stageNumber: string, updates: Partial<Stage>) => {
+    const loadingKey = `stage-${stageNumber}`;
     try {
+      setLoading(prev => ({ ...prev, [loadingKey]: true }));
+      setError('');
+      
       const updatedStages = {
-        ...competition.stages,
+        ...formData.stages,
         [stageNumber]: {
-          ...competition.stages[parseInt(stageNumber)],
+          ...formData.stages[stageNumber],
           ...updates
         }
       };
 
-      await onUpdateCompetition(competition.id, {
+      await onUpdateCompetition(competition.id, { stages: updatedStages });
+      
+      setFormData(prev => ({
+        ...prev,
         stages: updatedStages
-      });
+      }));
+      
+      setEditMode(prev => ({ ...prev, [loadingKey]: false }));
+      showSuccess('Stage updated successfully');
+    } catch (error) {
+      setError('Failed to update stage');
+    } finally {
+      setLoading(prev => ({ ...prev, [loadingKey]: false }));
+    }
+  };
 
-      setEditMode(prev => ({
+  const handleStageVisibilityToggle = async (stageNumber: string) => {
+    const loadingKey = `visibility-${stageNumber}`;
+    try {
+      setLoading(prev => ({ ...prev, [loadingKey]: true }));
+      setError('');
+
+      const currentStage = formData.stages[stageNumber];
+      const newVisibility = !currentStage.isVisible;
+
+      await onUpdateStageVisibility(stageNumber, newVisibility);
+
+      setFormData(prev => ({
         ...prev,
         stages: {
           ...prev.stages,
           [stageNumber]: {
-            description: false,
-            deadline: false
+            ...prev.stages[stageNumber],
+            isVisible: newVisibility
           }
         }
       }));
+
+      showSuccess(`Stage visibility updated successfully`);
     } catch (error) {
-      console.error('Failed to update stage:', error);
+      setError('Failed to update stage visibility');
+    } finally {
+      setLoading(prev => ({ ...prev, [loadingKey]: false }));
     }
   };
 
-  const toggleStageEditMode = (stageNumber: string, field: 'description' | 'deadline', value: boolean) => {
-    setEditMode(prev => ({
-      ...prev,
-      stages: {
-        ...prev.stages,
-        [stageNumber]: {
-          ...prev.stages[stageNumber],
-          [field]: value
+  const handleFileUpload = async (stageNumber: string, file: File) => {
+    const loadingKey = `file-${stageNumber}`;
+    try {
+      setLoading(prev => ({ ...prev, [loadingKey]: true }));
+      setError('');
+
+      await onUpdateStageGuideline(stageNumber, file);
+
+      setFormData(prev => ({
+        ...prev,
+        stages: {
+          ...prev.stages,
+          [stageNumber]: {
+            ...prev.stages[stageNumber],
+            guidelines: file.name
+          }
         }
-      }
-    }));
+      }));
+
+      showSuccess('Guidelines uploaded successfully');
+    } catch (error) {
+      setError('Failed to upload guidelines');
+    } finally {
+      setLoading(prev => ({ ...prev, [loadingKey]: false }));
+    }
   };
 
+  const renderEditableField = (
+    field: string,
+    value: string,
+    label: string,
+    type: 'input' | 'textarea' = 'input',
+    path?: string
+  ) => {
+    const isEditing = editMode[field];
+    const isLoading = loading[field];
+    const InputComponent = type === 'input' ? Input : Textarea;
+    
+    const [tempValue, setTempValue] = useState<string>(value || '');
+    
+    const currentValue = path
+      ? formData.stages[path.split('-')[1]]?.description || ''
+      : (formData[field as keyof FormData] as string) || '';
+  
+    useEffect(() => {
+      setTempValue(currentValue);
+    }, [currentValue]);
+    
+    const handleSave = async () => {
+      if (path) {
+        const [_, stageNumber] = path.split('-');
+        await handleStageUpdate(stageNumber, { description: tempValue });
+      } else {
+        await handleUpdate(field as keyof FormData, tempValue);
+      }
+      setEditMode(prev => ({ ...prev, [field]: false }));
+    };
+  
+    const handleCancel = () => {
+      setTempValue(currentValue);
+      setEditMode(prev => ({ ...prev, [field]: false }));
+    };
+    
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <h3 className="text-sm font-medium">{label}</h3>
+          {!isEditing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditMode(prev => ({ ...prev, [field]: true }))}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        
+        {isEditing ? (
+          <div className="space-y-2">
+            <InputComponent
+              value={tempValue}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                setTempValue(e.target.value);
+              }}
+              className={type === 'textarea' ? "min-h-[100px]" : ""}
+              disabled={isLoading}
+            />
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSave}
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="whitespace-pre-wrap">{value || currentValue}</p>
+        )}
+      </div>
+    );
+  };
+  
+  // For file upload dialog:
+  const FileUploadDialog = ({ stageNumber, stage }: { stageNumber: string; stage: Stage }) => {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const isLoading = loading[`file-${stageNumber}`];
+  
+    const handleUpload = async () => {
+      if (selectedFile) {
+        await handleFileUpload(stageNumber, selectedFile);
+        setIsDialogOpen(false);
+        setSelectedFile(null);
+      }
+    };
+  
+    return (
+      <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <AlertDialogTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Guidelines
+              </>
+            )}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Upload Guidelines</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please select a PDF file to upload as guidelines for this stage.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="file"
+              accept=".pdf"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedFile(file);
+                }
+              }}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setSelectedFile(null);
+              setIsDialogOpen(false);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUpload}
+              disabled={!selectedFile || isLoading}
+            >
+              {isLoading ? 'Uploading...' : 'Upload'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  };
+  
+  
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Competition Details</CardTitle>
-          </div>
+          <CardTitle>Competition Details</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Name Editor */}
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h3 className="text-sm font-medium mb-1">Competition Name</h3>
-              {editMode.name ? (
-                <div className="flex gap-2">
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="max-w-md"
-                  />
-                  <Button onClick={() => handleUpdate('name', formData.name)}>Save</Button>
-                  <Button variant="outline" onClick={() => setEditMode({ ...editMode, name: false })}>
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span>{competition.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditMode({ ...editMode, name: true })}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Description Editor */}
-          <div>
-            <h3 className="text-sm font-medium mb-1">Description</h3>
-            {editMode.description ? (
-              <div className="space-y-2">
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="min-h-[100px]"
-                />
-                <div className="flex gap-2">
-                  <Button onClick={() => handleUpdate('description', formData.description)}>
-                    Save
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditMode({ ...editMode, description: false })}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2">
-                <p className="whitespace-pre-wrap">{competition.description}</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditMode({ ...editMode, description: true })}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Registration Deadline Editor */}
-          <div>
-            <h3 className="text-sm font-medium mb-1">Registration Deadline</h3>
+        <CardContent className="space-y-6">
+          {renderEditableField('name', formData.name, 'Competition Name')}
+          {renderEditableField('description', formData.description, 'Description', 'textarea')}
+          
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Registration Deadline</h3>
             <Dialog>
               <DialogTrigger asChild>
                 <div className="flex items-center gap-2 cursor-pointer">
-                  <span>{formData.registrationDeadline.toLocaleDateString()}</span>
+                  <span>{formData.registrationDeadline?.toLocaleDateString()}</span>
                   <Button variant="ghost" size="sm">
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -202,73 +390,75 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
                 <DialogHeader>
                   <DialogTitle>Update Registration Deadline</DialogTitle>
                 </DialogHeader>
-                <Calendar
-                  mode="single"
-                  selected={formData.registrationDeadline}
-                  onSelect={(date) => {
-                    if (date) {
-                      handleUpdate('registrationDeadline', date);
-                    }
-                  }}
-                />
+                <div className="space-y-4">
+                  <Calendar
+                    mode="single"
+                    selected={tempDate || formData.registrationDeadline}
+                    onSelect={(day) => setTempDate(day || null)}
+                    disabled={loading['registrationDeadline']}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <DialogClose asChild>
+                      <Button variant="outline" onClick={() => setTempDate(null)}>
+                        Cancel
+                      </Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button 
+                        onClick={async () => {
+                          if (tempDate) {
+                            await handleUpdate('registrationDeadline', tempDate);
+                            setTempDate(null);
+                          }
+                        }}
+                        disabled={loading['registrationDeadline'] || !tempDate}
+                      >
+                        {loading['registrationDeadline'] && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Confirm
+                      </Button>
+                    </DialogClose>
+                  </div>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
         </CardContent>
       </Card>
 
-      {/* Stages Section */}
       <Card>
         <CardHeader>
           <CardTitle>Stages</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {Object.entries(competition.stages).map(([stageNumber, stage]) => (
+            {Object.entries(formData.stages).map(([stageNumber, stage]) => (
               <Card key={stageNumber} className="border rounded-lg">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>Stage {stageNumber}: {stage.title}</CardTitle>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline">
-                          {stage.visibility ? (
-                            <Eye className="h-4 w-4 mr-2" />
-                          ) : (
-                            <EyeOff className="h-4 w-4 mr-2" />
-                          )}
-                          {stage.visibility ? 'Visible' : 'Hidden'}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {stage.visibility ? 'Hide Stage' : 'Show Stage'}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to {stage.visibility ? 'hide' : 'show'} this stage?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => onUpdateStageVisibility(competition.id, parseInt(stageNumber), !stage.visibility)}
-                          >
-                            Continue
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleStageVisibilityToggle(stageNumber)}
+                      disabled={loading[`visibility-${stageNumber}`]}
+                    >
+                      {loading[`visibility-${stageNumber}`] ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : stage.isVisible ? (
+                        <Eye className="h-4 w-4" />
+                      ) : (
+                        <EyeOff className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Stage Deadline Editor */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Deadline</h4>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Deadline</h4>
                     <Dialog>
                       <DialogTrigger asChild>
                         <div className="flex items-center gap-2 cursor-pointer">
-                          <span>{stage.deadline.toLocaleDateString()}</span>
+                          <span>{stage.deadline?.toLocaleDateString()}</span>
                           <Button variant="ghost" size="sm">
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -278,99 +468,95 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
                         <DialogHeader>
                           <DialogTitle>Update Stage Deadline</DialogTitle>
                         </DialogHeader>
-                        <Calendar
-                          mode="single"
-                          selected={stage.deadline}
-                          onSelect={(date) => {
-                            if (date) {
-                              handleStageUpdate(stageNumber, { deadline: date });
-                            }
-                          }}
-                        />
+                        <div className="space-y-4">
+                          <Calendar
+                            mode="single"
+                            selected={tempDate || stage.deadline}
+                            onSelect={(day) => setTempDate(day || null)}
+                            disabled={loading[`stage-${stageNumber}`]}
+                          />
+                          <div className="flex justify-end gap-2">
+                            <DialogClose asChild>
+                              <Button variant="outline" onClick={() => setTempDate(null)}>
+                                Cancel
+                              </Button>
+                            </DialogClose>
+                            <DialogClose asChild>
+                              <Button 
+                                onClick={async () => {
+                                  if (tempDate) {
+                                    await handleStageUpdate(stageNumber, { deadline: tempDate });
+                                    setTempDate(null);
+                                  }
+                                }}
+                                disabled={loading[`stage-${stageNumber}`] || !tempDate}
+                              >
+                                {loading[`stage-${stageNumber}`] && 
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Confirm
+                              </Button>
+                            </DialogClose>
+                          </div>
+                        </div>
                       </DialogContent>
                     </Dialog>
                   </div>
 
-                  {/* Stage Description Editor */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Description</h4>
-                    {editMode.stages[stageNumber]?.description ? (
-                      <div className="space-y-2">
-                        <Textarea
-                          value={formData.stages[stageNumber].description}
-                          onChange={(e) => {
-                            const updatedStages = {
-                              ...formData.stages,
-                              [stageNumber]: {
-                                ...formData.stages[stageNumber],
-                                description: e.target.value
-                              }
-                            };
-                            setFormData(prev => ({
-                              ...prev,
-                              stages: updatedStages
-                            }));
-                          }}
-                          className="min-h-[100px]"
-                        />
-                        <div className="flex gap-2">
-                          <Button onClick={() => handleStageUpdate(stageNumber, { 
-                            description: formData.stages[stageNumber].description 
-                          })}>
-                            Save
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => toggleStageEditMode(stageNumber, 'description', false)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start gap-2">
-                        <p className="whitespace-pre-wrap">{stage.description}</p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleStageEditMode(stageNumber, 'description', true)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {renderEditableField(
+                    `stage-${stageNumber}-description`,
+                    stage.description,
+                    'Description',
+                    'textarea',
+                    `stage-${stageNumber}`
+                  )}
 
-                  {/* Stage Guidelines File Upload */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Guidelines File</h4>
+<div className="space-y-2">
+                    <h4 className="text-sm font-medium">Guidelines</h4>
                     <div className="flex items-center gap-4">
-                      {stage.guidelineFileURL && (
-                        <a 
-                          href={stage.guidelineFileURL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Current Guidelines
-                        </a>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="file"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              onUpdateStageGuideline(
-                                competition.id,
-                                parseInt(stageNumber),
-                                e.target.files[0],
-                                stage.description
-                              );
-                            }
-                          }}
-                          className="max-w-xs"
-                        />
-                      </div>
+                      <p className="text-sm text-gray-500">
+                        {stage.guidelines || 'No guidelines uploaded'}
+                      </p>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={loading[`file-${stageNumber}`]}
+                          >
+                            {loading[`file-${stageNumber}`] ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload Guidelines
+                              </>
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Upload Guidelines</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Please select a PDF file to upload as guidelines for this stage.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <div className="space-y-4">
+                            <Input
+                              type="file"
+                              accept=".pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleFileUpload(stageNumber, file);
+                                }
+                              }}
+                            />
+                          </div>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </CardContent>
@@ -379,6 +565,18 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="bg-green-50 border-green-200">
+          <AlertDescription className="text-green-800">{success}</AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 };
