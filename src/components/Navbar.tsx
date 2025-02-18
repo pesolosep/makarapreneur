@@ -100,7 +100,7 @@ export default function Navbar() {
                     
                     {/* Separated Login Button */}
                     <Link
-                        href="/login"
+                        href="/authentication/login"
                         className="ml-8 px-6 py-2.5 bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
                     >
                         Login
@@ -147,7 +147,7 @@ export default function Navbar() {
                                     </Link>
                                 ))}
                                 <Link
-                                    href="/login"
+                                    href="/authentication/login"
                                     className="bg-juneBud text-zinc-900 rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-linen transition-colors text-center"
                                 >
                                     Login
