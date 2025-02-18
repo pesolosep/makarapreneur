@@ -91,7 +91,7 @@ export default function RegisterForm() {
       </div>
 
       {/* Main Content */}
-      <div className="relative flex items-center justify-center min-h-[calc(100vh-80px)] md:min-h-[calc(100vh-96px)] md:mt-20">
+      <div className="relative flex items-center justify-center min-h-[calc(100vh-80px)] md:min-h-[calc(100vh-96px)] md:mt-12">
         <div className="w-full max-w-md md:max-w-2xl px-4 md:px-8">
           {/* Tabs */}
           <div className="absolute left-1/2 -translate-x-1/2 -translate-y-[60%] z-20">
