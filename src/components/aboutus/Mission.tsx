@@ -1,11 +1,15 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { ArrowRight } from 'lucide-react';
 
 export default function Mission() {
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);
+    const textMission = ["Memfasilitasi realisasi ide dan konsep inovatif dari para wirausahawan muda.",
+        "Menjembatani para wirausahawan muda dengan peluang untuk mendapatkan pendanaan bagi bisnis mereka.",
+        "Meningkatkan pengetahuan dan keterampilan bagi para wirausahawan muda untuk mengembangkan usaha mereka dari usaha kecil menjadi perusahaan publik.",
+        "Menginspirasi dan membekali para wirausahawan muda untuk berkembang dan sukses di tengah persaingan bisnis dan tantangan eksternal."
+    ]
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -57,12 +61,12 @@ export default function Mission() {
             </div>
 
             <div className="flex items-center gap-8 lg:gap-12 mt-16 w-full justify-center flex-wrap">
-                {[1, 2, 3].map((_, index) => (
+                {[1, 2, 3, 4].map((_, index) => (
                     <div 
                         key={index}
                         className={`
                             group relative
-                            w-[280px] h-[320px] lg:w-[320px] lg:h-[360px]
+                            w-[280px] h-[320px] xlg:w-[320px] lg:h-[360px]
                             bg-signalBlack rounded-3xl overflow-hidden
                             transition-all duration-500 cursor-pointer
                             hover:shadow-2xl hover:-translate-y-2
@@ -93,18 +97,11 @@ export default function Mission() {
                                 <h3 className="text-linen text-2xl lg:text-3xl font-bold">
                                     Mission {index + 1}
                                 </h3>
-                                <p className="text-linen text-base lg:text-lg leading-relaxed">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                                <p className="text-linen text-sm lg:text-md leading-relaxed">
+                                    {textMission[index]}
                                 </p>
                             </div>
 
-                            {/* Enhanced learn more button */}
-                            <div className="group/btn">
-                                <button className="flex items-center gap-2 text-cornflowerBlue hover:text-juneBud transition-colors duration-300">
-                                    <span className="font-medium">Learn more</span>
-                                    <ArrowRight className="w-5 h-5 transition-all duration-500 group-hover/btn:translate-x-2" />
-                                </button>
-                            </div>
                         </div>
 
                         {/* Enhanced bottom border */}

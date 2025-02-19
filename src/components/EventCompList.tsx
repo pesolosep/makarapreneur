@@ -9,12 +9,19 @@ import { twMerge } from "tailwind-merge";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+interface cardInformation { 
+    id: number; 
+    title: string; 
+    link: string; 
+}
+
 interface ShowCardProps {
     title: string;
     variant?: string;
+    cardsList?: cardInformation[];
 }
 
-export default function ShowCard({ title, variant }: ShowCardProps) {
+export default function ShowCard({ title, variant, cardsList }: ShowCardProps) {
     const isSecondary = variant === "secondary";
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);
@@ -40,7 +47,7 @@ export default function ShowCard({ title, variant }: ShowCardProps) {
         };
     }, []);
 
-    const cards = [
+    const cards = cardsList || [
         { id: 1, title: "BUSINESS CASE COMPETITION", link: isSecondary ? "/event/1" : "#1" },
         { id: 2, title: "STARTUP INNOVATION CHALLENGE", link: isSecondary ? "/event/2" : "#2" },
         { id: 3, title: "LEADERSHIP DEVELOPMENT PROGRAM", link: isSecondary ? "/event/3" : "#3" }

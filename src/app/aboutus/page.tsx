@@ -18,7 +18,7 @@ export default function page() {
         <div className="font-poppins">
             <Navbar />
             <Banner title="ABOUT US" />
-            <AboutUs variant="secondary" height={600} />
+            <AboutUs variant="secondary"/>
             <div className=" max-w-screen overflow-x-hidden">
             <Prinsip />
             <Vision />

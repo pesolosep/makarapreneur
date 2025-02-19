@@ -75,6 +75,15 @@ export default function Slideshow() {
         startAutoSlide();
     };
 
+    const cardContent = [
+        { title: 'BUSINESS CASE COMPETITION - SMA', description: 'Dirancang untuk menginspirasi siswa dalam menciptakan ide bisnis yang kreatif, inovatif, dan praktis, serta membangun pemahaman dasar tentang kewirausahaan.' },
+        { title: 'BUSINESS CASE COMPETITION - MAHASISWA', description: 'Platform bagi mahasiswa untuk mengasah keterampilan dalam perencanaan dan pelaksanaan bisnis, dengan fokus pada strategi pertumbuhan dan keberlanjutan.' },
+        { title: 'BUSINESS PLAN COMPETITION', description: 'Menantang peserta untuk menganalisis dan memberikan solusi strategis terhadap permasalahan bisnis di dunia nyata, mengasah kemampuan berpikir kritis, inovatif, dan berbasis data.'},
+        { title: 'HIPMI TALKS', description: 'HIPMI Talks UI 2025 adalah acara pra-event untuk Makarapreneur 2025 yang bertujuan memberikan wawasan berharga dan menginspirasi generasi muda dalam dunia kewirausahaan.' },
+        { title: 'INTERNAL BUSINESS CLASS', description: 'Internal Business Class (IBC) 2025 adalah workshop kewirausahaan yang dirancang khusus untuk fungsionaris dan anggota HIPMI PT UI.' },
+        { title: 'NETWORKING NIGHT', description: 'Networking Night 2025 merupakan salah satu rangkaian acara dalam Makarapreneur 2025 yang bertujuan untuk menyatukan individu dari berbagai sektor bisnis dan wilayah.' }
+    ]
+
     return (
         <div 
             ref={sectionRef}
@@ -97,7 +106,7 @@ export default function Slideshow() {
                     className="w-full max-w-3xl"
                 >
                     <CarouselContent>
-                        {Array.from({ length: 5 }).map((_, index) => (
+                        {Array.from({ length: 6 }).map((_, index) => (
                             <CarouselItem
                                 key={index}
                                 className={`
@@ -117,13 +126,11 @@ export default function Slideshow() {
                                         <CardContent className="flex aspect-video items-center justify-center p-6 relative rounded-2xl overflow-hidden group">
                                             {/* Content */}
                                             <div className="z-10 flex flex-col items-center gap-4 justify-center transition-transform duration-500 group-hover:scale-105">
-                                                <p className="text-2xl lg:text-4xl font-bold text-linen mb-2 [text-shadow:0px_0px_20px_rgba(186,222,79,0.3)]">
-                                                    COMPETITION
+                                                <p className="text-lg lg:text-3xl font-bold text-linen mb-2 text-center [text-shadow:0px_0px_20px_rgba(186,222,79,0.3)]">
+                                                    {cardContent[index].title}
                                                 </p>
-                                                <p className="text-center text-signalBlack bg-juneBud/90 backdrop-blur-sm font-medium text-base lg:text-lg px-6 py-2 rounded-lg mx-2 lg:mx-20 transition-all duration-500 group-hover:bg-juneBud">
-                                                    Lorem ipsum dolor sit amet
-                                                    consectetur adipisicing
-                                                    elit. Quisquam soluta.
+                                                <p className="text-center hidden sm:block lg:block text-signalBlack bg-juneBud/90 backdrop-blur-sm font-medium text-base lg:text-lg px-6 py-2 rounded-lg mx-2 lg:mx-20 transition-all duration-500 group-hover:bg-juneBud">
+                                                    {cardContent[index].description}
                                                 </p>
                                                 <Button 
                                                     className="group/btn relative overflow-hidden bg-transparent border-linen text-linen hover:text-white transition-all duration-300 hover:pr-12"

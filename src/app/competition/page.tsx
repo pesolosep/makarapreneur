@@ -12,11 +12,17 @@ export const metadata: Metadata = {
 };
 
 export default function page() {
+    const cards = [
+        { id: 1, title: "BUSINESS PLAN COMPETITION - SMA", link: "#1" },
+        { id: 2, title: "BUSINESS PLAN COMPETITION - MAHASISWA", link: "#2" },
+        { id: 3, title: "BUSINESS CASE COMPETITION", link: "#3" }
+    ];
+
     return (
         <div className="font-poppins">
             <Navbar />
             <Banner title="COMPETITION" />
-            <ShowCard title="ARE YOU READY TO COMPETE?" />
+            <ShowCard title="ARE YOU READY TO COMPETE?" cardsList={cards}/>
             <Testimonial />
             <Description  number={1}/>
             <Description variant="secondary" number={2}/>
