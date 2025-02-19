@@ -18,13 +18,15 @@ export default function ShowArticle() {
             { threshold: 0.1 }
         );
 
-        if (articleRef.current) {
-            observer.observe(articleRef.current);
+        const currentArticleRef = articleRef.current;
+
+        if (currentArticleRef) {
+            observer.observe(currentArticleRef);
         }
 
         return () => {
-            if (articleRef.current) {
-                observer.unobserve(articleRef.current);
+            if (currentArticleRef) {
+                observer.unobserve(currentArticleRef);
             }
         };
     }, []);
@@ -119,7 +121,7 @@ export default function ShowArticle() {
                                 />
                             </div>
                             <figcaption className="mt-3 text-center text-base text-signalBlack/60 italic">
-                                The Mykonos signature collection showcases the brand's attention to detail
+                                The Mykonos signature collection showcases the brand&apos;s attention to detail
                             </figcaption>
                         </figure>
 
