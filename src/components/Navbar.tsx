@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { twMerge } from "tailwind-merge";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navigationItems = [
     { name: "Home", href: "/" },
@@ -29,9 +30,14 @@ const navigationItems = [
     { name: "Contact", href: "/contact" },
 ];
 
-export default function Navbar() {
+type NavbarProps = {
+    notTransparent?: boolean
+
+}
+export default function Navbar({notTransparent}: NavbarProps) {
     const [isScrolled, setIsScrolled] = useState(false);
     const pathname = usePathname();
+    const { user , loading} = useAuth();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -51,7 +57,7 @@ export default function Navbar() {
     return (
         <header
             className={`fixed top-0 z-50 left-0 w-full transition-all duration-500 transform ${
-                isScrolled ? "bg-zinc-900" : "bg-zinc-900/80 backdrop-blur-sm"
+                (isScrolled || notTransparent )? "bg-zinc-900" : "bg-zinc-900/80 backdrop-blur-sm"
             }`}
         >
             <nav
@@ -98,13 +104,17 @@ export default function Navbar() {
                         </NavigationMenuList>
                     </NavigationMenu>
                     
-                    {/* Separated Login Button */}
-                    <Link
-                        href="/authentication/login"
-                        className="ml-8 px-6 py-2.5 bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-                    >
-                        Login
-                    </Link>
+                    {/* Desktop Login Button */}
+                    {!loading && !user && (
+                        <Link
+                            href="/authentication/login"
+                            className="ml-8 px-6 py-2.5 bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+                        >
+                            Login
+                        </Link>
+                    )}
+
+
                 </div>
 
                 {/* Mobile Navigation */}
@@ -146,12 +156,15 @@ export default function Navbar() {
                                         {item.name}
                                     </Link>
                                 ))}
-                                <Link
-                                    href="/authentication/login"
-                                    className="bg-juneBud text-zinc-900 rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-linen transition-colors text-center"
-                                >
-                                    Login
-                                </Link>
+                                {/* Mobile Login Button */}
+                                {!loading && !user && (
+                                    <Link
+                                        href="/authentication/login"
+                                        className="bg-juneBud text-zinc-900 rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-linen transition-colors text-center"
+                                    >
+                                        Login
+                                    </Link>
+                                )}
                             </div>
                         </SheetContent>
                     </Sheet>

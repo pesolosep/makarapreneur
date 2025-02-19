@@ -1,8 +1,12 @@
 // components/competition/InformationCard.tsx
+"use client";
+
 import { useState, useEffect } from 'react';
 import { Competition } from '@/models/Competition';
 import { Team } from '@/models/Team';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
+import { Trophy, Users, Timer, Target, Check, ChevronRight, AlertCircle } from 'lucide-react';
 
 interface InformationCardProps {
   competition?: Competition | null;
@@ -45,93 +49,159 @@ export default function InformationCard({
     };
 
     const timer = setInterval(calculateTimeLeft, 1000);
-    calculateTimeLeft(); // Initial calculation
+    calculateTimeLeft();
 
     return () => clearInterval(timer);
   }, [competition?.registrationDeadline]);
 
-  const formatNumber = (num: number): string => {
-    return num < 10 ? `0${num}` : num.toString();
-  };
-
   return (
-    <div className="bg-juneBud p-4 py-20">
-      <div className="w-full py-9">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 text-signalBlack text-left">
-            <h1 className="font-semibold text-3xl tracking-widest mb-5">
+    <div className="bg-juneBud py-20">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left Section - Competition Info */}
+          <div className="flex-1">
+            <h1 className="text-4xl lg:text-5xl font-bold mb-6 text-signalBlack">
               {competition?.name || 'Competition Name'}
             </h1>
-            <p className="font-medium max-w-[500px]">
+            <div className="flex items-center gap-2 mb-4 text-signalBlack/80">
+              <Trophy className="w-5 h-5" />
+              <span className="text-lg">Business Case Competition</span>
+            </div>
+            <p className="text-lg text-signalBlack/90 leading-relaxed mb-8 max-w-2xl">
               {competition?.description || 'Competition description loading...'}
             </p>
           </div>
-          <div className="w-full md:w-1/3 bg-gray-700 text-white p-6 rounded-lg shadow-none">
-            <h2 className="text-xl font-semibold mb-4">Team Information</h2>
-            {team ? (
-              <div className="space-y-3">
-                <p><span className="font-medium">Team Name:</span> {team.teamName}</p>
-                <p><span className="font-medium">Team Leader:</span> {team.teamLeader.name}</p>
-                {team.members.member1 && (
-                  <p><span className="font-medium">Member 1:</span> {team.members.member1.name}</p>
-                )}
-                {team.members.member2 && (
-                  <p><span className="font-medium">Member 2:</span> {team.members.member2.name}</p>
-                )}
-                <p>
-                  <span className="font-medium">Registration Status:</span>{' '}
-                  <span className={`
-                    ${team.registrationStatus === 'approved' ? 'text-green-400' : ''}
-                    ${team.registrationStatus === 'rejected' ? 'text-red-400' : ''}
-                    ${team.registrationStatus === 'pending' ? 'text-yellow-400' : ''}
-                  `}>
-                    {team.registrationStatus.toUpperCase()}
-                  </span>
-                </p>
-                {onEdit && (
-                  <Button
-                    onClick={onEdit}
-                    variant="secondary"
-                    className="w-full"
-                  >
-                    Edit Team Information
-                  </Button>
+
+          {/* Right Section - Registration Status & Team Info */}
+          <div className="lg:w-[400px] space-y-6">
+            {/* Registration Status Card */}
+            <div className="bg-signalBlack rounded-xl p-6 text-linen">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Registration Status</h2>
+                {team ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 text-green-400 rounded-full text-sm">
+                    <Check className="w-4 h-4" />
+                    Registered
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-full text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    Not Registered
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="text-red-500 text-2xl font-bold mb-4 text-center">
-                  <div className="grid grid-cols-4 gap-2">
-                    <div className="flex flex-col items-center">
-                      <span>{formatNumber(timeLeft.days)}</span>
-                      <span className="text-sm">Days</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span>{formatNumber(timeLeft.hours)}</span>
-                      <span className="text-sm">Hours</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span>{formatNumber(timeLeft.minutes)}</span>
-                      <span className="text-sm">Min</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span>{formatNumber(timeLeft.seconds)}</span>
-                      <span className="text-sm">Sec</span>
+              {!team && (
+                <>
+                  <p className="text-sm text-linen/80 mb-4">
+                    Registration Deadline:
+                    <span className="block text-lg font-medium mt-1">
+                      {new Date(competition?.registrationDeadline || '').toLocaleString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </p>
+                  <div className="grid grid-cols-4 gap-3 mb-4">
+                    <TimeBlock label="Days" value={timeLeft.days} />
+                    <TimeBlock label="Hours" value={timeLeft.hours} />
+                    <TimeBlock label="Min" value={timeLeft.minutes} />
+                    <TimeBlock label="Sec" value={timeLeft.seconds} />
+                  </div>
+                  <Button
+                    onClick={onRegister}
+                    className="w-full bg-juneBud text-signalBlack hover:bg-juneBud/90 group"
+                    disabled={new Date() > new Date(competition?.registrationDeadline || 0)}
+                  >
+                    {new Date() > new Date(competition?.registrationDeadline || 0) ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Timer className="w-4 h-4" />
+                        Registration Closed
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        Register Now
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    )}
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Team Info Card - Only shown if team exists */}
+            {team && (
+              <div className="bg-signalBlack rounded-xl p-6 text-linen">
+                <div className="space-y-6">
+                  {/* Team Details */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Team Details
+                    </h2>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm text-linen/60">Team Name</label>
+                        <p className="text-lg font-medium">{team.teamName}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-linen/60">Leader</label>
+                        <p className="text-lg font-medium">{team.teamLeader.name}</p>
+                      </div>
+                      {team.members.member1 && (
+                        <div>
+                          <label className="text-sm text-linen/60">Member 1</label>
+                          <p className="text-lg font-medium">{team.members.member1.name}</p>
+                        </div>
+                      )}
+                      {team.members.member2 && (
+                        <div>
+                          <label className="text-sm text-linen/60">Member 2</label>
+                          <p className="text-lg font-medium">{team.members.member2.name}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Progress Info */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      <Target className="w-5 h-5" />
+                      Current Progress
+                    </h2>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm text-linen/60">Stage</label>
+                        <p className="text-lg font-medium">Stage {Object.keys(team.stages).length}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-linen/60">Status</label>
+                        <p className={`text-lg font-medium ${
+                          team.registrationStatus === 'approved' ? 'text-green-400' :
+                          team.registrationStatus === 'rejected' ? 'text-red-400' :
+                          'text-yellow-400'
+                        }`}>
+                          {team.registrationStatus.toUpperCase()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {onEdit && (
+                    <Button
+                      onClick={onEdit}
+                      className="w-full bg-juneBud text-signalBlack hover:bg-juneBud/90 group"
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        Edit Team Information
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </Button>
+                  )}
                 </div>
-                <p><span className="font-medium">Status:</span> Not Registered</p>
-                <p>
-                  <span className="font-medium">Registration Deadline:</span>{' '}
-                  {competition?.registrationDeadline.toLocaleString()}
-                </p>
-                <Button
-                  onClick={onRegister}
-                  className="w-full bg-green-500 hover:bg-green-600"
-                  disabled={new Date() > new Date(competition?.registrationDeadline || 0)}
-                >
-                  Register Now!
-                </Button>
               </div>
             )}
           </div>
@@ -140,3 +210,16 @@ export default function InformationCard({
     </div>
   );
 }
+
+const TimeBlock = ({ label, value }: { label: string; value: number }) => (
+  <motion.div 
+    className="bg-linen/10 rounded-lg p-2 text-center"
+    whileHover={{ scale: 1.05 }}
+    transition={{ duration: 0.2 }}
+  >
+    <span className="text-xl font-bold block">
+      {value < 10 ? `0${value}` : value}
+    </span>
+    <span className="text-xs text-linen/60">{label}</span>
+  </motion.div>
+);
