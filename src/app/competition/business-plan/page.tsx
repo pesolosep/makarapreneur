@@ -18,34 +18,52 @@ import SemifinalPaymentButton from '@/components/competition/SemifinalPaymentBut
 export default function Dashboard() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading} = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const competitionId = 'business-plan';
 
   useEffect(() => {
-    if (loading) return;
-    
-    if (!user) {
-    //   router.push('/login');
-      return;
-    }else{
-        console.log("ini user " + user)
-    }
-
     const fetchData = async () => {
       try {
+        setLoading(true);
+
+        // If still authenticating, don't fetch yet
+        if (authLoading) return;
+
+        // If no user and authentication is complete, redirect
+        if (!user && !authLoading) {
+          router.push('/login');
+          return;
+        }
+
         // Fetch competition data
         const competitionDoc = await getDoc(doc(db, 'competitions', competitionId));
         if (!competitionDoc.exists()) {
           throw new Error('Competition not found');
         }
 
-        const competitionData = competitionDoc.data() as Competition;
+        const competitionData = {
+          ...competitionDoc.data(),
+          id: competitionDoc.id,
+          registrationDeadline: competitionDoc.data().registrationDeadline?.toDate(),
+          createdAt: competitionDoc.data().createdAt?.toDate(),
+          updatedAt: competitionDoc.data().updatedAt?.toDate(),
+          stages: Object.entries(competitionDoc.data().stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+            ...acc,
+            [key]: {
+              ...value,
+              deadline: value.deadline?.toDate()
+            }
+          }), {})
+        } as Competition;
+
         setCompetition(competitionData);
+
+        if (!user) return;
 
         // Fetch team data if exists
         const teamsQuery = query(
@@ -57,34 +75,34 @@ export default function Dashboard() {
         const teamDoc = teamSnapshot.docs[0];
 
         if (teamDoc) {
-          const teamData = teamDoc.data() as Team;
+          const teamData = {
+            ...teamDoc.data(),
+            id: teamDoc.id
+          } as Team;
+          
           setTeam(teamData);
 
           // Transform visible stages into assignments
           const stageAssignments = Object.entries(competitionData.stages)
-            .filter(([_, stage]) => stage.visibility) // Only show visible stages
+            .filter(([_, stage]) => stage.visibility)
             .map(([stageNum, stage]) => {
               const stageNumber = parseInt(stageNum);
               const previousStage = teamData.stages[stageNumber - 1];
               const currentStage = teamData.stages[stageNumber];
 
-              // Determine if submission should be enabled
-              const isSubmissionEnabled = 
-                teamData.registrationStatus === 'approved' && // Team is approved
-                (stageNumber === 1 || previousStage?.status !== 'rejected') && // Previous stage not rejected
-                stage.visibility; // Stage is visible
-
               return {
                 id: stageNum,
                 ...stage,
                 submission: currentStage,
-                submissionEnabled: isSubmissionEnabled
+                submissionEnabled: 
+                  teamData.registrationStatus === 'approved' && 
+                  (stageNumber === 1 || previousStage?.status !== 'rejected') && 
+                  stage.visibility
               };
             });
 
           setAssignments(stageAssignments);
         } else {
-          // If no team, still show visible stages but without submission capability
           const stageAssignments = Object.entries(competitionData.stages)
             .filter(([_, stage]) => stage.visibility)
             .map(([stageNum, stage]) => ({
@@ -104,12 +122,12 @@ export default function Dashboard() {
           description: error instanceof Error ? error.message : "Failed to load competition data",
         });
       } finally {
-        setSubmitting(false);
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [user, competitionId, toast, router]);
+  }, [user, authLoading, competitionId, toast, router]);
 
   const handleDownload = async (stageId: string) => {
     try {
@@ -145,7 +163,6 @@ export default function Dashboard() {
         throw new Error('Stage not found');
       }
 
-      // Check if submission is enabled for this stage
       const stageNumber = parseInt(stageId);
       const previousStage = team.stages[stageNumber - 1];
       
@@ -161,7 +178,6 @@ export default function Dashboard() {
         throw new Error('This stage is not currently available');
       }
 
-      // Check deadline
       if (new Date() > new Date(stage.deadline)) {
         throw new Error('Submission deadline has passed');
       }
@@ -174,31 +190,46 @@ export default function Dashboard() {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
 
-        await competitionService.submitStageWork(team.id, stageNumber, file);
-        
-        toast({
-          title: "Success",
-          description: "Submission uploaded successfully",
-        });
-
-        // Refresh team data
-        const teamDoc = await getDoc(doc(db, 'teams', team.id));
-        if (teamDoc.exists()) {
-          const updatedTeam = teamDoc.data() as Team;
-          setTeam(updatedTeam);
+        setLoading(true);
+        try {
+          await competitionService.submitStageWork(team.id, stageNumber, file);
           
-          // Update assignments
-          setAssignments(prev => 
-            prev.map(assignment => 
-              assignment.id === stageId 
-                ? { 
-                    ...assignment, 
-                    submission: updatedTeam.stages[stageNumber],
-                    submissionEnabled: true
-                  }
-                : assignment
-            )
-          );
+          toast({
+            title: "Success",
+            description: "Submission uploaded successfully",
+          });
+
+          // Refresh team data
+          const teamDoc = await getDoc(doc(db, 'teams', team.id));
+          if (teamDoc.exists()) {
+            const updatedTeam = {
+              ...teamDoc.data(),
+              id: teamDoc.id
+            } as Team;
+            
+            setTeam(updatedTeam);
+            
+            // Update assignments
+            setAssignments(prev => 
+              prev.map(assignment => 
+                assignment.id === stageId 
+                  ? { 
+                      ...assignment, 
+                      submission: updatedTeam.stages[stageNumber],
+                      submissionEnabled: true
+                    }
+                  : assignment
+              )
+            );
+          }
+        } catch (error) {
+          toast({
+            variant: "destructive",
+            title: "Upload Error",
+            description: error instanceof Error ? error.message : "Failed to upload submission",
+          });
+        } finally {
+          setLoading(false);
         }
       };
       
@@ -212,7 +243,7 @@ export default function Dashboard() {
     }
   };
 
-  if (submitting) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-100 font-poppins">
         <Navbar />

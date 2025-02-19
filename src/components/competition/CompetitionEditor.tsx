@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,10 +28,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Stage {
   title: string;
+  guidelineFileURL: string; // Changed from guidelines
   description: string;
   deadline: Date;
   isVisible?: boolean;
-  guidelines?: string;
 }
 
 interface Competition {
@@ -187,22 +187,22 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
     try {
       setLoading(prev => ({ ...prev, [loadingKey]: true }));
       setError('');
-
+  
       await onUpdateStageGuideline(stageNumber, file);
-
       setFormData(prev => ({
         ...prev,
         stages: {
           ...prev.stages,
           [stageNumber]: {
             ...prev.stages[stageNumber],
-            guidelines: file.name
+            guidelineFileURL: file.name // This will be updated when the backend returns the URL
           }
         }
       }));
 
       showSuccess('Guidelines uploaded successfully');
     } catch (error) {
+      console.log(error);
       setError('Failed to upload guidelines');
     } finally {
       setLoading(prev => ({ ...prev, [loadingKey]: false }));
@@ -299,13 +299,32 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const isLoading = loading[`file-${stageNumber}`];
+    const fileInputRef = useRef<HTMLInputElement>(null);
+  
+    const handleSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        setSelectedFile(file);
+      }
+    };
   
     const handleUpload = async () => {
       if (selectedFile) {
         await handleFileUpload(stageNumber, selectedFile);
         setIsDialogOpen(false);
         setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
+    };
+  
+    const handleCancel = () => {
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      setIsDialogOpen(false);
     };
   
     return (
@@ -321,49 +340,57 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
-                Upload Guidelines
+                {stage.guidelineFileURL ? 'Update Guidelines' : 'Upload Guidelines'}
               </>
             )}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Upload Guidelines</AlertDialogTitle>
+            <AlertDialogTitle>
+            {stage.guidelineFileURL ? 'Update Guidelines' : 'Upload Guidelines'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Please select a PDF file to upload as guidelines for this stage.
+              {stage.guidelineFileURL ?
+                 'Select a new PDF file to update the guidelines for this stage.'
+                : 'Select a PDF file to upload as guidelines for this stage.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4">
             <Input
+              ref={fileInputRef}
               type="file"
               accept=".pdf"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setSelectedFile(file);
-                }
-              }}
+              onChange={handleSelectFile}
             />
+            {selectedFile && (
+              <p className="text-sm text-gray-500">
+                Selected: {selectedFile.name}
+              </p>
+            )}
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setSelectedFile(null);
-              setIsDialogOpen(false);
-            }}>
+            <AlertDialogCancel onClick={handleCancel}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleUpload}
               disabled={!selectedFile || isLoading}
             >
-              {isLoading ? 'Uploading...' : 'Upload'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Confirm Upload'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     );
   };
-  
   
   return (
     <div className="space-y-6">
@@ -510,55 +537,26 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
                     `stage-${stageNumber}`
                   )}
 
-<div className="space-y-2">
-                    <h4 className="text-sm font-medium">Guidelines</h4>
-                    <div className="flex items-center gap-4">
-                      <p className="text-sm text-gray-500">
-                        {stage.guidelines || 'No guidelines uploaded'}
-                      </p>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            disabled={loading[`file-${stageNumber}`]}
-                          >
-                            {loading[`file-${stageNumber}`] ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Upload className="h-4 w-4 mr-2" />
-                                Upload Guidelines
-                              </>
-                            )}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Upload Guidelines</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Please select a PDF file to upload as guidelines for this stage.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <div className="space-y-4">
-                            <Input
-                              type="file"
-                              accept=".pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  handleFileUpload(stageNumber, file);
-                                }
-                              }}
-                            />
-                          </div>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Guidelines</h4>
+                  <div className="flex items-center gap-4">
+                    <p className="text-sm">
+                      {stage.guidelineFileURL ? (
+                             <a 
+                             href={stage.guidelineFileURL}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="text-blue-600 hover:text-blue-800 hover:underline"
+                           >
+                             {decodeURIComponent(stage.guidelineFileURL).split('/').slice(-1)[0].split('?')[0]}
+                           </a>
+                      ) : (
+                        <span className="text-gray-500">No guidelines uploaded</span>
+                      )}
+                    </p>
+                    <FileUploadDialog stageNumber={stageNumber} stage={stage} />
                   </div>
+                </div>
                 </CardContent>
               </Card>
             ))}

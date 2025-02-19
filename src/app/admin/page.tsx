@@ -1,5 +1,5 @@
 "use client"
-import React, { useState} from 'react';
+import React, { useEffect, useState} from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -9,15 +9,14 @@ import { initialCompetitions } from '@/lib/competitionData';
 import CompetitionEditor from '@/components/competition/CompetitionEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getDownloadURL, ref } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 interface Stage {
   title: string;
   description: string;
   deadline: Date;
   isVisible?: boolean;
-  guidelines?: string;
-  guidelineURL?: string;
+  guidelineFileURL: string;
 }
 
 interface Competition {
@@ -44,8 +43,78 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
   } | null>(null);
   const { user, isAdmin } = useAuth();
   const router = useRouter();
-
-  // ... [Previous useEffect and initializeCompetitions remain the same] ...
+  useEffect(() => {
+    if (!loading && user) {
+      if (!isAdmin) {
+        router.push('/');
+      }
+    }
+  }, [user, isAdmin, router, loading]);
+  
+  const initializeCompetitions = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      const completedCompetitions = initialCompetitions.map(comp => ({
+        ...comp,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+  
+      // Initialize competitions in Firestore if they don't exist
+      for (const competition of completedCompetitions) {
+        const docRef = doc(db, 'competitions', competition.id);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+          await setDoc(docRef, {
+            ...competition,
+            createdAt: Timestamp.fromDate(new Date()),
+            updatedAt: Timestamp.fromDate(new Date()),
+            registrationDeadline: Timestamp.fromDate(competition.registrationDeadline),
+            stages: Object.entries(competition.stages).reduce((acc, [key, stage]) => ({
+              ...acc,
+              [key]: {
+                ...stage,
+                deadline: Timestamp.fromDate(stage.deadline)
+              }
+            }), {})
+          });
+        }
+      }
+  
+      // Fetch all competitions
+      const competitionsRef = collection(db, 'competitions');
+      const competitionsSnapshot = await getDocs(competitionsRef);
+      const competitionsData = competitionsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id,
+          registrationDeadline: data.registrationDeadline?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          stages: Object.entries(data.stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+            ...acc,
+            [key]: {
+              ...value,
+              deadline: value.deadline?.toDate() || new Date()
+            }
+          }), {})
+        };
+      }) as Competition[];
+  
+      setCompetitions(competitionsData);
+    } catch (error) {
+      console.error('Error initializing competitions:', error);
+      setError('Failed to initialize competitions');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    initializeCompetitions();
+  }, []);
 
   const getCurrentCompetition = (): Competition | undefined => 
     competitions.find(comp => comp.id === selectedCompetition);
@@ -139,45 +208,50 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
   const handleUpdateStageGuideline = async (
     stageId: string, 
     file: File
-  ): Promise<void> => {
+): Promise<void> => {
     try {
-      const competition = getCurrentCompetition();
-      if (!competition) return;
+        const competition = getCurrentCompetition();
+        if (!competition) return;
 
-      // TODO: Implement actual file upload logic
-      const url = `guidelines/${competition.id}/stage${stageId}/${file.name}`;
-  
-      const storageRef = ref(storage, url);
-      const guidelineFileURL = await getDownloadURL(storageRef);
-      
-      const docRef = doc(db, 'competitions', competition.id);
-      await setDoc(docRef, {
-        [`stages.${stageId}.guidelines`]: file.name,
-        [`stages.${stageId}.guidelineURL`]: guidelineFileURL,
-        updatedAt: Timestamp.fromDate(new Date())
-      }, { merge: true });
+        // Create the storage reference
+        const url = `guidelines/${competition.id}/stage${stageId}/${file.name}`;
+        const storageRef = ref(storage, url);
+        
+        // Upload the file
+        await uploadBytes(storageRef, file);
+        
+        // Get the download URL after upload
+        const guidelineFileURL = await getDownloadURL(storageRef);
+        
+        // Update Firestore with the new URL
+        const docRef = doc(db, 'competitions', competition.id);
+        await setDoc(docRef, {
+            [`stages.${stageId}.guidelineFileURL`]: guidelineFileURL,
+            updatedAt: Timestamp.fromDate(new Date())
+        }, { merge: true });
 
-      setCompetitions(prev => prev.map(comp => {
-        if (comp.id === competition.id) {
-          return {
-            ...comp,
-            stages: {
-              ...comp.stages,
-              [stageId]: {
-                ...comp.stages[stageId],
-                guidelines: file.name,
-                guidelineURL: guidelineFileURL
-              }
-            },
-            updatedAt: new Date()
-          };
-        }
-        return comp;
-      }));
+        // Update local state
+        setCompetitions(prev => prev.map(comp => {
+            if (comp.id === competition.id) {
+                return {
+                    ...comp,
+                    stages: {
+                        ...comp.stages,
+                        [stageId]: {
+                            ...comp.stages[stageId],
+                            guidelineFileURL: guidelineFileURL
+                        }
+                    },
+                    updatedAt: new Date()
+                };
+            }
+            return comp;
+        }));
     } catch (error) {
-      throw new Error('Failed to update stage guideline');
+        console.error('Error updating guideline:', error);
+        throw new Error('Failed to update stage guideline');
     }
-  };
+};
 
   if (loading) {
     return (
