@@ -47,7 +47,7 @@ export default function RegistrationPage() {
     if (loading) return;
     
     if (!user) {
-      router.push('/login');
+      router.push('/authentication/login');
       return;
     }else{
         console.log("ini user " + user)

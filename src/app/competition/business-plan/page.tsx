@@ -1,3 +1,4 @@
+// app/competition/[id]/dashboard/page.tsx
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -9,7 +10,7 @@ import AboutUs from "@/components/homepage/AboutUs";
 import Navbar from "@/components/Navbar";
 import InformationCard from "@/components/competition/InformationCard";
 import { AssignmentList } from "@/components/competition/AssignmentCard";
-import { Competition, Stage } from '@/models/Competition';
+import { Competition } from '@/models/Competition';
 import { Team } from '@/models/Team';
 import { competitionService } from '@/lib/firebase/competitionService';
 import { useToast } from '@/hooks/use-toast';
@@ -26,110 +27,142 @@ export default function Dashboard() {
 
   const competitionId = 'business-plan';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // If still authenticating, don't fetch yet
-        if (authLoading) return;
-
-        // If no user and authentication is complete, redirect
-        if (!user && !authLoading) {
-          router.push('/login');
-          return;
-        }
-
-        // Fetch competition data
-        const competitionDoc = await getDoc(doc(db, 'competitions', competitionId));
-        if (!competitionDoc.exists()) {
-          throw new Error('Competition not found');
-        }
-
-        const competitionData = {
-          ...competitionDoc.data(),
-          id: competitionDoc.id,
-          registrationDeadline: competitionDoc.data().registrationDeadline?.toDate(),
-          createdAt: competitionDoc.data().createdAt?.toDate(),
-          updatedAt: competitionDoc.data().updatedAt?.toDate(),
-          stages: Object.entries(competitionDoc.data().stages || {}).reduce((acc, [key, value]: [string, any]) => ({
-            ...acc,
-            [key]: {
-              ...value,
-              deadline: value.deadline?.toDate()
-            }
-          }), {})
-        } as Competition;
-
-        setCompetition(competitionData);
-
-        if (!user) return;
-
-        // Fetch team data if exists
-        const teamsQuery = query(
-          collection(db, 'teams'),
-          where('userId', '==', user.uid),
-          where('competitionId', '==', competitionId)
-        );
-        const teamSnapshot = await getDocs(teamsQuery);
-        const teamDoc = teamSnapshot.docs[0];
-
-        if (teamDoc) {
-          const teamData = {
-            ...teamDoc.data(),
-            id: teamDoc.id
-          } as Team;
-          
-          setTeam(teamData);
-
-          // Transform visible stages into assignments
-          const stageAssignments = Object.entries(competitionData.stages)
-            .filter(([_, stage]) => stage.visibility)
-            .map(([stageNum, stage]) => {
-              const stageNumber = parseInt(stageNum);
-              const previousStage = teamData.stages[stageNumber - 1];
-              const currentStage = teamData.stages[stageNumber];
-
-              return {
-                id: stageNum,
-                ...stage,
-                submission: currentStage,
-                submissionEnabled: 
-                  teamData.registrationStatus === 'approved' && 
-                  (stageNumber === 1 || previousStage?.status !== 'rejected') && 
-                  stage.visibility
-              };
-            });
-
-          setAssignments(stageAssignments);
-        } else {
-          const stageAssignments = Object.entries(competitionData.stages)
-            .filter(([_, stage]) => stage.visibility)
-            .map(([stageNum, stage]) => ({
-              id: stageNum,
-              ...stage,
-              submission: null,
-              submissionEnabled: false
-            }));
-
-          setAssignments(stageAssignments);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error instanceof Error ? error.message : "Failed to load competition data",
-        });
-      } finally {
-        setLoading(false);
+  // Fetch competition data regardless of authentication status
+  const fetchCompetitionData = async () => {
+    try {
+      const competitionDoc = await getDoc(doc(db, 'competitions', competitionId));
+      if (!competitionDoc.exists()) {
+        throw new Error('Competition not found');
       }
+
+      const competitionData = {
+        ...competitionDoc.data(),
+        id: competitionDoc.id,
+        registrationDeadline: competitionDoc.data().registrationDeadline?.toDate(),
+        createdAt: competitionDoc.data().createdAt?.toDate(),
+        updatedAt: competitionDoc.data().updatedAt?.toDate(),
+        stages: Object.entries(competitionDoc.data().stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+          ...acc,
+          [key]: {
+            ...value,
+            deadline: value.deadline?.toDate()
+          }
+        }), {})
+      } as Competition;
+
+      setCompetition(competitionData);
+
+      // Create public view of assignments for non-logged in users
+      if (!user) {
+        const publicAssignments = Object.entries(competitionData.stages)
+          .filter(([_, stage]) => stage.visibility)
+          .map(([stageNum, stage]) => ({
+            id: stageNum,
+            stageNumber: parseInt(stageNum),
+            ...stage,
+            submission: null,
+            submissionEnabled: false
+          }));
+
+        setAssignments(publicAssignments);
+      }
+    } catch (error) {
+      console.error('Error fetching competition data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load competition data",
+      });
+    }
+  };
+
+  // Fetch team data only for authenticated users
+  const fetchTeamData = async () => {
+    if (!user || !competition) return;
+
+    try {
+      const teamsQuery = query(
+        collection(db, 'teams'),
+        where('userId', '==', user.uid),
+        where('competitionId', '==', competitionId)
+      );
+      const teamSnapshot = await getDocs(teamsQuery);
+      const teamDoc = teamSnapshot.docs[0];
+
+      if (teamDoc) {
+        const teamData = {
+          ...teamDoc.data(),
+          id: teamDoc.id
+        } as Team;
+        
+        setTeam(teamData);
+
+        // Update assignments with team-specific data
+        const teamAssignments = Object.entries(competition.stages)
+          .filter(([_, stage]) => stage.visibility)
+          .map(([stageNum, stage]) => {
+            const stageNumber = parseInt(stageNum);
+            const previousStage = teamData.stages[stageNumber - 1];
+            const currentStage = teamData.stages[stageNumber];
+
+            return {
+              id: stageNum,
+              stageNumber,
+              ...stage,
+              submission: currentStage,
+              submissionEnabled: 
+                teamData.registrationStatus === 'approved' && 
+                (stageNumber === 1 || previousStage?.status !== 'rejected') && 
+                stage.visibility
+            };
+          });
+
+        setAssignments(teamAssignments);
+      }
+    } catch (error) {
+      console.error('Error fetching team data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load team data",
+      });
+    }
+  };
+
+  // Initialize page data
+  useEffect(() => {
+    const initializePage = async () => {
+      setLoading(true);
+      await fetchCompetitionData();
+      if (!authLoading && user) {
+        await fetchTeamData();
+      }
+      setLoading(false);
     };
 
-    fetchData();
-  }, [user, authLoading, competitionId, toast, router]);
+    initializePage();
+  }, [user, authLoading]);
+
+  // Handle authentication requirements for actions
+  const handleAuthenticatedAction = (action: () => void, message: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: message,
+        variant: "destructive"
+      });
+      router.push('/authentication/login');
+      return false;
+    }
+    return true;
+  };
 
   const handleDownload = async (stageId: string) => {
+    if (!handleAuthenticatedAction(
+      () => {}, 
+      "Please log in to download guidelines"
+    )) return;
+
     try {
       const stage = competition?.stages[parseInt(stageId)];
       if (!stage?.guidelineFileURL) {
@@ -153,97 +186,123 @@ export default function Dashboard() {
   };
 
   const handleUpload = async (stageId: string) => {
+    if (!handleAuthenticatedAction(
+      () => {}, 
+      "Please log in to submit your work"
+    )) return;
+
     try {
-      if (!team) {
-        throw new Error('You must be registered to submit');
-      }
-
-      const stage = competition?.stages[parseInt(stageId)];
-      if (!stage) {
-        throw new Error('Stage not found');
-      }
-
-      const stageNumber = parseInt(stageId);
-      const previousStage = team.stages[stageNumber - 1];
-      
-      if (team.registrationStatus !== 'approved') {
-        throw new Error('Your team registration must be approved first');
-      }
-
-      if (stageNumber > 1 && previousStage?.status === 'rejected') {
-        throw new Error('Previous stage submission was rejected');
-      }
-
-      if (!stage.visibility) {
-        throw new Error('This stage is not currently available');
-      }
-
-      if (new Date() > new Date(stage.deadline)) {
-        throw new Error('Submission deadline has passed');
-      }
-
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.pdf,.doc,.docx';
-      
-      input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-
-        setLoading(true);
-        try {
-          await competitionService.submitStageWork(team.id, stageNumber, file);
-          
-          toast({
-            title: "Success",
-            description: "Submission uploaded successfully",
-          });
-
-          // Refresh team data
-          const teamDoc = await getDoc(doc(db, 'teams', team.id));
-          if (teamDoc.exists()) {
-            const updatedTeam = {
-              ...teamDoc.data(),
-              id: teamDoc.id
-            } as Team;
-            
-            setTeam(updatedTeam);
-            
-            // Update assignments
-            setAssignments(prev => 
-              prev.map(assignment => 
-                assignment.id === stageId 
-                  ? { 
-                      ...assignment, 
-                      submission: updatedTeam.stages[stageNumber],
-                      submissionEnabled: true
-                    }
-                  : assignment
-              )
-            );
-          }
-        } catch (error) {
-          toast({
-            variant: "destructive",
-            title: "Upload Error",
-            description: error instanceof Error ? error.message : "Failed to upload submission",
-          });
-        } finally {
-          setLoading(false);
+        // Verify team registration
+        if (!team) {
+          throw new Error('You must be registered to submit');
         }
-      };
-      
-      input.click();
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Upload Error",
-        description: error instanceof Error ? error.message : "Failed to upload submission",
-      });
-    }
+  
+        // Get stage information and validate submission rules
+        const stage = competition?.stages[parseInt(stageId)];
+        if (!stage) {
+          throw new Error('Stage not found');
+        }
+  
+        const stageNumber = parseInt(stageId);
+        const previousStage = team.stages[stageNumber - 1];
+        
+        // Validate team registration status
+        if (team.registrationStatus !== 'approved') {
+          throw new Error('Your team registration must be approved first');
+        }
+  
+        // Check if previous stage was rejected (except for stage 1)
+        if (stageNumber > 1 && previousStage?.status === 'rejected') {
+          throw new Error('Previous stage submission was rejected');
+        }
+  
+        // Verify stage visibility
+        if (!stage.visibility) {
+          throw new Error('This stage is not currently available');
+        }
+  
+        // Check submission deadline
+        if (new Date() > new Date(stage.deadline)) {
+          throw new Error('Submission deadline has passed');
+        }
+  
+        // Create and trigger file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pdf,.doc,.docx';
+        
+        input.onchange = async (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (!file) return;
+  
+          setLoading(true);
+          try {
+            // Submit work using competition service
+            await competitionService.submitStageWork(team.id, stageNumber, file);
+            
+            // Show success message
+            toast({
+              title: "Success",
+              description: "Submission uploaded successfully",
+            });
+  
+            // Refresh team data to show updated submission
+            const teamDoc = await getDoc(doc(db, 'teams', team.id));
+            if (teamDoc.exists()) {
+              const updatedTeam = {
+                ...teamDoc.data(),
+                id: teamDoc.id
+              } as Team;
+              
+              setTeam(updatedTeam);
+              
+              // Update assignments list with new submission
+              setAssignments(prev => 
+                prev.map(assignment => 
+                  assignment.id === stageId 
+                    ? { 
+                        ...assignment, 
+                        submission: updatedTeam.stages[stageNumber],
+                        submissionEnabled: true
+                      }
+                    : assignment
+                )
+              );
+            }
+          } catch (error) {
+            // Show error message if upload fails
+            toast({
+              variant: "destructive",
+              title: "Upload Error",
+              description: error instanceof Error ? error.message : "Failed to upload submission",
+            });
+          } finally {
+            setLoading(false);
+          }
+        };
+        
+        // Trigger file selection
+        input.click();
+      } catch (error) {
+        // Show error message for validation failures
+        toast({
+          variant: "destructive",
+          title: "Upload Error",
+          description: error instanceof Error ? error.message : "Failed to upload submission",
+        });
+      }
+    };
+
+  const handleRegistration = () => {
+    if (!handleAuthenticatedAction(
+      () => {}, 
+      "Please log in to register for the competition"
+    )) return;
+    
+    router.push(`/competition/${competitionId}/register`);
   };
 
-  if (loading || authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 font-poppins">
         <Navbar />
@@ -261,7 +320,7 @@ export default function Dashboard() {
       <InformationCard
         competition={competition}
         team={team}
-        registrationUrl={`/competition/${competitionId}/register`}
+        onRegister={handleRegistration}
       />
 
       <div className="bg-gray-500 py-8">
@@ -271,6 +330,7 @@ export default function Dashboard() {
             assignments={assignments}
             onDownload={handleDownload}
             onUpload={handleUpload}
+            team={team}
           />
           
           {team?.stages[2]?.status === 'cleared' && !team.stages[2]?.paidStatus && (

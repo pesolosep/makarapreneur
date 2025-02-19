@@ -17,8 +17,8 @@ export default function RegisterPage() {
     try {
       const result = await registerUser(email, password);
       
-      // Redirect to OTP verification page
-      router.push(`/login`);
+      
+      router.push(`/authentication/login`);
     } catch (err: any) {
       setError(err.message);
     }

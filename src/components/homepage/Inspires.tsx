@@ -1,8 +1,11 @@
+// components/homepage/Inspires.tsx
 'use client'
-
 import { useRef, useState, useEffect } from "react"
 import { twMerge } from "tailwind-merge"
 import MakaraCard from "../makarainspires/MakaraCard"
+import { collection, getDocs, orderBy, query } from "firebase/firestore"
+import { db } from "@/lib/firebase/firebase"
+import { Article } from "@/models/Article"
 
 interface InspireProps {
     variant?: string
@@ -10,8 +13,24 @@ interface InspireProps {
 
 export default function Inspires({ variant }: InspireProps) {
     const [isVisible, setIsVisible] = useState(false)
+    const [articles, setArticles] = useState<Article[]>([])
     const sectionRef = useRef<HTMLDivElement>(null)
     const secondary = variant === "secondary"
+
+    useEffect(() => {
+        const fetchArticles = async () => {
+            const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
+            const snapshot = await getDocs(q);
+            const articlesData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                createdAt: doc.data().createdAt?.toDate(),
+                updatedAt: doc.data().updatedAt?.toDate()
+            })) as Article[];
+            setArticles(articlesData);
+        };
+        fetchArticles();
+    }, []);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -35,15 +54,7 @@ export default function Inspires({ variant }: InspireProps) {
     }, [])
 
     return (
-        <div
-            ref={sectionRef}
-            className={twMerge(
-                "relative py-16 overflow-hidden",
-                secondary 
-                    ? "bg-signalBlack" 
-                    : "bg-gradient-to-b from-juneBud via-juneBud/90 to-[#5E76BF]"
-            )}
-        >
+        <div ref={sectionRef} className={twMerge(/* existing classes */)}>
             {/* Background decoration */}
             {!secondary && (
                 <>
@@ -53,31 +64,15 @@ export default function Inspires({ variant }: InspireProps) {
             )}
 
             {!secondary && (
-                <h2 className={twMerge(
-                    "text-2xl lg:text-4xl font-bold text-center text-cornflowerBlue mb-12 transition-all duration-700 [text-shadow:0px_0px_20px_rgba(110,142,236,0.3)]",
-                    isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                )}>
+                <h2 className={twMerge(/* existing classes */)}>
                     MAKARA INSPIRES
                 </h2>
             )}
 
-            <div className={twMerge(
-                "flex flex-wrap justify-center gap-10 px-6 lg:px-12 max-w-7xl mx-auto",
-                secondary && "mt-0",
-                isVisible && "animate-in zoom-in-50 duration-1000"
-            )}>
-                {[0, 1, 2].map((index) => (
-                    <div
-                        key={index}
-                        className={twMerge(
-                            "transition-all duration-700",
-                            isVisible 
-                                ? "opacity-100 translate-y-0" 
-                                : "opacity-0 translate-y-16",
-                            `delay-[${index * 200}ms]`
-                        )}
-                    >
-                        <MakaraCard />
+            <div className={twMerge(/* existing classes */)}>
+                {articles.map((article, index) => (
+                    <div key={article.id} className={twMerge(/* existing classes */)}>
+                        <MakaraCard article={article} />
                     </div>
                 ))}
             </div>

@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, X, LogOut, UserCircle, Shield } from "lucide-react";
+import { logoutUser } from "@/lib/firebase/authService";
+import { useAuth } from "@/contexts/AuthContext";
 import {
     Sheet,
     SheetContent,
@@ -17,6 +19,13 @@ import {
     NavigationMenuLink,
     NavigationMenuList,
 } from "@/components/ui/navigation-menu";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { twMerge } from "tailwind-merge";
 
@@ -31,8 +40,11 @@ const navigationItems = [
 
 export default function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
+    const { user, userData, isAdmin, loading } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
 
+    // Handle scroll effect
     useEffect(() => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
@@ -40,13 +52,116 @@ export default function Navbar() {
         };
 
         handleScroll();
-
         window.addEventListener("scroll", handleScroll, { passive: true });
-
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
+        return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    // Handle logout with proper error handling and navigation
+    const handleLogout = async () => {
+        try {
+            await logoutUser();
+            router.push('/'); // Redirect to home page after logout
+        } catch (error) {
+            console.error('Logout failed:', error);
+            // You might want to add toast notification here
+        }
+    };
+
+    // Authentication button component with user data display
+    const AuthButton = () => {
+        if (loading) {
+            return null; // Or a loading spinner
+        }
+
+        if (user && userData) {
+            return (
+                <DropdownMenu>
+                    <DropdownMenuTrigger className="ml-8 px-6 py-2.5 bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2">
+                        <UserCircle className="h-5 w-5" />
+                        <span className="max-w-[150px] truncate"></span>
+                        {isAdmin && <Shield className="h-4 w-4" />}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 bg-zinc-900 text-linen border-zinc-800">
+                        {isAdmin && (
+                            <>
+                                <DropdownMenuItem 
+                                    onClick={() => router.push('/admin')}
+                                    className="text-juneBud hover:bg-white/10 cursor-pointer"
+                                >
+                                    <Shield className="mr-2 h-4 w-4" />
+                                    Admin Dashboard
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-zinc-800" />
+                            </>
+                        )}
+                   
+                        <DropdownMenuSeparator className="bg-zinc-800" />
+                        <DropdownMenuItem 
+                            onClick={handleLogout}
+                            className="text-red-400 hover:text-red-300 hover:bg-white/10 cursor-pointer"
+                        >
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Logout
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            );
+        }
+        
+        return (
+            <Link
+                href="/authentication/login"
+                className="ml-8 px-6 py-2.5 bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+            >
+                Login
+            </Link>
+        );
+    };
+
+    // Mobile auth button component with enhanced user data display
+    const MobileAuthButton = () => {
+        if (loading) {
+            return null; // Or a loading spinner
+        }
+
+        if (user && userData) {
+            return (
+                <div className="flex flex-col gap-4">
+                    <div className="px-4 py-3 font-poppins text-base font-medium text-linen flex items-center gap-2">
+                        <UserCircle className="h-5 w-5" />
+                        <span className="truncate"></span>
+                        {isAdmin && <Shield className="h-4 w-4 text-juneBud" />}
+                    </div>
+                    {isAdmin && (
+                        <Link
+                            href="/admin"
+                            className="bg-zinc-800 text-juneBud rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-zinc-700 transition-colors text-center flex items-center justify-center gap-2"
+                        >
+                            <Shield className="h-4 w-4" />
+                            Admin Dashboard
+                        </Link>
+                    )}
+             
+                    <button
+                        onClick={handleLogout}
+                        className="bg-red-500 text-white rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-red-600 transition-colors text-center flex items-center justify-center gap-2"
+                    >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                    </button>
+                </div>
+            );
+        }
+
+        return (
+            <Link
+                href="/authentication/login"
+                className="bg-juneBud text-zinc-900 rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-linen transition-colors text-center"
+            >
+                Login
+            </Link>
+        );
+    };
 
     return (
         <header
@@ -54,11 +169,13 @@ export default function Navbar() {
                 isScrolled ? "bg-zinc-900" : "bg-zinc-900/80 backdrop-blur-sm"
             }`}
         >
+            {/* Rest of the navbar structure remains the same */}
             <nav
                 className={`mx-auto flex duration-500 ${
                     isScrolled ? "h-20" : "h-24"
                 } items-center justify-between px-6 lg:px-8`}
             >
+                {/* ... Previous Link and Image components ... */}
                 <Link href="/" className="flex items-center gap-3">
                     <Image
                         src="/icon.svg"
@@ -98,13 +215,8 @@ export default function Navbar() {
                         </NavigationMenuList>
                     </NavigationMenu>
                     
-                    {/* Separated Login Button */}
-                    <Link
-                        href="/login"
-                        className="ml-8 px-6 py-2.5 bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-                    >
-                        Login
-                    </Link>
+                    {/* Desktop Auth Button */}
+                    <AuthButton />
                 </div>
 
                 {/* Mobile Navigation */}
@@ -146,12 +258,8 @@ export default function Navbar() {
                                         {item.name}
                                     </Link>
                                 ))}
-                                <Link
-                                    href="/login"
-                                    className="bg-juneBud text-zinc-900 rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-linen transition-colors text-center"
-                                >
-                                    Login
-                                </Link>
+                                {/* Mobile Auth Button */}
+                                <MobileAuthButton />
                             </div>
                         </SheetContent>
                     </Sheet>
