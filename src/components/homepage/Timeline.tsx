@@ -5,34 +5,39 @@ import { twMerge } from "tailwind-merge"
 
 const timelineData = [
     {
-        title: "Open Registration",
-        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        date: "1 March 2024"
+        title: "NETWORKING NIGHT",
+        description: "HIPMI PT UI WITH HIPMI NETWORK",
+        date: "4 March 2025"
     },
     {
-        title: "Close Registration",
-        description: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        title: "NETWORKING NIGHT",
+        description: "HIPMI PT UI WITH UI NETWORK",
         date: "15 March 2024"
     },
     {
-        title: "Technical Meeting",
-        description: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-        date: "20 March 2024"
+        title: "HIPMI TALKS UI",
+        description: "",
+        date: "17 APRIL 2025"
     },
     {
-        title: "Preliminary Round",
-        description: "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-        date: "1 April 2024"
+        title: "HIPMI BUSINESS CLASS",
+        description: "EPISODE 1",
+        date: "2nd & 3rd week of April"
     },
     {
-        title: "Semi Final",
-        description: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
-        date: "15 April 2024"
+        title: "HIPMI BUSINESS CLASS",
+        description: "EPISODE 2",
+        date: "4th & 5th week of April"
     },
     {
-        title: "Grand Final",
-        description: "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur.",
-        date: "30 April 2024"
+        title: "HIPMI BUSINESS CLASS",
+        description: "EPISODE 3",
+        date: "1st & 2nd week of May"
+    },
+    {
+        title: "AWARDING NIGHT",
+        description: "",
+        date: "17 MAY 2025"
     }
 ]
 
