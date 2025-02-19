@@ -10,9 +10,11 @@ import { ArrowRight } from "lucide-react";
 interface VariantProps {
     variant?: string;
     number: number;
+    title: string;
+    description: string;
 }
 
-export default function Description({ variant, number }: VariantProps) {
+export default function Description({ variant, number, title, description }: VariantProps) {
     const secondary = variant === "secondary";
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);
@@ -92,13 +94,10 @@ export default function Description({ variant, number }: VariantProps) {
                     }
                 `}>
                     <p className="text-2xl lg:text-3xl font-bold">
-                        Lorem ipsum dolor sit amet
+                        {title}
                     </p>
                     <p className="text-base lg:text-lg leading-relaxed max-w-[500px] font-medium">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                        do eiusmod tempor incididunt ut labore et dolore magna
-                        aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-                        ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                        {description}
                     </p>
                     <Button 
                     

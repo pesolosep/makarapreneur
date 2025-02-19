@@ -4,7 +4,6 @@ import { useRef, useState, useEffect } from "react";
 import Image, { StaticImageData } from "next/image";
 import { twMerge } from "tailwind-merge";
 
-
 type Speakers = {
     name: string;
     role: string;
@@ -15,11 +14,18 @@ interface SpeakersProps {
     title1: string;
     title2: string;
     speakers: Speakers[];
+    variant?: string;
 }
 
-export default function Speakers({ title1, title2, speakers }: SpeakersProps) {
+export default function Speakers({
+    title1,
+    title2,
+    speakers,
+    variant,
+}: SpeakersProps) {
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);
+    const isSecondary = variant === "secondary";
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -63,53 +69,58 @@ export default function Speakers({ title1, title2, speakers }: SpeakersProps) {
             </h2>
 
             <div
-                className="flex flex-row-reverse gap-6 lg:gap-8 max-w-5xl w-full animate-infinite-scroll"
+                className={twMerge(
+                    "flex flex-row-reverse gap-6 lg:gap-8 max-w-5xl w-full animate-infinite-scroll",
+                    isSecondary && "flex-row"
+                )}
                 style={
                     {
                         // Menambahkan CSS variable untuk mengontrol animasi
-                        "--scroll-width": `${200}%`,
+                        "--scroll-width": `${isSecondary ? -200 : 200}%`,
                     } as React.CSSProperties
                 }
             >
-                {[...speakers, ...speakers, ...speakers].map((speaker, index) => (
-                    <div
-                        key={index}
-                        className={twMerge(
-                            "group relative transition-all duration-700 flex-shrink-0", // Durasi ditingkatkan
-                            isVisible
-                                ? "opacity-100 translate-y-0"
-                                : "opacity-0 translate-y-32", // Jarak translate ditingkatkan
-                            `delay-[${(index + 1) * 200}ms]` // Delay diperbesar dan index + 1 agar lebih terasa bertahap
-                        )}
-                    >
-                        <div className="relative bg-white/5 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 hover:scale-105">
-                            {/* Speaker Image */}
-                            <div className="relative mb-4">
-                                <div className="relative z-10">
-                                    <Image
-                                        src={speaker.image}
-                                        alt={speaker.name}
-                                        className="w-full max-w-[200px] mx-auto filter grayscale"
-                                    />
+                {[...speakers, ...speakers, ...speakers].map(
+                    (speaker, index) => (
+                        <div
+                            key={index}
+                            className={twMerge(
+                                "group relative transition-all duration-700 flex-shrink-0", // Durasi ditingkatkan
+                                isVisible
+                                    ? "opacity-100 translate-y-0"
+                                    : "opacity-0 translate-y-32", // Jarak translate ditingkatkan
+                                `delay-[${(index + 1) * 200}ms]` // Delay diperbesar dan index + 1 agar lebih terasa bertahap
+                            )}
+                        >
+                            <div className="relative bg-white/5 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 hover:scale-105">
+                                {/* Speaker Image */}
+                                <div className="relative mb-4">
+                                    <div className="relative z-10">
+                                        <Image
+                                            src={speaker.image}
+                                            alt={speaker.name}
+                                            className="w-full max-w-[200px] mx-auto filter grayscale"
+                                        />
+                                    </div>
+                                    <div className="absolute -bottom-2 right-2 w-full h-[90%] bg-gradient-to-br from-cornflowerBlue/80 to-cornflowerBlue rounded-xl" />
                                 </div>
-                                <div className="absolute -bottom-2 right-2 w-full h-[90%] bg-gradient-to-br from-cornflowerBlue/80 to-cornflowerBlue rounded-xl" />
-                            </div>
 
-                            {/* Speaker Info */}
-                            <div className="relative z-10 text-center space-y-1">
-                                <h3 className="text-lg font-semibold text-signalBlack transition-colors duration-300 max-w-[200px]">
-                                    {speaker.name}
-                                </h3>
-                                <p className="text-sm text-signalBlack max-w-[200px]">
-                                    {speaker.role}
-                                </p>
-                            </div>
+                                {/* Speaker Info */}
+                                <div className="relative z-10 text-center space-y-1">
+                                    <h3 className="text-lg font-semibold text-signalBlack transition-colors duration-300 max-w-[200px]">
+                                        {speaker.name}
+                                    </h3>
+                                    <p className="text-sm text-signalBlack max-w-[200px]">
+                                        {speaker.role}
+                                    </p>
+                                </div>
 
-                            {/* Hover effect overlay */}
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-cornflowerBlue/0 to-cornflowerBlue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                {/* Hover effect overlay */}
+                                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-cornflowerBlue/0 to-cornflowerBlue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    )
+                )}
             </div>
         </div>
     );
