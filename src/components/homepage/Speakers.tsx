@@ -67,7 +67,7 @@ export default function Speakers({ title1, title2, speakers }: SpeakersProps) {
                 style={
                     {
                         // Menambahkan CSS variable untuk mengontrol animasi
-                        "--scroll-width": `${300}%`,
+                        "--scroll-width": `${200}%`,
                     } as React.CSSProperties
                 }
             >
