@@ -1,73 +1,104 @@
-'use client'
+"use client";
 
-import { useRef, useEffect, useState } from 'react'
-import { Card, CardContent } from "@/components/ui/card"
-import bankMandiri from "@/assets/sponsorsLogo/bankMandiri.svg"
-import gojek from "@/assets/sponsorsLogo/gojek.png"
-import jasaMarga from "@/assets/sponsorsLogo/jasaMarga.png"
-import jiwasraya from "@/assets/sponsorsLogo/jiwasraya.png"
-import Image from 'next/image'
+import { useRef, useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 
+import bankMandiri from "@/assets/sponsorsLogo/bankMandiri.svg";
+import gojek from "@/assets/sponsorsLogo/gojek.png";
+import jasaMarga from "@/assets/sponsorsLogo/jasaMarga.png";
+import jiwasraya from "@/assets/sponsorsLogo/jiwasraya.png";
+import Image from "next/image";
 
-const sponsorsLink = [bankMandiri, gojek, jasaMarga, jiwasraya, bankMandiri, gojek, jasaMarga, jiwasraya];
+import beritaLomba from "@/assets/medpar/BeritaLomba.png";
+import kompasianaBiru from "@/assets/medpar/KompasianaBiru.png";
+import marketeers from "@/assets/medpar/Marketeers.webp";
+import studentxCEOSsChapterJakarta from "@/assets/medpar/StudentxCEOsChapterJakarta.webp";
+import tempo from "@/assets/medpar/Tempo.png";
+
+const sponsorsLink = [
+    bankMandiri,
+    gojek,
+    jasaMarga,
+    jiwasraya,
+    bankMandiri,
+    gojek,
+    jasaMarga,
+    jiwasraya,
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const medpar: any[] = [
+    beritaLomba,
+    kompasianaBiru,
+    marketeers,
+    studentxCEOSsChapterJakarta,
+    tempo,
+    beritaLomba,
+    kompasianaBiru,
+    marketeers,
+    studentxCEOSsChapterJakarta,
+    tempo,
+];
 
 const sponsors = Array.from({ length: sponsorsLink.length }).map((_, i) => ({
     id: i + 1,
     name: `Sponsor ${i + 1}`,
-    imageLink: sponsorsLink[i]
-}))
+    imageLink: sponsorsLink[i],
+}));
 
-const mediaPartners = Array.from({ length: sponsors.length }).map((_, i) => ({
+const mediaPartners = Array.from({ length: medpar.length }).map((_, i) => ({
     id: i + 1,
     name: `Media Partner ${i + 1}`,
-    imageLink: sponsorsLink[i]
-}))
+    imageLink: medpar[i],
+}));
 
 interface ScrollingWrapperProps {
-    items: Array<{ id: number; name: string, imageLink: string }>
-    className?: string
+    items: Array<{ id: number; name: string; imageLink: string }>;
+    className?: string;
 }
 
 function ScrollingWrapper({ items, className = "" }: ScrollingWrapperProps) {
-    const [shouldAnimate, setShouldAnimate] = useState(false)
-    const containerRef = useRef<HTMLDivElement>(null)
-    const contentRef = useRef<HTMLDivElement>(null)
+    const [shouldAnimate, setShouldAnimate] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (containerRef.current && contentRef.current) {
-            const containerWidth = containerRef.current.offsetWidth
-            const contentWidth = contentRef.current.scrollWidth / 2 // Dibagi 2 karena konten diduplikasi
-            setShouldAnimate(contentWidth > containerWidth)
+            const containerWidth = containerRef.current.offsetWidth;
+            const contentWidth = contentRef.current.scrollWidth / 2; // Dibagi 2 karena konten diduplikasi
+            setShouldAnimate(contentWidth > containerWidth);
         }
-    }, [items])
+    }, [items]);
 
     // Duplikasi items untuk memastikan transisi mulus
-    const duplicatedItems = [...items, ...items, ...items]
+    const duplicatedItems = [...items, ...items, ...items];
 
     return (
-        <div 
+        <div
             ref={containerRef}
             className="relative w-full max-w-7xl overflow-hidden mx-auto"
         >
-            <div 
+            <div
                 ref={contentRef}
                 className={`flex gap-4 ${
-                    shouldAnimate 
-                        ? "animate-infinite-scroll hover:[animation-play-state:paused]" 
+                    shouldAnimate
+                        ? "animate-infinite-scroll hover:[animation-play-state:paused]"
                         : "justify-center"
                 }`}
-                style={{
-                    // Menambahkan CSS variable untuk mengontrol animasi
-                    '--scroll-width': `${-100}%`
-                } as React.CSSProperties}
+                style={
+                    {
+                        // Menambahkan CSS variable untuk mengontrol animasi
+                        "--scroll-width": `${-100}%`,
+                    } as React.CSSProperties
+                }
             >
                 {duplicatedItems.map((item, index) => (
-                    <Card 
+                    <Card
                         key={`${item.id}-${index}`}
                         className={`flex-shrink-0 bg-linen backdrop-blur-sm hover:bg-linen/80 transition-colors ${className}`}
                     >
                         <CardContent className="flex aspect-square items-center justify-center p-6 w-[140px] lg:w-[200px]">
-                            <Image 
+                            <Image
                                 src={item.imageLink}
                                 alt={item.name}
                                 width={200}
@@ -78,7 +109,7 @@ function ScrollingWrapper({ items, className = "" }: ScrollingWrapperProps) {
                 ))}
             </div>
         </div>
-    )
+    );
 }
 
 export default function Sponsors() {
@@ -89,8 +120,8 @@ export default function Sponsors() {
                     PAST SPONSORS
                 </h2>
                 <div className="mt-8 w-full px-6">
-                    <ScrollingWrapper 
-                        items={sponsors} 
+                    <ScrollingWrapper
+                        items={sponsors}
                         className="border-juneBud/20 hover:border-juneBud/40"
                     />
                 </div>
@@ -101,12 +132,12 @@ export default function Sponsors() {
                     MEDIA PARTNERS
                 </h2>
                 <div className="mt-8 w-full px-6">
-                    <ScrollingWrapper 
+                    <ScrollingWrapper
                         items={mediaPartners}
                         className="border-juneBud/20 hover:border-juneBud/40"
                     />
                 </div>
             </div>
         </div>
-    )
+    );
 }
