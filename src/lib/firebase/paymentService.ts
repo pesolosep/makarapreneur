@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // lib/paymentService/semifinalPayment.ts
 
 import { db } from '@/lib/firebase/firebase';

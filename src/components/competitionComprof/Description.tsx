@@ -19,6 +19,7 @@ export default function Description({ variant, number, title, description }: Var
     const secondary = variant === "secondary";
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -102,7 +103,7 @@ export default function Description({ variant, number, title, description }: Var
                         {description}
                     </p>
                     <Button 
-                        onClick={() => router.push(registerLink)}
+                        onClick={() => router.push("#")}
                         className={`
                             group relative overflow-hidden rounded-2xl px-6 h-12
                             ${secondary 
@@ -113,7 +114,7 @@ export default function Description({ variant, number, title, description }: Var
                         `}
                     >
                         <span className="relative z-10 transition-transform duration-300 group-hover:-translate-x-2">
-                            {buttonText}
+                            Register Now
                         </span>
                         <ArrowRight 
                             className="absolute z-10 right-4 h-5 w-5 transition-all duration-300 

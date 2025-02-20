@@ -39,7 +39,7 @@ export default function ArticlePage() {
     return (
         <div className="font-poppins">
             <Navbar />
-            <ShowArticle article={article} />
+            <ShowArticle article={article}/>
             <Footer />
         </div>
     );
