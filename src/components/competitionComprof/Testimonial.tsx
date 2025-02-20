@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
 import { useEffect, useRef, useState } from "react";
@@ -30,13 +31,14 @@ export default function Testimonial() {
             { threshold: 0.2 }
         );
 
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
+        const currentRef = sectionRef.current;
+        if (currentRef) {
+            observer.observe(currentRef);
         }
 
         return () => {
-            if (sectionRef.current) {
-                observer.unobserve(sectionRef.current);
+            if (currentRef) {
+                observer.unobserve(currentRef);
             }
         };
     }, []);

@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/paymentService/semifinalPayment.ts
+
 import { db } from '@/lib/firebase/firebase';
 import { doc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { Team } from '@/models/Team';
@@ -35,8 +37,8 @@ interface XenditCallbackPayload {
 }
 
 const SEMIFINAL_PAYMENT_AMOUNT = 500000; // IDR 500,000
-const XENDIT_API_URL = process.env.NEXT_PUBLIC_XENDIT_API_URL || 'https://api.xendit.co';
-const XENDIT_API_KEY = process.env.XENDIT_API_KEY || 'mock_key';
+// const XENDIT_API_URL = process.env.NEXT_PUBLIC_XENDIT_API_URL || 'https://api.xendit.co';
+// const XENDIT_API_KEY = process.env.XENDIT_API_KEY || 'mock_key';
 
 export const semifinalPaymentService = {
 

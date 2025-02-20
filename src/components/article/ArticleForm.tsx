@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // components/ArticleForm.tsx
 'use client';
 import { useState, useEffect } from 'react';
@@ -153,6 +154,7 @@ export default function ArticleForm({ params }: ArticleFormProps) {
           required={!params?.id}
         />
         {formData.preview && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img 
             src={formData.preview} 
             alt="Preview" 

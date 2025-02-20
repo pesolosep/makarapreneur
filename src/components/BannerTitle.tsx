@@ -21,13 +21,14 @@ export function BannerTitle({ title }: BannerTitleProps) {
             { threshold: 0.1 }
         );
 
-        if (titleRef.current) {
-            observer.observe(titleRef.current);
+        const element = titleRef.current;
+        if (element) {
+            observer.observe(element);
         }
 
         return () => {
-            if (titleRef.current) {
-                observer.unobserve(titleRef.current);
+            if (element) {
+                observer.unobserve(element);
             }
         };
     }, []);

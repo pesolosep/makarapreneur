@@ -29,13 +29,14 @@ export default function ShowCard({ title, variant }: ShowCardProps) {
             { threshold: 0.2 }
         );
 
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
+        const currentElement = sectionRef.current;
+        if (currentElement) {
+            observer.observe(currentElement);
         }
 
         return () => {
-            if (sectionRef.current) {
-                observer.unobserve(sectionRef.current);
+            if (currentElement) {
+                observer.unobserve(currentElement);
             }
         };
     }, []);

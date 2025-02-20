@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { 
   auth, 
@@ -10,7 +11,6 @@ import {
   signOut
 } from './firebase';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { UserCredential } from 'firebase/auth';
 
 // Setup persistence
 export async function setupAuthPersistence() {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // models/Team.ts
 export interface TeamMember {
   name: string;

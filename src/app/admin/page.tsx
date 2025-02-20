@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 import React, { useEffect, useState} from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

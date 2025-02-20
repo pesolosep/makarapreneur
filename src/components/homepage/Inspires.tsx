@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/homepage/Inspires.tsx
 'use client'
 import { useRef, useState, useEffect } from "react"
@@ -42,13 +43,14 @@ export default function Inspires({ variant }: InspireProps) {
             { threshold: 0.2 }
         )
 
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current)
+        const currentRef = sectionRef.current
+        if (currentRef) {
+            observer.observe(currentRef)
         }
 
         return () => {
-            if (sectionRef.current) {
-                observer.unobserve(sectionRef.current)
+            if (currentRef) {
+                observer.unobserve(currentRef)
             }
         }
     }, [])

@@ -6,14 +6,11 @@ import Footer from "@/components/Footer";
 import ShowArticle from "@/components/makarainspires/ShowArticle";
 import Navbar from "@/components/Navbar";
 import { Article } from '@/models/Article';
+import { useParams } from 'next/navigation'
 
-interface ArticlePageProps {
-    params: {
-        id: string;
-    };
-}
 
-export default function ArticlePage({ params }: ArticlePageProps) {
+export default function ArticlePage() {
+    const params = useParams<{ id: string }>()
     const [article, setArticle] = useState<Article | null>(null);
     const [loading, setLoading] = useState(true);
 
