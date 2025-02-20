@@ -1,4 +1,6 @@
+
 // lib/paymentService/semifinalPayment.ts
+
 import { db } from '@/lib/firebase/firebase';
 import { doc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { Team } from '@/models/Team';

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import aboutUsDummy from "@/assets/aboutUsDummy.svg";
 import { twMerge } from "tailwind-merge";
@@ -18,6 +19,7 @@ export default function Description({ variant, number, title, description }: Var
     const secondary = variant === "secondary";
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -29,13 +31,14 @@ export default function Description({ variant, number, title, description }: Var
             { threshold: 0.2 }
         );
 
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
+        const currentRef = sectionRef.current;
+        if (currentRef) {
+            observer.observe(currentRef);
         }
 
         return () => {
-            if (sectionRef.current) {
-                observer.unobserve(sectionRef.current);
+            if (currentRef) {
+                observer.unobserve(currentRef);
             }
         };
     }, []);
@@ -100,7 +103,7 @@ export default function Description({ variant, number, title, description }: Var
                         {description}
                     </p>
                     <Button 
-                    
+                        onClick={() => router.push("#")}
                         className={`
                             group relative overflow-hidden rounded-2xl px-6 h-12
                             ${secondary 
