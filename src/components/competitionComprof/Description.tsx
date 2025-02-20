@@ -13,19 +13,9 @@ interface VariantProps {
     number: number;
     title: string;
     description: string;
-    registerLink: string;
-    buttonText?: string;
 }
 
-export default function Description({ 
-    variant, 
-    number, 
-    title,
-    description,
-    registerLink,
-    buttonText = "Register Now"
-}: VariantProps) {
-    const router = useRouter();
+export default function Description({ variant, number, title, description }: VariantProps) {
     const secondary = variant === "secondary";
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);

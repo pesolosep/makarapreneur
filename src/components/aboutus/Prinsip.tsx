@@ -45,7 +45,7 @@ export default function Prinsip() {
                     [text-shadow:0px_0px_20px_rgba(110,142,236,0.5)]
                 `}
             >
-                LOREM
+                Beyond Survival:
             </p>
 
             <p 
@@ -56,7 +56,7 @@ export default function Prinsip() {
                     [text-shadow:0px_0px_20px_rgba(110,142,236,0.5)]
                 `}
             >
-                LOREM OFFICIA REDOLOR EXCEPTEUR MOLLIT
+                Thriving as an Entrepreneur in a World of Uncertainty
             </p>
 
             {/* Optional decorative lines */}

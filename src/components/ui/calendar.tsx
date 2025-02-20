@@ -60,17 +60,19 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
+        PrevButton: ({ ...props }) => (
+          <ChevronLeft className="h-4 w-4" {...props} />
         ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn("h-4 w-4", className)} {...props} />
+        NextButton: ({ ...props }) => (
+          <ChevronRight className="h-4 w-4" {...props} />
         ),
-      }}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any}
       {...props}
     />
   )
 }
+
 Calendar.displayName = "Calendar"
 
 export { Calendar }

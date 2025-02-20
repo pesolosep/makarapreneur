@@ -197,6 +197,7 @@ export const semifinalPaymentService = {
 };
 
 // API route handler for Xendit callback
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function handleXenditCallback(req: any, res: any) {
   try {
     const payload = req.body as XenditCallbackPayload;

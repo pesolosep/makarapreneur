@@ -12,33 +12,34 @@ export const metadata: Metadata = {
 };
 
 export default function page() {
+    const cards = [
+        { id: 1, title: "BUSINESS PLAN COMPETITION - SMA", link: "#1" },
+        { id: 2, title: "BUSINESS PLAN COMPETITION - MAHASISWA", link: "#2" },
+        { id: 3, title: "BUSINESS CASE COMPETITION", link: "#3" },
+    ];
+
     return (
         <div className="font-poppins">
             <Navbar />
             <Banner title="COMPETITION" />
-            <ShowCard title="ARE YOU READY TO COMPETE?" />
+            <ShowCard title="ARE YOU READY TO COMPETE?" cardsList={cards} />
             <Testimonial />
-            <Description 
-        number={1}
-        title="Business Plan Competition"
-        description="Join our premier business plan competition where innovative ideas meet opportunity. Present your groundbreaking business concept to industry experts and win substantial funding to kickstart your venture."
-        registerLink="/competition/business-plan/"
-      />
-
-      <Description 
-        variant="secondary"
-        number={2}
-        title="Case Competition"
-        description="Put your analytical and problem-solving skills to the test in our case competition. Work with a talented team to analyze real-world business scenarios and present your strategic solutions to a panel of distinguished judges."
-        registerLink="/competition/case/register"
-      />
-
-      <Description 
-        number={3}
-        title="Innovation Challenge"
-        description="Showcase your innovative thinking in our technology-focused challenge. Develop cutting-edge solutions to real industry problems and get the chance to implement your ideas with leading tech companies."
-        registerLink="/competition/innovation/register"
-      />
+            <Description
+                number={1}
+                title="TINGKAT SMA - NATIONAL BUSINESS PLAN COMPETITION"
+                description="Dirancang untuk menginspirasi siswa dalam menciptakan ide bisnis yang kreatif, inovatif, dan praktis, serta membangun pemahaman dasar tentang kewirausahaan."
+            />
+            <Description
+                variant="secondary"
+                number={2}
+                title="TINGKAT MAHASISWA - NATIONAL BUSINESS PLAN COMPETITION"
+                description="Platform bagi mahasiswa untuk mengasah keterampilan dalam perencanaan dan pelaksanaan bisnis, dengan fokus pada strategi pertumbuhan dan keberlanjutan."
+            />
+            <Description
+                number={3}
+                title="TINGKAT MAHASISWA - NATIONAL BUSINESS CASE COMPETITION"
+                description="Menantang peserta untuk menganalisis dan memberikan solusi strategis terhadap permasalahan bisnis di dunia nyata, mengasah kemampuan berpikir kritis, inovatif, dan berbasis data."
+            />
             <Footer />
         </div>
     );

@@ -10,11 +10,17 @@ export const metadata: Metadata = {
 };
 
 export default function page() {
+    const cards = [
+        { id: 1, title: "HIPMI TALKS", link: "#1" },
+        { id: 2, title: "INTERNAL BUSINESS CLASS", link: "#2" },
+        { id: 3, title: "NETWORKING NIGHT", link: "#3" }
+    ];
+
     return (
         <div className="font-poppins">
             <Navbar />
             <Banner title="EVENT" />
-            <ShowCard title="ARE YOU READY?" variant="secondary"/>
+            <ShowCard title="ARE YOU READY?" variant="secondary" cardsList={cards}/>
             <Footer />
         </div>
     );

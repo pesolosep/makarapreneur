@@ -43,14 +43,14 @@ export default function Inspires({ variant }: InspireProps) {
             { threshold: 0.2 }
         )
 
-        const currentRef = sectionRef.current
-        if (currentRef) {
-            observer.observe(currentRef)
+        const currentSectionRef = sectionRef.current;
+        if (currentSectionRef) {
+            observer.observe(currentSectionRef);
         }
 
         return () => {
-            if (currentRef) {
-                observer.unobserve(currentRef)
+            if (currentSectionRef) {
+                observer.unobserve(currentSectionRef);
             }
         }
     }, [])

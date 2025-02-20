@@ -62,7 +62,7 @@ export default function InformationCard({
 
     // Set up timer interval
     const timer = setInterval(calculateTimeLeft, 1000);
-    calculateTimeLeft(); // Initial calculation
+    calculateTimeLeft();
 
     return () => clearInterval(timer);
   }, [competition?.registrationDeadline]);
@@ -97,7 +97,11 @@ export default function InformationCard({
             <h1 className="font-semibold text-3xl tracking-widest mb-5">
               {competition?.name || 'Competition Name'}
             </h1>
-            <p className="font-medium max-w-[500px]">
+            <div className="flex items-center gap-2 mb-4 text-signalBlack/80">
+              <Trophy className="w-5 h-5" />
+              <span className="text-lg">Business Case Competition</span>
+            </div>
+            <p className="text-lg text-signalBlack/90 leading-relaxed mb-8 max-w-2xl">
               {competition?.description || 'Competition description loading...'}
             </p>
           </div>
@@ -197,3 +201,16 @@ export default function InformationCard({
     </div>
   );
 }
+
+const TimeBlock = ({ label, value }: { label: string; value: number }) => (
+  <motion.div 
+    className="bg-linen/10 rounded-lg p-2 text-center"
+    whileHover={{ scale: 1.05 }}
+    transition={{ duration: 0.2 }}
+  >
+    <span className="text-xl font-bold block">
+      {value < 10 ? `0${value}` : value}
+    </span>
+    <span className="text-xs text-linen/60">{label}</span>
+  </motion.div>
+);

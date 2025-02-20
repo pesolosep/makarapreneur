@@ -2,19 +2,29 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { Card, CardContent } from "@/components/ui/card"
+import bankMandiri from "@/assets/sponsorsLogo/bankMandiri.svg"
+import gojek from "@/assets/sponsorsLogo/gojek.png"
+import jasaMarga from "@/assets/sponsorsLogo/jasaMarga.png"
+import jiwasraya from "@/assets/sponsorsLogo/jiwasraya.png"
+import Image from 'next/image'
 
-const sponsors = Array.from({ length: 8 }).map((_, i) => ({
+
+const sponsorsLink = [bankMandiri, gojek, jasaMarga, jiwasraya, bankMandiri, gojek, jasaMarga, jiwasraya];
+
+const sponsors = Array.from({ length: sponsorsLink.length }).map((_, i) => ({
     id: i + 1,
-    name: `Sponsor ${i + 1}`
+    name: `Sponsor ${i + 1}`,
+    imageLink: sponsorsLink[i]
 }))
 
-const mediaPartners = Array.from({ length: 8 }).map((_, i) => ({
+const mediaPartners = Array.from({ length: sponsors.length }).map((_, i) => ({
     id: i + 1,
-    name: `Media Partner ${i + 1}`
+    name: `Media Partner ${i + 1}`,
+    imageLink: sponsorsLink[i]
 }))
 
 interface ScrollingWrapperProps {
-    items: Array<{ id: number; name: string }>
+    items: Array<{ id: number; name: string, imageLink: string }>
     className?: string
 }
 
@@ -54,12 +64,15 @@ function ScrollingWrapper({ items, className = "" }: ScrollingWrapperProps) {
                 {duplicatedItems.map((item, index) => (
                     <Card 
                         key={`${item.id}-${index}`}
-                        className={`flex-shrink-0 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors ${className}`}
+                        className={`flex-shrink-0 bg-linen backdrop-blur-sm hover:bg-linen/80 transition-colors ${className}`}
                     >
                         <CardContent className="flex aspect-square items-center justify-center p-6 w-[140px] lg:w-[200px]">
-                            <span className="text-2xl font-semibold text-linen">
-                                {item.id}
-                            </span>
+                            <Image 
+                                src={item.imageLink}
+                                alt={item.name}
+                                width={200}
+                                height={200}
+                            />
                         </CardContent>
                     </Card>
                 ))}
@@ -73,7 +86,7 @@ export default function Sponsors() {
         <div className="bg-signalBlack text-linen">
             <div className="flex flex-col justify-center items-center py-12">
                 <h2 className="headerText text-juneBud text-2xl lg:text-4xl">
-                    SPONSORS
+                    PAST SPONSORS
                 </h2>
                 <div className="mt-8 w-full px-6">
                     <ScrollingWrapper 
