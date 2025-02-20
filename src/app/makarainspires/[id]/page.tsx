@@ -7,7 +7,13 @@ import ShowArticle from "@/components/makarainspires/ShowArticle";
 import Navbar from "@/components/Navbar";
 import { Article } from '@/models/Article';
 
-export default function ArticlePage({ params }: { params: { id: string } }) {
+interface ArticlePageProps {
+    params: {
+        id: string;
+    };
+}
+
+export default function ArticlePage({ params }: ArticlePageProps) {
     const [article, setArticle] = useState<Article | null>(null);
     const [loading, setLoading] = useState(true);
 

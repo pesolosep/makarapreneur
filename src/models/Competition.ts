@@ -4,7 +4,7 @@ export interface Stage {
     guidelineFileURL: string;
     description: string;
     deadline: Date;  
-    visibility: Boolean;     // Added deadline for each stage
+    visibility: boolean;     // Added deadline for each stage
   }
   
   export interface Competition {
