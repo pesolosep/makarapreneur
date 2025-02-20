@@ -1,42 +1,60 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState} from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Check, X, Clock } from 'lucide-react';
-import { Competition } from "@/models/Competition";
-import { Team } from "@/models/Team";
-import { adminService } from '@/lib/firebase/competitionService';
-import { db } from '@/lib/firebase/firebase';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { db, storage } from '@/lib/firebase/firebase';
 import { doc, collection, getDoc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
-import {initialCompetitions } from '@/lib/competitionData';
+import { initialCompetitions } from '@/lib/competitionData';
 import CompetitionEditor from '@/components/competition/CompetitionEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
-const AdminDashboard: React.FC = () => {
+interface Stage {
+  title: string;
+  description: string;
+  deadline: Date;
+  isVisible?: boolean;
+  guidelineFileURL: string;
+}
+
+interface Competition {
+  id: string;
+  name: string;
+  description: string;
+  registrationDeadline: Date;
+  stages: Record<string, Stage>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface AdminDashboardProps {}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = () => {
   const [selectedCompetition, setSelectedCompetition] = useState<string>(initialCompetitions[0].id);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const {user, isAdmin} = useAuth();
+  const [visibilityDialogOpen, setVisibilityDialogOpen] = useState<boolean>(false);
+  const [pendingVisibilityChange, setPendingVisibilityChange] = useState<{
+    stageId: string;
+    isVisible: boolean;
+  } | null>(null);
+  const { user, isAdmin } = useAuth();
   const router = useRouter();
-
-  
   useEffect(() => {
-    if (loading) return;
-    if (user) {
-      if (isAdmin) {
-        console.log("ini user " + user)
-      } else{
-        router.push('/')
+    if (!loading && user) {
+      if (!isAdmin) {
+        router.push('/');
       }
     }
-  }, [user, isAdmin, router,loading]);
-  const initializeCompetitions = async () => {
+  }, [user, isAdmin, router, loading]);
+  
+  const initializeCompetitions = async (): Promise<void> => {
     try {
       setLoading(true);
       const completedCompetitions = initialCompetitions.map(comp => ({
@@ -44,13 +62,13 @@ const AdminDashboard: React.FC = () => {
         createdAt: new Date(),
         updatedAt: new Date()
       }));
-
+  
+      // Initialize competitions in Firestore if they don't exist
       for (const competition of completedCompetitions) {
         const docRef = doc(db, 'competitions', competition.id);
         const docSnap = await getDoc(docRef);
         
         if (!docSnap.exists()) {
-          console.log(`Initializing competition ${competition.id} in Firebase...`);
           await setDoc(docRef, {
             ...competition,
             createdAt: Timestamp.fromDate(new Date()),
@@ -66,7 +84,8 @@ const AdminDashboard: React.FC = () => {
           });
         }
       }
-
+  
+      // Fetch all competitions
       const competitionsRef = collection(db, 'competitions');
       const competitionsSnapshot = await getDocs(competitionsRef);
       const competitionsData = competitionsSnapshot.docs.map(doc => {
@@ -86,7 +105,7 @@ const AdminDashboard: React.FC = () => {
           }), {})
         };
       }) as Competition[];
-
+  
       setCompetitions(competitionsData);
     } catch (error) {
       console.error('Error initializing competitions:', error);
@@ -95,43 +114,147 @@ const AdminDashboard: React.FC = () => {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     initializeCompetitions();
   }, []);
 
-  useEffect(() => {
-    if (selectedCompetition) {
-      loadTeamsForCompetition(selectedCompetition);
-    }
-  }, [selectedCompetition]);
-
-  const loadTeamsForCompetition = async (competitionId: string) => {
-    try {
-      setLoading(true);
-      const teamsData = await adminService.getTeamsByCompetition(competitionId);
-      setTeams(teamsData);
-      setError('');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      setError('Failed to fetch teams');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateStatus = async (teamId: string, status: 'approved' | 'rejected') => {
-    try {
-      await adminService.updateRegistrationStatus(teamId, status);
-      await loadTeamsForCompetition(selectedCompetition);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      setError('Failed to update status');
-    }
-  };
-
   const getCurrentCompetition = (): Competition | undefined => 
     competitions.find(comp => comp.id === selectedCompetition);
+
+  const handleUpdateCompetition = async (
+    competitionId: string, 
+    updates: Partial<Competition>
+  ): Promise<void> => {
+    try {
+      const docRef = doc(db, 'competitions', competitionId);
+      
+      // Convert dates to Timestamps for Firestore
+      const processedUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
+        if (value instanceof Date) {
+          return { ...acc, [key]: Timestamp.fromDate(value) };
+        }
+        if (key === 'stages' && typeof value === 'object') {
+          const processedStages = Object.entries(value).reduce((stageAcc, [stageKey, stage]: [string, any]) => ({
+            ...stageAcc,
+            [stageKey]: {
+              ...stage,
+              deadline: stage.deadline instanceof Date ? Timestamp.fromDate(stage.deadline) : stage.deadline
+            }
+          }), {});
+          return { ...acc, [key]: processedStages };
+        }
+        return { ...acc, [key]: value };
+      }, {});
+
+      await setDoc(docRef, {
+        ...processedUpdates,
+        updatedAt: Timestamp.fromDate(new Date())
+      }, { merge: true });
+      
+      setCompetitions(prev => prev.map(comp => 
+        comp.id === competitionId 
+          ? { ...comp, ...updates, updatedAt: new Date() } 
+          : comp
+      ));
+    } catch (error) {
+      throw new Error('Failed to update competition');
+    }
+  };
+
+  const handleUpdateStageVisibility = async (
+    stageId: string, 
+    isVisible: boolean
+  ): Promise<void> => {
+    setPendingVisibilityChange({ stageId, isVisible });
+    setVisibilityDialogOpen(true);
+  };
+
+  const confirmVisibilityChange = async (): Promise<void> => {
+    if (!pendingVisibilityChange) return;
+    const { stageId, isVisible } = pendingVisibilityChange;
+
+    try {
+      const competition = getCurrentCompetition();
+      if (!competition) return;
+
+      const docRef = doc(db, 'competitions', competition.id);
+      await setDoc(docRef, {
+        [`stages.${stageId}.isVisible`]: isVisible,
+        updatedAt: Timestamp.fromDate(new Date())
+      }, { merge: true });
+
+      setCompetitions(prev => prev.map(comp => {
+        if (comp.id === competition.id) {
+          return {
+            ...comp,
+            stages: {
+              ...comp.stages,
+              [stageId]: {
+                ...comp.stages[stageId],
+                isVisible
+              }
+            },
+            updatedAt: new Date()
+          };
+        }
+        return comp;
+      }));
+
+      setVisibilityDialogOpen(false);
+      setPendingVisibilityChange(null);
+    } catch (error) {
+      throw new Error('Failed to update stage visibility');
+    }
+  };
+
+  const handleUpdateStageGuideline = async (
+    stageId: string, 
+    file: File
+): Promise<void> => {
+    try {
+        const competition = getCurrentCompetition();
+        if (!competition) return;
+
+        // Create the storage reference
+        const url = `guidelines/${competition.id}/stage${stageId}/${file.name}`;
+        const storageRef = ref(storage, url);
+        
+        // Upload the file
+        await uploadBytes(storageRef, file);
+        
+        // Get the download URL after upload
+        const guidelineFileURL = await getDownloadURL(storageRef);
+        
+        // Update Firestore with the new URL
+        const docRef = doc(db, 'competitions', competition.id);
+        await setDoc(docRef, {
+            [`stages.${stageId}.guidelineFileURL`]: guidelineFileURL,
+            updatedAt: Timestamp.fromDate(new Date())
+        }, { merge: true });
+
+        // Update local state
+        setCompetitions(prev => prev.map(comp => {
+            if (comp.id === competition.id) {
+                return {
+                    ...comp,
+                    stages: {
+                        ...comp.stages,
+                        [stageId]: {
+                            ...comp.stages[stageId],
+                            guidelineFileURL: guidelineFileURL
+                        }
+                    },
+                    updatedAt: new Date()
+                };
+            }
+            return comp;
+        }));
+    } catch (error) {
+        console.error('Error updating guideline:', error);
+        throw new Error('Failed to update stage guideline');
+    }
+};
 
   if (loading) {
     return (
@@ -141,122 +264,73 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
+  const competition = getCurrentCompetition();
+
   return (
     <div className="container mx-auto p-6">
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle>Competition Management Dashboard</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6">
-            <select
-              value={selectedCompetition}
-              onChange={(e) => setSelectedCompetition(e.target.value)}
-              className="w-full p-2 border rounded-md"
-            >
-              {competitions.map((comp) => (
-                <option key={comp.id} value={comp.id}>
-                  {comp.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <Tabs defaultValue="overview">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="teams">Teams</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview">
-              {(() => {
-                const competition = getCurrentCompetition();
-                if (!competition) {
-                  return (
-                    <div className="p-4 text-center">
-                      <p>No competition selected</p>
-                    </div>
-                  );
-                }
-                
-                return (
-                  <CompetitionEditor
-                  competition={competition}
-                  onUpdateCompetition={adminService.updateCompetition}
-                  onUpdateStageVisibility={adminService.updateStageVisibility}
-                  onUpdateStageGuideline={adminService.updateStageGuideline}
-                />
-                );
-              })()}
-            </TabsContent>
-
-            <TabsContent value="teams">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Team Name
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Team Leader
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {teams.map(team => (
-                      <tr key={team.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {team.teamName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {team.teamLeader.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            {team.registrationStatus === 'pending' && <Clock className="text-yellow-500" />}
-                            {team.registrationStatus === 'approved' && <Check className="text-green-500" />}
-                            {team.registrationStatus === 'rejected' && <X className="text-red-500" />}
-                            <span className="text-sm capitalize">{team.registrationStatus}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUpdateStatus(team.id, 'approved')}
-                              className="text-green-600 hover:text-green-900"
-                              disabled={team.registrationStatus === 'approved'}
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUpdateStatus(team.id, 'rejected')}
-                              className="text-red-600 hover:text-red-900"
-                              disabled={team.registrationStatus === 'rejected'}
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-          </Tabs>
+          <select
+            value={selectedCompetition}
+            onChange={(e) => setSelectedCompetition(e.target.value)}
+            className="w-full p-2 border rounded-md bg-white"
+          >
+            {competitions.map((comp) => (
+              <option key={comp.id} value={comp.id}>
+                {comp.name}
+              </option>
+            ))}
+          </select>
         </CardContent>
       </Card>
+
+      {!competition ? (
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p>No competition selected</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <CompetitionEditor
+            competition={competition}
+            onUpdateCompetition={handleUpdateCompetition}
+            onUpdateStageVisibility={handleUpdateStageVisibility}
+            onUpdateStageGuideline={handleUpdateStageGuideline}
+          />
+
+          <AlertDialog open={visibilityDialogOpen} onOpenChange={setVisibilityDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {pendingVisibilityChange?.isVisible 
+                    ? 'Show Stage' 
+                    : 'Hide Stage'}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {pendingVisibilityChange?.isVisible
+                    ? 'Are you sure you want to make this stage visible to participants?'
+                    : 'Are you sure you want to hide this stage from participants?'}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => {
+                  setVisibilityDialogOpen(false);
+                  setPendingVisibilityChange(null);
+                }}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={confirmVisibilityChange}>
+                  Confirm
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
 
       {error && (
         <Alert variant="destructive" className="mt-4">

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/competitionService.ts
+
 import { db, storage } from './firebase';
 import { Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -106,8 +107,6 @@ const convertDatesToTimestamps = (obj: any): any => {
   return converted;
 };
 
-
-
 // Admin functions
 export const adminService = {
 
@@ -169,6 +168,8 @@ export const adminService = {
     });
   },
 
+
+  
   // Update stage guideline
   async updateStageGuideline(
     competitionId: string,
@@ -176,32 +177,19 @@ export const adminService = {
     guidelineFile: File,
     description: string
   ) {
-    const storageRef = ref(storage, `guidelines/${competitionId}/stage${stageNumber}/${guidelineFile.name}`);
-    await uploadBytes(storageRef, guidelineFile);
-    const guidelineFileURL = await getDownloadURL(storageRef);
-    
-    await updateDoc(doc(db, 'competitions', competitionId), {
-      [`stages.${stageNumber}.guidelineFileURL`]: guidelineFileURL,
-      [`stages.${stageNumber}.description`]: description,
-      updatedAt: new Date()
-    });
-  },
-
-  // Retrieve all teams data
-  async getAllTeams() {
     try {
-      const teamsCollection = collection(db, 'teams');
-      const teamsSnapshot = await getDocs(teamsCollection);
+      const storageRef = ref(storage, `guidelines/${competitionId}/stage${stageNumber}/${guidelineFile.name}`);
+      await uploadBytes(storageRef, guidelineFile);
+      const guidelineFileURL = await getDownloadURL(storageRef);
       
-      const teams: Team[] = teamsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Team));
-      
-      return teams;
+      await updateDoc(doc(db, 'competitions', competitionId), {
+        [`stages.${stageNumber}.guidelineFileURL`]: guidelineFileURL,
+        [`stages.${stageNumber}.description`]: description,
+        updatedAt: new Date()
+      });
     } catch (error) {
-      console.error('Error retrieving teams:', error);
-      throw new Error('Failed to retrieve teams data');
+      console.error('Error updating stage guideline:', error);
+      throw new Error('Failed to update stage guideline');
     }
   },
 
