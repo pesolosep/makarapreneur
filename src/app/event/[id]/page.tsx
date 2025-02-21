@@ -48,7 +48,7 @@ export default async function page({
     return (
         <div className="font-poppins">
             <Navbar />
-            <Banner title="EVENT #1" />
+            <Banner title={event[id].title} />
             <div className="bg-signalBlack">
                 <div className="py-6">
                     <EventDetail event={event[id]} />
