@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 
 export default function page() {
     const cards = [
-        { id: 1, title: "HIPMI TALKS", link: "#1" },
-        { id: 2, title: "INTERNAL BUSINESS CLASS", link: "#2" },
-        { id: 3, title: "NETWORKING NIGHT", link: "#3" }
+        { id: 1, title: "HIPMI TALKS", link: "/event/hipmitalks" },
+        { id: 2, title: "INTERNAL BUSINESS CLASS", link: "/event/internalbusinessclass" },
+        { id: 3, title: "NETWORKING NIGHT", link: "/event/networkingnight" }
     ];
 
     return (

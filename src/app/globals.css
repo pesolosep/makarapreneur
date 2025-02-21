@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --cornflower-blue: #6E8EEC;
+  --cornflower-blue: 225 77% 68%;
   --june-bud: 75 68% 59%;
-  --signal-black: #282B26;
+  --signal-black: 96 6% 16%;
   --linen: 38 27% 92%;
 }
 
@@ -102,5 +102,16 @@ body {
 
 .clip-path-expanded {
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
