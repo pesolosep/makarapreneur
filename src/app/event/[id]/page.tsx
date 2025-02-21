@@ -9,14 +9,14 @@ export const metadata: Metadata = {
     description: "Event Details Page",
 };
 
-type EventId = 'hipmitalks' | 'internalbusinessclass' | 'networkingnight';
+type EventId = "hipmitalks" | "internalbusinessclass" | "networkingnight";
 
-type Params = { 
-    id: EventId;
-};
-
-export default async function page({ params }: { params: Params }) {
-    const id = await (params).id;
+export default async function page({
+    params,
+}: {
+    params: Promise<{ id: EventId }>;
+}) {
+    const id = (await params).id;
 
     const event = {
         hipmitalks: {
@@ -39,10 +39,10 @@ export default async function page({ params }: { params: Params }) {
             description: [
                 "Networking Night 2025 merupakan salah satu rangkaian acara dalam Makarapreneur 2025 yang bertujuan untuk menyatukan individu dari berbagai sektor bisnis dan wilayah. Acara ini dirancang untuk memperluas jaringan, mendorong kolaborasi, dan menciptakan kesempatan masa depan bagi para peserta.",
                 "Dengan tema “Membangun Koneksi, Menciptakan Peluang”, Networking Night akan dilaksanakan dalam beberapa sesi dengan agenda yang bervariasi, termasuk pertemuan dengan anggota HIPMI PT dari seluruh Indonesia, serta pakar bisnis, juri, dan investor",
-                "Acara ini memberikan platform yang unik bagi para wirausahawan dan profesional untuk berinteraksi, berbagi ide, dan mengeksplorasi kolaborasi potensial yang dapat mendorong pertumbuhan dan kesuksesan bisnis jangka panjang."
+                "Acara ini memberikan platform yang unik bagi para wirausahawan dan profesional untuk berinteraksi, berbagi ide, dan mengeksplorasi kolaborasi potensial yang dapat mendorong pertumbuhan dan kesuksesan bisnis jangka panjang.",
             ],
-            theme: "Membangun Koneksi, Menciptakan Peluang"
-        }
+            theme: "Membangun Koneksi, Menciptakan Peluang",
+        },
     };
 
     return (
