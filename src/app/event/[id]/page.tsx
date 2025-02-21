@@ -16,6 +16,8 @@ type Params = {
 };
 
 export default async function page({ params }: { params: Params }) {
+    const id = await (params).id;
+
     const event = {
         hipmitalks: {
             title: "HIPMI Talks UI",
@@ -49,7 +51,7 @@ export default async function page({ params }: { params: Params }) {
             <Banner title="EVENT #1" />
             <div className="bg-signalBlack">
                 <div className="py-6">
-                    <EventDetail event={event[params.id]} />
+                    <EventDetail event={event[id]} />
                 </div>
             </div>
             <Footer />
