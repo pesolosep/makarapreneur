@@ -3,13 +3,16 @@ import { notFound } from 'next/navigation';
 import BusinessCaseContent from '@/components/competition/BusinessCaseContent';
 import { competitionService } from '@/lib/firebase/competitionService';
 
-interface Props {
-  params: {
-    id: string;
-  }
+// Define the correct props type for Next.js app router pages
+type Props = {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  { params, searchParams }: Props
+): Promise<Metadata> {
   const competition = await competitionService.getCompetitionById(params.id);
 
   if (!competition) {
@@ -30,7 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CompetitionPage({ params }: Props) {
+export default async function CompetitionPage({
+  params,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  searchParams,
+}: Props) {
   const competition = await competitionService.getCompetitionById(params.id);
 
   if (!competition) {
