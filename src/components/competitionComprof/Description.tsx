@@ -13,9 +13,10 @@ interface VariantProps {
     number: number;
     title: string;
     description: string;
+    link:string;
 }
 
-export default function Description({ variant, number, title, description }: VariantProps) {
+export default function Description({ variant, number, title, description, link }: VariantProps) {
     const secondary = variant === "secondary";
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef<HTMLDivElement>(null);
@@ -103,7 +104,7 @@ export default function Description({ variant, number, title, description }: Var
                         {description}
                     </p>
                     <Button 
-                        onClick={() => router.push("#")}
+                        onClick={() => router.push("/competition/" + link)}
                         className={`
                             group relative overflow-hidden rounded-2xl px-6 h-12
                             ${secondary 
