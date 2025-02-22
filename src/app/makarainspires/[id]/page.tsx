@@ -1,46 +1,74 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/firebase';
+// app/makarainspires/[id]/page.tsx
+import { Metadata } from "next";
 import Footer from "@/components/Footer";
 import ShowArticle from "@/components/makarainspires/ShowArticle";
 import Navbar from "@/components/Navbar";
-import { Article } from '@/models/Article';
-import { useParams } from 'next/navigation'
+import { notFound } from 'next/navigation';
+import { getArticle } from "@/lib/firebase/article";
 
+interface Props {
+    params: {
+        id: Promise<string>
+    }
+}
 
-export default function ArticlePage() {
-    const params = useParams<{ id: string }>()
-    const [article, setArticle] = useState<Article | null>(null);
-    const [loading, setLoading] = useState(true);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    try {
+        const id = await params.id;
+        const article = await getArticle(id);
+        
+        if (!article) {
+            return {
+                title: 'Article Not Found | Makarapreneur',
+                description: 'The article you are looking for could not be found.'
+            };
+        }
 
-    useEffect(() => {
-        const fetchArticle = async () => {
-            const docRef = doc(db, 'articles', params.id);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-                setArticle({
-                    id: docSnap.id,
-                    ...docSnap.data(),
-                    createdAt: docSnap.data().createdAt?.toDate(),
-                    updatedAt: docSnap.data().updatedAt?.toDate()
-                } as Article);
+        return {
+            title: `${article.title} | Makarapreneur`,
+            description: article.content.replace(/<[^>]*>/g, '').slice(0, 155) + '...',
+            openGraph: {
+                title: article.title,
+                description: article.content.replace(/<[^>]*>/g, '').slice(0, 155) + '...',
+                images: [article.imageUrl]
             }
-            setLoading(false);
         };
+    } catch (error) {
+        console.error('Error generating metadata:', error);
+        return {
+            title: 'Error | Makarapreneur',
+            description: 'An error occurred while loading the article.'
+        };
+    }
+}
 
-        fetchArticle();
-    }, [params.id]);
+export default async function ArticlePage({ params }: Props) {
+    try {
+        const id = await params.id;
+        const article = await getArticle(id);
 
-    if (loading) return <div>Loading...</div>;
-    if (!article) return <div>Article not found</div>;
+        if (!article) {
+            notFound();
+        }
 
-    return (
-        <div className="font-poppins">
-            <Navbar />
-            <ShowArticle article={article}/>
-            <Footer />
-        </div>
-    );
+        return (
+            <div className="font-poppins">
+                <Navbar/>
+                <ShowArticle article={article}/>
+                <Footer />
+            </div>
+        );
+    } catch (error) {
+        console.error('Error loading article:', error);
+        return (
+            <div className="font-poppins min-h-screen">
+                <Navbar/>
+                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                    <h2 className="text-2xl font-bold">Error Loading Article</h2>
+                    <p>An error occurred while loading the article.</p>
+                </div>
+                <Footer />
+            </div>
+        );
+    }
 }

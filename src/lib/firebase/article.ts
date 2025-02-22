@@ -1,9 +1,72 @@
 // lib/firebase/articles.ts
 import { db, storage } from '@/lib/firebase/firebase';
 import { Article } from '@/models/Article';
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, orderBy, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
+export async function getArticleCount() {
+  const snapshot = await getDocs(collection(db, 'articles'));
+  return snapshot.size;
+}
+
+export async function getHomepageArticles() {
+  const q = query(
+    collection(db, 'articles'), 
+    orderBy('createdAt', 'desc'),
+    limit(3)
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate(),
+    updatedAt: doc.data().updatedAt?.toDate()
+  })) as Article[];
+}
+export async function getRandomArticles(count: number = 2) {
+  // Get total count first for random starting point
+  const snapshot = await getDocs(collection(db, 'articles'));
+  const totalArticles = snapshot.size;
+  
+  if (totalArticles <= count) {
+    // If we don't have enough articles, just return all shuffled
+    const q = query(collection(db, 'articles'));
+    const allDocs = await getDocs(q);
+    const articles = allDocs.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate()
+    })) as Article[];
+
+    // Shuffle
+    for (let i = articles.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [articles[i], articles[j]] = [articles[j], articles[i]];
+    }
+    
+    return articles;
+  }
+
+  // Get more than we need to ensure randomness
+  const q = query(collection(db, 'articles'), limit(count * 2));
+  const querySnapshot = await getDocs(q);
+  const articles = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate(),
+    updatedAt: doc.data().updatedAt?.toDate()
+  })) as Article[];
+
+  // Shuffle and return required count
+  for (let i = articles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [articles[i], articles[j]] = [articles[j], articles[i]];
+  }
+
+  return articles.slice(0, count);
+}
 export async function getArticles() {
   const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);

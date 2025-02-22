@@ -81,7 +81,26 @@ export const competitionService = {
         submissionDate: new Date()
       }
     });
-  }
+  },
+  async getCompetitionById(competitionId: string): Promise<Competition | null> {
+    try {
+      const competitionDoc = await getDoc(doc(db, 'competitions', competitionId));
+      
+      if (!competitionDoc.exists()) {
+        return null;
+      }
+  
+      const data = competitionDoc.data();
+      return {
+        id: competitionDoc.id,
+        ...convertTimestampsToDates(data)
+      } as Competition;
+      
+    } catch (error) {
+      console.error('Error fetching competition:', error);
+      throw new Error('Failed to fetch competition');
+    }
+  },
 };
 
 
@@ -106,6 +125,31 @@ const convertDatesToTimestamps = (obj: any): any => {
   }
   return converted;
 };
+export const convertTimestampsToDates = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (obj instanceof Timestamp) {
+    return obj.toDate();
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertTimestampsToDates(item));
+  }
+
+  const converted: any = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      converted[key] = convertTimestampsToDates(obj[key]);
+    }
+  }
+  return converted;
+};
+
+
+
+
 
 // Admin functions
 export const adminService = {

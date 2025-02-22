@@ -14,7 +14,7 @@ export default function page() {
         <div className="font-poppins">
             <Navbar />
             <Banner title="MAKARA INSPIRES" />
-            <Inspires variant="secondary"/>
+            <Inspires variant="secondary" showAll/>
             <Footer />
         </div>
     );

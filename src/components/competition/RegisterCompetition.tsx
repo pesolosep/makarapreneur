@@ -12,6 +12,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
+import { Competition } from '@/models/Competition';
+
+interface RegisterCompetitionProps {
+  competition: Competition;
+}
 
 interface FormData {
   teamName: string;
@@ -51,7 +56,7 @@ const Step = ({ title, icon, isCompleted, isActive }: StepProps) => (
     </div>
   );
 
-export default function RegisterCompetition() {
+  export default function RegisterCompetition({ competition }: RegisterCompetitionProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { user, loading } = useAuth();
@@ -193,15 +198,13 @@ export default function RegisterCompetition() {
         registrationDate: new Date(),
       };
 
-      const competitionId = 'business-plan';
-      const userId = user?.uid;
       if (!formData.registrationFile) {
         throw new Error('Registration file is required');
       }
 
       await competitionService.registerTeam(
-        userId,
-        competitionId,
+        user.uid,
+        competition.id,
         teamData,
         formData.registrationFile
       );
@@ -243,9 +246,9 @@ export default function RegisterCompetition() {
       <div className="bg-gradient-to-r from-juneBud to-juneBud/90 text-signalBlack mt-24">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="max-w-3xl">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">Business Plan Competition Registration</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">{competition.name}</h1>
             <p className="text-xl text-signalBlack/80 leading-relaxed">
-              Join the prestigious Makarapreneur Business Plan Competition and showcase your innovative ideas.
+              {competition.description || 'Join the competition and showcase your innovative ideas.'}
             </p>
           </div>
         </div>

@@ -1,36 +1,73 @@
-// components/competition/AssignmentCard.tsx
+"use client";
+
 import { useState, useRef } from 'react';
-import { Clock, Download, Upload, ChevronUp, ChevronDown, Eye, AlertTriangle } from 'lucide-react';
+import { Clock, Download, Upload, ChevronDown, Eye, AlertTriangle } from 'lucide-react';
 import { Stage } from '@/models/Competition';
 import { TeamStageSubmission, Team } from '@/models/Team';
 import { Timestamp } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
- AlertDialog,
- AlertDialogAction,
- AlertDialogCancel,
- AlertDialogContent,
- AlertDialogDescription,
- AlertDialogFooter,
- AlertDialogHeader,
- AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { cn } from '@/lib/utils';
 
 interface Assignment extends Stage {
- id: string;
- stageNumber: number;
- submission?: TeamStageSubmission;
- submissionEnabled: boolean;
+  id: string;
+  stageNumber: number;
+  submission?: TeamStageSubmission;
+  submissionEnabled: boolean;
 }
 
 interface AssignmentCardProps {
- assignment: Assignment;
- onDownload: (id: string) => void;
- onUpload: (id: string, file: File) => void;
- team?: Team | null;
+  assignment: Assignment;
+  onDownload: (id: string) => void;
+  onUpload: (id: string, file: File) => void;
+  team?: Team | null;
 }
 
+const cardVariants = {
+  hidden: { 
+    opacity: 0,
+    y: 20,
+  },
+  visible: { 
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      duration: 0.5,
+      bounce: 0.3
+    }
+  }
+};
+
+const contentVariants = {
+  hidden: { 
+    opacity: 0,
+    height: 0,
+    transition: {
+      duration: 0.2,
+    }
+  },
+  visible: { 
+    opacity: 1,
+    height: "auto",
+    transition: {
+      duration: 0.3,
+      ease: "easeOut"
+    }
+  }
+};
+
 export function AssignmentCard({ assignment, onDownload, onUpload, team }: AssignmentCardProps) {
- const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
  const [fileToSubmit, setFileToSubmit] = useState<File | null>(null);
  const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +92,7 @@ export function AssignmentCard({ assignment, onDownload, onUpload, team }: Assig
    return new Date() > deadline;
  };
 
+ // eslint-disable-next-line @typescript-eslint/no-unused-vars
  const getStatusDisplay = (status: string) => {
    if (assignment.stageNumber === 1) {
      if (!team) {
@@ -143,35 +181,65 @@ export function AssignmentCard({ assignment, onDownload, onUpload, team }: Assig
    onDownload(assignment.id);
  };
 
- return (
-   <div className="bg-juneBud rounded-lg shadow-lg mb-6">
-     <div 
-       className="p-6 flex justify-between items-center cursor-pointer"
-       onClick={() => setIsExpanded(!isExpanded)}
-     >
-       <div className="flex-1">
-         <h3 className="font-semibold text-3xl tracking-widest text-signalBlack">
-           {assignment.title}
-         </h3>
-         <div className="flex items-center text-base text-signalBlack mt-3">
-           <Clock className="w-5 h-5 mr-2" />
-           <p className="text-sm">
-             <span className="font-medium">Deadline: </span>
-             {assignment?.deadline ? formatDeadline(assignment.deadline) : 'Loading...'}
-           </p>
-         </div>
-       </div>
-       <div className="flex items-center gap-2">
-         {isExpanded ? 
-           <ChevronUp className="w-6 h-6 text-signalBlack" /> : 
-           <ChevronDown className="w-6 h-6 text-signalBlack" />
-         }
-       </div>
-     </div>
 
-     {isExpanded && (
-       <div className="px-6 pb-6 border-t border-signalBlack/10">
-         <div className="mt-4">
+
+  return (
+    <motion.div 
+      className=" bg-juneBud rounded-lg overflow-hidden mb-6 hover:shadow-lg transition-shadow duration-300"
+      variants={cardVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.6 }}
+    >
+      <div 
+        className={cn(
+          "p-6 flex justify-between items-center cursor-pointer transition-colors duration-200",
+          isExpanded ? "bg-accent/5" : "hover:bg-accent/5"
+        )}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h3 className="font-semibold text-2xl text-card-foreground font-poppins">
+              {assignment.title}
+            </h3>
+            {assignment.submission?.status && (
+              <div className={cn(
+                "px-3 py-1 rounded-full text-sm font-medium",
+                assignment.submission.status === 'cleared' && "bg-juneBud/20 text-juneBud",
+                assignment.submission.status === 'rejected' && "bg-destructive/20 text-destructive",
+                assignment.submission.status === 'pending' && "bg-muted/20 text-muted-foreground"
+              )}>
+                {assignment.submission.status.toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center text-base text-muted-foreground mt-3">
+            <Clock className="w-4 h-4 mr-2" />
+            <p className="text-sm">
+              <span className="font-medium">Deadline: </span>
+              {assignment?.deadline ? formatDeadline(assignment.deadline) : 'Loading...'}
+            </p>
+          </div>
+        </div>
+        <motion.div 
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <ChevronDown className="w-6 h-6 text-muted-foreground" />
+        </motion.div>
+      </div>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            variants={contentVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            className="px-6 pb-6 border-t border-gray-400"
+          >
+            <div className="mt-4">
            <div className="space-y-3">
              {team && assignment.submission?.submissionURL && (
                <div className="flex items-center gap-2">
@@ -197,10 +265,10 @@ export function AssignmentCard({ assignment, onDownload, onUpload, team }: Assig
                </p>
              )}
 
-             <p className="text-base">
+             {/* <p className="text-base">
                <span className="font-medium">Status:</span>{' '}
                {getStatusDisplay(assignment.submission?.status || 'pending')}
-             </p>
+             </p> */}
 
              {team && assignment.submission?.feedback && (
                <p className="text-base">
@@ -218,105 +286,132 @@ export function AssignmentCard({ assignment, onDownload, onUpload, team }: Assig
            </div>
          </div>
 
-         <div className="mt-6">
-           <p className="text-base text-signalBlack font-medium max-w-[700px]">
-             {assignment.description}
-           </p>
-         </div>
+            <div className="mt-6">
+              <p className="text-base text-card-foreground/90 font-medium max-w-[700px]">
+                {assignment.description}
+              </p>
+            </div>
 
-         <div className="mt-6 flex gap-4">
-           <button
-             onClick={handleDownloadClick}
-             className="flex items-center gap-2 px-6 py-3 text-base font-medium text-signalBlack bg-white/80 rounded-md hover:bg-white transition-colors"
-           >
-             <Download className="w-5 h-5" />
-             Download Guidelines
-           </button>
-           
-           {!shouldHideSubmission() && (
-             <div className="relative">
-               <input
-                 ref={fileInputRef}
-                 type="file"
-                 id={`file-upload-${assignment.id}`}
-                 className="hidden"
-                 accept=".pdf,.doc,.docx"
-                 onChange={handleFileSelect}
-                 disabled={isSubmissionDisabled() || isDeadlinePassed()}
-               />
-               <label
-                 htmlFor={`file-upload-${assignment.id}`}
-                 className={`flex items-center gap-2 px-6 py-3 text-base font-medium text-white bg-signalBlack rounded-md hover:bg-signalBlack/80 transition-colors cursor-pointer
-                   ${(isSubmissionDisabled() || isDeadlinePassed()) ? 'opacity-50 cursor-not-allowed' : ''}`}
-               >
-                 <Upload className="w-5 h-5" />
-                 {assignment.submission?.submissionURL ? 'Update Submission' : 'Upload Submission'}
-               </label>
-             </div>
-           )}
-         </div>
+            <div className="mt-6 flex flex-wrap gap-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDownloadClick}
+                className="flex items-center gap-2 px-6 py-3 text-base font-medium 
+                  bg-accent text-accent-foreground rounded-md hover:bg-accent/90 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                Download Guidelines
+              </motion.button>
+              
+              {!shouldHideSubmission() && (
+                <div className="relative">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    id={`file-upload-${assignment.id}`}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileSelect}
+                    disabled={isSubmissionDisabled() || isDeadlinePassed()}
+                  />
+                  <motion.label
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    htmlFor={`file-upload-${assignment.id}`}
+                    className={cn(
+                      "flex items-center gap-2 px-6 py-3 text-base font-medium",
+                      "bg-primary text-primary-foreground rounded-md",
+                      "hover:bg-primary/90 transition-colors cursor-pointer",
+                      (isSubmissionDisabled() || isDeadlinePassed()) && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    <Upload className="w-5 h-5" />
+                    {assignment.submission?.submissionURL ? 'Update Submission' : 'Upload Submission'}
+                  </motion.label>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-         <AlertDialog open={showConfirmDialog} onOpenChange={handleDialogClose}>
-           <AlertDialogContent>
-             <AlertDialogHeader>
-               <AlertDialogTitle>Confirm Submission</AlertDialogTitle>
-               <AlertDialogDescription className="space-y-2">
-                 <p>
-                   {assignment.submission?.submissionURL
-                     ? 'Are you sure you want to update your submission?'
-                     : 'Are you sure you want to submit this file?'}
-                 </p>
-                 {fileToSubmit && (
-                   <div className="p-3 bg-gray-100 rounded-md">
-                     <p className="font-medium">Selected file:</p>
-                     <p className="text-sm">{fileToSubmit.name}</p>
-                     <p className="text-sm text-gray-500">
-                       Size: {(fileToSubmit.size / 1024 / 1024).toFixed(2)} MB
-                     </p>
-                   </div>
-                 )}
-                 {assignment.submission?.submissionURL && (
-                   <p className="text-yellow-600">
-                     This will replace your current submission.
-                   </p>
-                 )}
-               </AlertDialogDescription>
-             </AlertDialogHeader>
-             <AlertDialogFooter>
-               <AlertDialogCancel onClick={handleDialogClose}>
-                 Cancel
-               </AlertDialogCancel>
-               <AlertDialogAction onClick={handleConfirmSubmission}>
-                 Confirm
-               </AlertDialogAction>
-             </AlertDialogFooter>
-           </AlertDialogContent>
-         </AlertDialog>
-       </div>
-     )}
-   </div>
- );
+      <AlertDialog open={showConfirmDialog} onOpenChange={handleDialogClose}>
+      <AlertDialog open={showConfirmDialog} onOpenChange={handleDialogClose}>
+  <AlertDialogContent className="bg-card border-border">
+    <AlertDialogHeader>
+      <AlertDialogTitle className="text-xl font-semibold font-poppins">
+        Confirm Submission
+      </AlertDialogTitle>
+      <AlertDialogDescription className="space-y-4">
+        <p className="text-card-foreground/80">
+          {assignment.submission?.submissionURL
+            ? 'Are you sure you want to update your submission? This action cannot be undone.'
+            : 'Are you sure you want to submit this file? Please ensure all information is correct.'}
+        </p>
+        {fileToSubmit && (
+          <div className="p-4 rounded-lg bg-accent/5 border border-border space-y-2">
+            <p className="font-medium text-card-foreground">Selected file:</p>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Eye className="w-4 h-4" />
+              <p className="text-sm">{fileToSubmit.name}</p>
+            </div>
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Size: {(fileToSubmit.size / 1024 / 1024).toFixed(2)} MB
+            </p>
+          </div>
+        )}
+        {assignment.submission?.submissionURL && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
+            <AlertTriangle className="w-5 h-5" />
+            <p className="text-sm font-medium">
+              This will replace your current submission.
+            </p>
+          </div>
+        )}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel 
+        className="bg-accent text-accent-foreground hover:bg-accent/80"
+        onClick={handleDialogClose}
+      >
+        Cancel
+      </AlertDialogCancel>
+      <AlertDialogAction
+        className="bg-primary text-primary-foreground hover:bg-primary/90"
+        onClick={handleConfirmSubmission}
+      >
+        {assignment.submission?.submissionURL ? 'Update Submission' : 'Submit File'}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+      </AlertDialog>
+    </motion.div>
+  );
 }
 
 interface AssignmentListProps {
- assignments: Assignment[];
- onDownload: (id: string) => void;
- onUpload: (id: string, file: File) => void;
- team?: Team | null;
+  assignments: Assignment[];
+  onDownload: (id: string) => void;
+  onUpload: (id: string, file: File) => void;
+  team?: Team | null;
 }
 
 export function AssignmentList({ assignments, onDownload, onUpload, team }: AssignmentListProps) {
- return (
-   <div className="max-w-5xl mx-auto px-6">
-     {assignments.map((assignment) => (
-       <AssignmentCard
-         key={assignment.id}
-         assignment={assignment}
-         onDownload={onDownload}
-         onUpload={onUpload}
-         team={team}
-       />
-     ))}
-   </div>
- );
+  return (
+    <div className="max-w-7xl mx-auto ">
+      {assignments.map((assignment) => (
+        <AssignmentCard
+          key={assignment.id}
+          assignment={assignment}
+          onDownload={onDownload}
+          onUpload={onUpload}
+          team={team}
+        />
+      ))}
+    </div>
+  );
 }
