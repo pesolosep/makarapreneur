@@ -40,9 +40,9 @@ import { twMerge } from "tailwind-merge";
 
 const competitionItems = [
     { name: "Competitions", href: "/competition" },
-    { name: "BPC - SMA", href: "/competition/bpc-sma" },
-    { name: "BPC - Mahasiswa", href: "/competition/bpc-mahasiswa" },
-    { name: "BCC - Mahasiswa", href: "/competition/bcc-mahasiswa" },
+    { name: "BPC - SMA", href: "/competition/highschool-business-plan" },
+    { name: "BPC - Mahasiswa", href: "/competition/business-plan" },
+    { name: "BCC - Mahasiswa", href: "/competition/business-case" },
 ];
 
 const navigationItems = [

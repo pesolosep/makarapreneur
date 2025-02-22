@@ -78,7 +78,7 @@ const Step = ({ title, icon, isCompleted, isActive }: StepProps) => (
     if (loading) return;
     
     if (!user) {
-      router.push('/login');
+      router.push('/authentication/login');
       return;
     }
   }, [user, loading, router]);
