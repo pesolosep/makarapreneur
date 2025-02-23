@@ -8,7 +8,7 @@ export interface TeamMember {
 export interface TeamStageSubmission {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [x: string]: any;
-  status: 'pending' | 'cleared' | 'rejected';
+  status: 'pending' | 'cleared' | 'rejected' | 'approved';
   submissionURL?: string;
   submissionDate?: Date;
   feedback?: string;

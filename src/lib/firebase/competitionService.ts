@@ -198,18 +198,29 @@ export const adminService = {
     });
   },
 
-  // Update stage clearance
   async updateStageClearance(
     teamId: string,
     stageNumber: number,
     status: 'cleared' | 'rejected',
     feedback?: string
   ) {
-    await updateDoc(doc(db, 'teams', teamId), {
-      [`stages.${stageNumber}.status`]: status,
-      [`stages.${stageNumber}.feedback`]: feedback,
-      updatedAt: new Date()
-    });
+    try {
+      // Create update data object
+      const updateData: any = {
+        [`stages.${stageNumber}.status`]: status,
+        updatedAt: Timestamp.fromDate(new Date())
+      };
+
+      // Only add feedback field if it's provided
+      if (feedback) {
+        updateData[`stages.${stageNumber}.feedback`] = feedback;
+      }
+
+      await updateDoc(doc(db, 'teams', teamId), updateData);
+    } catch (error) {
+      console.error('Error updating stage clearance:', error);
+      throw new Error('Failed to update stage clearance');
+    }
   },
 
 
@@ -237,24 +248,35 @@ export const adminService = {
     }
   },
 
-  // Retrieve teams for a specific competition
-  async getTeamsByCompetition(competitionId: string) {
-    try {
-      const teamsCollection = collection(db, 'teams');
-      const q = query(teamsCollection, where('competitionId', '==', competitionId));
-      const teamsSnapshot = await getDocs(q);
-      
-      const teams: Team[] = teamsSnapshot.docs.map(doc => ({
+// Also update the getTeamsByCompetition function in your adminService:
+async getTeamsByCompetition(competitionId: string) {
+  try {
+    const teamsCollection = collection(db, 'teams');
+    const q = query(teamsCollection, where('competitionId', '==', competitionId));
+    const teamsSnapshot = await getDocs(q);
+    
+    return teamsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
         id: doc.id,
-        ...doc.data()
-      } as Team));
-      
-      return teams;
-    } catch (error) {
-      console.error('Error retrieving teams for competition:', error);
-      throw new Error('Failed to retrieve teams for the specified competition');
-    }
-  },
+        ...data,
+        registrationDate: data.registrationDate?.toDate(), // Convert Firestore Timestamp to Date
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+        stages: Object.entries(data.stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+          ...acc,
+          [key]: {
+            ...value,
+            submissionDate: value.submissionDate?.toDate() // Convert Firestore Timestamp to Date
+          }
+        }), {})
+      };
+    }) as Team[];
+  } catch (error) {
+    console.error('Error getting teams:', error);
+    throw new Error('Failed to get teams');
+  }
+},
 
   // Retrieve teams by registration status
   async getTeamsByRegistrationStatus(status: 'pending' | 'approved' | 'rejected') {
@@ -273,7 +295,134 @@ export const adminService = {
       console.error('Error retrieving teams by registration status:', error);
       throw new Error('Failed to retrieve teams with specified registration status');
     }
-  }
+  },
 
+  async getTeamsByStageWithPreviousCheck(
+    competitionId: string,
+    stageNumber: number,
+    checkPreviousStages: boolean = false
+  ) {
+    try {
+      const teamsCollection = collection(db, 'teams');
+      const baseQuery = query(
+        teamsCollection, 
+        where('competitionId', '==', competitionId),
+        where('registrationStatus', '==', 'approved')
+      );
+      const teamsSnapshot = await getDocs(baseQuery);
+      
+      return teamsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        const team = {
+          id: doc.id,
+          ...data,
+          registrationDate: data.registrationDate?.toDate(),
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+          stages: Object.entries(data.stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+            ...acc,
+            [key]: {
+              ...value,
+              submissionDate: value.submissionDate?.toDate()
+            }
+          }), {})
+        } as Team;
+  
+        if (!checkPreviousStages || stageNumber === 1) {
+          return { ...team, allPreviousStagesCleared: true };
+        }
+  
+        // Custom progression checks based on stage number
+        let allPreviousStagesCleared = true;
+  
+        if (stageNumber === 2) {
+          // For stage 2, check if stage 1 is cleared
+          const stage1 = team.stages[1];
+          allPreviousStagesCleared = stage1?.status === 'cleared';
+        } else if (stageNumber === 3) {
+          // For stage 3, check if stage 1 is cleared AND stage 2 is paid
+          const stage1 = team.stages[1];
+          const stage2 = team.stages[2];
+          allPreviousStagesCleared = 
+            stage1?.status === 'cleared' && 
+            stage2?.status === 'cleared' && 
+            stage2?.paidStatus === true;
+        }
+  
+        return { ...team, allPreviousStagesCleared };
+      });
+    } catch (error) {
+      console.error('Error getting teams by stage:', error);
+      throw new Error('Failed to get teams by stage');
+    }
+  },
+
+  async searchTeams(
+    competitionId: string,
+    searchTerm: string
+  ) {
+    try {
+      const teamsCollection = collection(db, 'teams');
+      // Add registration status check here too for consistency
+      const q = query(
+        teamsCollection, 
+        where('competitionId', '==', competitionId),
+        where('registrationStatus', '==', 'approved')
+      );
+      const teamsSnapshot = await getDocs(q);
+      
+      const searchTermLower = searchTerm.toLowerCase().trim();
+      
+      // Return all teams if search term is empty
+      if (!searchTermLower) {
+        return teamsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          registrationDate: doc.data().registrationDate?.toDate(),
+          createdAt: doc.data().createdAt?.toDate(),
+          updatedAt: doc.data().updatedAt?.toDate(),
+          stages: Object.entries(doc.data().stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+            ...acc,
+            [key]: {
+              ...value,
+              submissionDate: value.submissionDate?.toDate()
+            }
+          }), {})
+        })) as Team[];
+      }
+      
+      return teamsSnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            registrationDate: data.registrationDate?.toDate(),
+            createdAt: data.createdAt?.toDate(),
+            updatedAt: data.updatedAt?.toDate(),
+            stages: Object.entries(data.stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+              ...acc,
+              [key]: {
+                ...value,
+                submissionDate: value.submissionDate?.toDate()
+              }
+            }), {})
+          } as Team;
+        })
+        .filter(team => 
+          team.teamName.toLowerCase().includes(searchTermLower) ||
+          team.teamLeader.name.toLowerCase().includes(searchTermLower) ||
+          team.teamLeader.email.toLowerCase().includes(searchTermLower) ||
+          // Also search team members
+          (team.members.member1?.name.toLowerCase().includes(searchTermLower) ?? false) ||
+          (team.members.member2?.name.toLowerCase().includes(searchTermLower) ?? false) ||
+          (team.members.member1?.email?.toLowerCase().includes(searchTermLower) ?? false) ||
+          (team.members.member2?.email?.toLowerCase().includes(searchTermLower) ?? false)
+        );
+    } catch (error) {
+      console.error('Error searching teams:', error);
+      throw new Error('Failed to search teams');
+    }
+  }
   
 };
