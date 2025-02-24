@@ -9,11 +9,8 @@ import jasaMarga from "@/assets/sponsorsLogo/jasaMarga.png";
 import jiwasraya from "@/assets/sponsorsLogo/jiwasraya.png";
 import Image from "next/image";
 
-import beritaLomba from "@/assets/medpar/BeritaLomba.png";
-import kompasianaBiru from "@/assets/medpar/KompasianaBiru.png";
-import marketeers from "@/assets/medpar/Marketeers.webp";
-import studentxCEOSsChapterJakarta from "@/assets/medpar/StudentxCEOsChapterJakarta.webp";
-import tempo from "@/assets/medpar/Tempo.png";
+import { getDocuments } from "@/lib/firebase/crud";
+import { Medpar } from "@/models/Medpar";
 
 const sponsorsLink = [
     bankMandiri,
@@ -26,34 +23,15 @@ const sponsorsLink = [
     jiwasraya,
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const medpar: any[] = [
-    beritaLomba,
-    kompasianaBiru,
-    marketeers,
-    studentxCEOSsChapterJakarta,
-    tempo,
-    beritaLomba,
-    kompasianaBiru,
-    marketeers,
-    studentxCEOSsChapterJakarta,
-    tempo,
-];
-
 const sponsors = Array.from({ length: sponsorsLink.length }).map((_, i) => ({
-    id: i + 1,
+    id: (i + 1).toString(),
     name: `Sponsor ${i + 1}`,
-    imageLink: sponsorsLink[i],
+    imageUrl: sponsorsLink[i],
 }));
 
-const mediaPartners = Array.from({ length: medpar.length }).map((_, i) => ({
-    id: i + 1,
-    name: `Media Partner ${i + 1}`,
-    imageLink: medpar[i],
-}));
 
 interface ScrollingWrapperProps {
-    items: Array<{ id: number; name: string; imageLink: string }>;
+    items: Array<{ id?: string; name: string; imageUrl: string }>;
     className?: string;
 }
 
@@ -71,7 +49,7 @@ function ScrollingWrapper({ items, className = "" }: ScrollingWrapperProps) {
     }, [items]);
 
     // Duplikasi items untuk memastikan transisi mulus
-    const duplicatedItems = [...items, ...items, ...items];
+    const duplicatedItems = [...items, ...items, ...items, ...items];
 
     return (
         <div
@@ -99,7 +77,7 @@ function ScrollingWrapper({ items, className = "" }: ScrollingWrapperProps) {
                     >
                         <CardContent className="flex aspect-square items-center justify-center p-6 w-[140px] lg:w-[200px]">
                             <Image
-                                src={item.imageLink}
+                                src={item.imageUrl}
                                 alt={item.name}
                                 width={200}
                                 height={200}
@@ -113,6 +91,16 @@ function ScrollingWrapper({ items, className = "" }: ScrollingWrapperProps) {
 }
 
 export default function Sponsors() {
+    const [mediaPartners, setMediaPartners] = useState<Medpar[]>([]);
+
+    useEffect(() => {
+        const fetchPartners = async () => {
+            const partners = await getDocuments<Medpar>("mediaPartners")
+            setMediaPartners(partners)
+        }   
+        fetchPartners()
+    }, [])
+
     return (
         <div className="bg-signalBlack text-linen">
             <div className="flex flex-col justify-center items-center py-12">

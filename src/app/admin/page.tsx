@@ -11,7 +11,6 @@ import { doc, collection, getDoc, getDocs, setDoc, Timestamp } from 'firebase/fi
 import { initialCompetitions } from '@/lib/competitionData';
 import CompetitionEditor from '@/components/competition/CompetitionEditor';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 interface Stage {
@@ -44,15 +43,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
     stageId: string;
     isVisible: boolean;
   } | null>(null);
-  const { user, isAdmin } = useAuth();
-  const router = useRouter();
-  useEffect(() => {
-    if (!loading && user) {
-      if (!isAdmin) {
-        router.push('/');
-      }
-    }
-  }, [user, isAdmin, router, loading]);
+  const { isAdmin } = useAuth();
+  
+
   
   const initializeCompetitions = async (): Promise<void> => {
     try {
@@ -118,6 +111,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
   useEffect(() => {
     initializeCompetitions();
   }, []);
+
+  if (!isAdmin) return <div>Access denied</div>;
 
   const getCurrentCompetition = (): Competition | undefined => 
     competitions.find(comp => comp.id === selectedCompetition);
