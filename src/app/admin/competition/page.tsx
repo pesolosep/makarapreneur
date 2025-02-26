@@ -13,12 +13,13 @@ import CompetitionEditor from '@/components/competition/CompetitionEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { adminService } from '@/lib/firebase/competitionService';
+import AdminNavbar from '@/components/admin/NavbarAdmin';
 
 interface Stage {
   title: string;
   description: string;
   deadline: Date;
-  isVisible?: boolean;
+  visibility: boolean;
   guidelineFileURL: string;
 }
 
@@ -36,26 +37,27 @@ interface AdminDashboardProps {}
 
 const AdminDashboard: React.FC<AdminDashboardProps> = () => {
   const [selectedCompetition, setSelectedCompetition] = useState<string>(initialCompetitions[0].id);
-  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [visibilityDialogOpen, setVisibilityDialogOpen] = useState<boolean>(false);
   const [pendingVisibilityChange, setPendingVisibilityChange] = useState<{
     stageId: string;
-    isVisible: boolean;
-  } | null>(null);
-  const [fileUploadDialog, setFileUploadDialog] = useState<{
+    visibility: boolean;
+} | null>(null);
+const [fileUploadDialog, setFileUploadDialog] = useState<{
     isOpen: boolean;
     stageId: string;
     file: File | null;
     description: string;
-  } | null>(null);
+} | null>(null);
 
+const [loading, setLoading] = useState<boolean>(true);
   const { user, isAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user && !isAdmin) {
+    if (loading){return}
+    if ( user && !isAdmin) {
       router.push('/');
     }
   }, [user, isAdmin, router, loading]);
@@ -160,6 +162,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
         updatedAt: Timestamp.fromDate(new Date())
       }, { merge: true });
       
+      // Update local state after successful API call
       setCompetitions(prev => prev.map(comp => 
         comp.id === competitionId 
           ? { ...comp, ...updates, updatedAt: new Date() } 
@@ -172,22 +175,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
 
   const handleUpdateStageVisibility = async (
     stageId: string, 
-    isVisible: boolean
+    visibility: boolean
   ): Promise<void> => {
-    setPendingVisibilityChange({ stageId, isVisible });
+    // Store the pending change and open the confirmation dialog
+    setPendingVisibilityChange({ stageId, visibility });
     setVisibilityDialogOpen(true);
   };
 
   const confirmVisibilityChange = async (): Promise<void> => {
     if (!pendingVisibilityChange) return;
-    const { stageId, isVisible } = pendingVisibilityChange;
+    const { stageId, visibility } = pendingVisibilityChange;
 
     try {
       const competition = getCurrentCompetition();
       if (!competition) return;
 
-      await adminService.updateStageVisibility(competition.id, Number(stageId), isVisible);
+      // Call the API to update visibility
+      await adminService.updateStageVisibility(competition.id, Number(stageId), visibility);
 
+      // Only update the local state after successful API call
       setCompetitions(prev => prev.map(comp => {
         if (comp.id === competition.id) {
           return {
@@ -196,7 +202,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
               ...comp.stages,
               [stageId]: {
                 ...comp.stages[stageId],
-                isVisible
+                visibility // Use the correct property name here
               }
             },
             updatedAt: new Date()
@@ -205,6 +211,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
         return comp;
       }));
 
+      // Close the dialog and reset the pending change
       setVisibilityDialogOpen(false);
       setPendingVisibilityChange(null);
     } catch (error) {
@@ -260,6 +267,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
 
   return (
     <div className="container mx-auto p-6">
+        <AdminNavbar></AdminNavbar>
+         <div className='py-12'></div>
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Competition Management Dashboard</CardTitle>
@@ -272,7 +281,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
           >
             {competitions.map((comp) => (
               <option key={comp.id} value={comp.id}>
-                {comp.name}
+              {comp.name}
               </option>
             ))}
           </select>
@@ -298,12 +307,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  {pendingVisibilityChange?.isVisible 
-                    ? 'Show Stage' 
+                  {pendingVisibilityChange?.visibility 
+                    ? 'Make Stage Public' 
                     : 'Hide Stage'}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  {pendingVisibilityChange?.isVisible
+                  {pendingVisibilityChange?.visibility
                     ? 'Are you sure you want to make this stage visible to participants?'
                     : 'Are you sure you want to hide this stage from participants?'}
                 </AlertDialogDescription>
@@ -359,7 +368,3 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
 };
 
 export default AdminDashboard;
-
-function setFileUploadDialog(arg0: null) {
-    throw new Error('Function not implemented.');
-}

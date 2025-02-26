@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
 import { Calendar } from '@/components/ui/calendar';
-import { Eye, EyeOff, Pencil, Upload, Loader2 } from 'lucide-react';
+import { Pencil, Upload, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Stage {
@@ -34,7 +34,7 @@ interface Stage {
   guidelineFileURL: string;
   description: string;
   deadline: Date;
-  isVisible?: boolean;
+  visibility: boolean;
 }
 
 interface Competition {
@@ -55,7 +55,7 @@ interface FormData {
 interface CompetitionEditorProps {
   competition: Competition;
   onUpdateCompetition: (id: string, updates: Partial<Competition>) => Promise<void>;
-  onUpdateStageVisibility: (stageId: string, isVisible: boolean) => Promise<void>;
+  onUpdateStageVisibility: (stageId: string, visibility: boolean) => Promise<void>;
   onUpdateStageGuideline: (stageId: string, file: File, description: string) => Promise<void>;
 }
 
@@ -159,25 +159,15 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
     const loadingKey = `visibility-${stageNumber}`;
     try {
       setLoading(prev => ({ ...prev, [loadingKey]: true }));
-      setError('');
 
       const currentStage = formData.stages[stageNumber];
-      const newVisibility = !currentStage.isVisible;
+      const newVisibility = !currentStage.visibility;
 
+      // We only call the parent function to show the dialog
       await onUpdateStageVisibility(stageNumber, newVisibility);
-
-      setFormData(prev => ({
-        ...prev,
-        stages: {
-          ...prev.stages,
-          [stageNumber]: {
-            ...prev.stages[stageNumber],
-            isVisible: newVisibility
-          }
-        }
-      }));
-
-      showSuccess(`Stage visibility updated successfully`);
+      
+      // The actual state change will happen in the parent component
+      // after confirmation, so we don't update local state here
     } catch (error) {
       setError('Failed to update stage visibility');
     } finally {
@@ -466,20 +456,23 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Stage {stageNumber}: {stage.title}</CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleStageVisibilityToggle(stageNumber)}
-                        disabled={loading[`visibility-${stageNumber}`]}
-                      >
-                        {loading[`visibility-${stageNumber}`] ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : stage.isVisible ? (
-                          <Eye className="h-4 w-4" />
-                        ) : (
-                          <EyeOff className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-medium ${stage.visibility ? "text-green-600" : "text-amber-600"}`}>
+                          {stage.visibility ? "Public" : "Hidden"}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStageVisibilityToggle(stageNumber)}
+                          disabled={loading[`visibility-${stageNumber}`]}
+                        >
+                          {loading[`visibility-${stageNumber}`] ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            stage.visibility ? "Make Hidden" : "Make Public"
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">

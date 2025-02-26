@@ -18,15 +18,11 @@ import { db } from '@/lib/firebase/firebase';
 import { adminService } from '@/lib/firebase/competitionService';
 import type { Competition } from '@/models/Competition';
 import type { Team } from '@/models/Team';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import AdminNavbar from '@/components/admin/NavbarAdmin';
 
-interface EmailTemplate {
-  subject: string;
-  content: string;
-}
 
-interface EmailTemplates {
-  [key: string]: EmailTemplate;
-}
 
 interface SelectedTeams {
   [key: string]: boolean;
@@ -34,8 +30,19 @@ interface SelectedTeams {
 
 type RegistrationStatus = 'all' | 'pending' | 'approved' | 'rejected';
 
+  
 const EmailPage = () => {
   // Team management states
+  const [loading] = useState<boolean>(true);
+  const { user, isAdmin } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading){return}
+    if ( user && !isAdmin) {
+      router.push('/');
+    }
+  }, [user, isAdmin, router, loading]);
   const [selectedCompetition, setSelectedCompetition] = useState<string>('');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -50,7 +57,6 @@ const EmailPage = () => {
   const [sending, setSending] = useState(false);
   const [content, setContent] = useState('');
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState('');
 
   // Editor setup
   const editor = useEditor({
@@ -66,53 +72,7 @@ const EmailPage = () => {
     },
   });
 
-  // Email templates
-  const emailTemplates: EmailTemplates = {
-    welcome: {
-      subject: 'Welcome to Our Competition!',
-      content: `<p>Dear Team [TeamName],</p>
-<p>Thank you for registering for our competition. We're excited to have you on board!</p>
-<p>Here are some important details about the upcoming events:</p>
-<ul>
-  <li>Competition timeline</li>
-  <li>Important deadlines</li>
-  <li>Required materials</li>
-</ul>
-<p>Best regards,<br/>Admin Team</p>`
-    },
-    reminder: {
-      subject: 'Upcoming Deadline Reminder',
-      content: `<p>Dear [TeamName] Team,</p>
-<p>This is a friendly reminder that the deadline for the current stage is approaching. Please ensure you submit all required materials by the deadline.</p>
-<p>If you have any questions, feel free to reach out to us.</p>
-<p>Best regards,<br/>Admin Team</p>`
-    },
-    announcement: {
-      subject: 'Important Announcement',
-      content: `<p>Dear Participants,</p>
-<p>We have an important announcement regarding the competition.</p>
-<p>[Announcement details go here]</p>
-<p>Thank you for your attention.</p>
-<p>Best regards,<br/>Admin Team</p>`
-    },
-    'stage-cleared': {
-      subject: 'Congratulations - You Advanced to the Next Stage!',
-      content: `<p>Dear Team [TeamName],</p>
-<p>Congratulations! We're pleased to inform you that your team has successfully cleared the current stage and advanced to the next round of the competition.</p>
-<p>Please check your dashboard for details about the next stage and its requirements.</p>
-<p>Best regards,<br/>Admin Team</p>`
-    },
-    'stage-rejected': {
-      subject: 'Submission Status Update',
-      content: `<p>Dear Team [TeamName],</p>
-<p>Thank you for your submission to our competition. After careful review, we regret to inform you that your submission did not meet the requirements for advancing to the next stage.</p>
-<p>Here is the feedback from our judges:</p>
-<p>[Feedback details]</p>
-<p>We appreciate your participation and hope you'll consider joining our future competitions.</p>
-<p>Best regards,<br/>Admin Team</p>`
-    },
-  };
-
+  
   // Fetch competitions and teams
   useEffect(() => {
     const fetchCompetitions = async () => {
@@ -223,20 +183,6 @@ const EmailPage = () => {
     setSelectedTeams(newSelectedTeams);
   };
 
-  // Handle template selection
-  const handleTemplateSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const templateKey = event.target.value;
-    setSelectedTemplate(templateKey);
-    
-    if (templateKey) {
-      const template = emailTemplates[templateKey];
-      if (template) {
-        setSubject(template.subject);
-        editor?.commands.setContent(template.content);
-        setContent(template.content);
-      }
-    }
-  };
 
   // Handle email sending
   const handleSendEmail = async () => {
@@ -318,6 +264,8 @@ const EmailPage = () => {
 
   return (
     <div className="container mx-auto p-6">
+        <AdminNavbar></AdminNavbar>
+         <div className='py-12'></div>
       <Card>
         <CardHeader>
           <CardTitle>Email Management</CardTitle>
@@ -357,7 +305,7 @@ const EmailPage = () => {
                 }}
                 className="w-48 p-2 border rounded-md bg-white"
               >
-                <option value="all">All Statuses</option>
+                <option value="all">Registration Statuses</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
@@ -366,10 +314,7 @@ const EmailPage = () => {
           </div>
 
           <Tabs defaultValue="compose" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="compose">Compose Email</TabsTrigger>
-              <TabsTrigger value="templates">Templates</TabsTrigger>
-            </TabsList>
+          
 
             <TabsContent value="compose">
               <div className="space-y-4">
@@ -534,7 +479,7 @@ const EmailPage = () => {
                     onClick={() => {
                       setSubject('');
                       setContent('');
-                      setSelectedTemplate('');
+                  
                       editor?.commands.setContent('');
                     }}
                   >
@@ -550,40 +495,6 @@ const EmailPage = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="templates">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium" htmlFor="template">
-                    Select Template
-                  </label>
-                  <select
-                    id="template"
-                    value={selectedTemplate}
-                    onChange={handleTemplateSelect}
-                    className="w-full p-2 border rounded-md mt-1"
-                  >
-                    <option value="">Choose a template</option>
-                    <option value="welcome">Welcome Email</option>
-                    <option value="reminder">Deadline Reminder</option>
-                    <option value="announcement">Announcement</option>
-                    <option value="stage-cleared">Stage Cleared Notification</option>
-                    <option value="stage-rejected">Stage Rejection Notification</option>
-                  </select>
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-md">
-                  <h3 className="font-medium mb-2">Template Preview</h3>
-                  <div className="text-sm">
-                    {content && (
-                      <div
-                        dangerouslySetInnerHTML={{ __html: content }}
-                        className="prose max-w-none"
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
 
           {status && (

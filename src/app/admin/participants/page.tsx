@@ -18,6 +18,7 @@ import { db } from '@/lib/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { SubmissionViewer } from '@/components/admin/SubmissionViewer';
 import { Search } from 'lucide-react';
+import AdminNavbar from '@/components/admin/NavbarAdmin';
 
 interface TeamManagementDashboardProps {}
 
@@ -371,7 +372,8 @@ const renderStageActions = (team: Team, stageNumber: string | number, submission
 
   return (
     <div className="container mx-auto p-6">
-      <Card className="mb-6">
+      <AdminNavbar></AdminNavbar>
+      <Card className="mb-6 py-12">
         <CardHeader>
           <CardTitle>Team Management Dashboard</CardTitle>
         </CardHeader>

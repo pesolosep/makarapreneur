@@ -7,9 +7,11 @@ import { db, storage } from '@/lib/firebase/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { Article } from '@/models/Article';
+import { useRouter } from 'next/navigation';
+import AdminNavbar from '@/components/admin/NavbarAdmin';
 
 export default function AdminArticles() {
- const { isAdmin } = useAuth();
+
  const [articles, setArticles] = useState<Article[]>([]);
 
  useEffect(() => {
@@ -31,10 +33,21 @@ export default function AdminArticles() {
    setArticles(prev => prev.filter(article => article.id !== id));
  };
 
- if (!isAdmin) return <div>Access denied</div>;
+const [loading, setLoading] = useState<boolean>(true);
+  const { user, isAdmin } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading){return}
+    if ( user && !isAdmin) {
+      router.push('/');
+    }
+  }, [user, isAdmin, router, loading]);
 
  return (
    <div className="p-6">
+    <AdminNavbar></AdminNavbar>
+    <div className='py-12'></div>
      <div className="flex justify-between mb-6">
        <h1 className="text-2xl font-bold">Articles</h1>
        <Link href="/admin/article/new" className="bg-blue-500 text-white px-4 py-2 rounded">New</Link>
