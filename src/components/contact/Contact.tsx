@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mail, Phone, Users, MessageSquare, Send, Instagram, Twitter, Facebook, Linkedin } from "lucide-react";
+import { Mail, Phone, Users, MessageSquare, Send, Instagram, Twitter, Linkedin, Calendar, Trophy, Settings, Truck } from "lucide-react";
 
 export default function Contact() {
     const [isVisible, setIsVisible] = useState(false);
@@ -34,17 +34,72 @@ export default function Contact() {
     }, []);
 
     const contactItems = [
-        { icon: Users, title: "Sponsorship", color: "bg-juneBud" },
-        { icon: Mail, title: "Media Partnership", color: "bg-cornflowerBlue" },
-        { icon: Phone, title: "Public Relation", color: "bg-juneBud" },
-        { icon: MessageSquare, title: "Contact Person", color: "bg-cornflowerBlue" }
+        { 
+            icon: Users, 
+            title: "Sponsorship", 
+            color: "bg-juneBud",
+            contact: "Umar (+62 821-2502-8592)"
+        },
+        { 
+            icon: Mail, 
+            title: "Media Partnership", 
+            color: "bg-cornflowerBlue",
+            contact: "Rafi (+62 811-1247-117)"
+        },
+        { 
+            icon: Phone, 
+            title: "Public Relation", 
+            color: "bg-juneBud",
+            contact: "Syauqi (+62 877-6031-3616)"
+        },
+        { 
+            icon: MessageSquare, 
+            title: "General Inquiries", 
+            color: "bg-cornflowerBlue",
+            contact: "Sabila (+62 812-1130-1903)"
+        },
+        {
+            icon: Calendar,
+            title: "Event",
+            color: "bg-juneBud",
+            contact: "Aqila (+62 812-1130-1903)"
+        },
+        {
+            icon: Trophy,
+            title: "Competition",
+            color: "bg-cornflowerBlue",
+            contact: "Nifara (+62 878-8305-3850)"
+        },
+        {
+            icon: Settings,
+            title: "Operational",
+            color: "bg-juneBud",
+            contact: "Dylan (+62 812-7433-9857)"
+        },
+        {
+            icon: Truck,
+            title: "Logistic",
+            color: "bg-cornflowerBlue",
+            contact: "Arsa (+62 851-5545-2071)"
+        }
     ];
 
     const socialIcons = [
-        { icon: Instagram, color: "bg-gradient-to-br from-juneBud to-cornflowerBlue" },
-        { icon: Twitter, color: "bg-gradient-to-br from-juneBud to-cornflowerBlue" },
-        { icon: Facebook, color: "bg-gradient-to-br from-juneBud to-cornflowerBlue" },
-        { icon: Linkedin, color: "bg-gradient-to-br from-juneBud to-cornflowerBlue" }
+        { 
+            icon: Instagram, 
+            color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
+            link: "https://www.instagram.com/makarapreneur"
+        },
+        { 
+            icon: Twitter, 
+            color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
+            link: "https://x.com/makarapreneur"
+        },
+        { 
+            icon: Linkedin, 
+            color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
+            link: "https://www.linkedin.com/in/makarapreneur-hipmi-pt-ui-71a9262b9/?originalSubdomain=id"
+        }
     ];
 
     return (
@@ -65,15 +120,15 @@ export default function Contact() {
             </div>
             
             <div className={`
-                bg-linen max-w-[1400px] mx-auto rounded-3xl px-8 lg:px-16 py-20
+                bg-linen max-w-[1400px] mx-auto rounded-3xl px-6 lg:px-12 py-16
                 transition-all duration-1000 transform
                 ${isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-95'}
                 relative overflow-hidden shadow-2xl
             `}>
-                <div className="flex flex-wrap justify-between gap-16 lg:gap-24">
+                <div className="flex flex-col lg:flex-row justify-between gap-8 lg:gap-12">
                     {/* Form Section */}
                     <Card className={`
-                        w-full max-w-[600px] border-0 shadow-2xl bg-signalBlack rounded-3xl 
+                        w-full lg:max-w-[550px] border-0 shadow-2xl bg-signalBlack rounded-3xl 
                         transition-all duration-1000 
                         ${isVisible ? 'opacity-100 translate-x-0 rotate-0' : 'opacity-0 -translate-x-12 rotate-2'}
                         hover:shadow-cornflowerBlue/20 hover:shadow-2xl
@@ -134,44 +189,45 @@ export default function Contact() {
 
                     {/* Info Section */}
                     <div className={`
-                        w-full max-w-[500px] space-y-8
+                        w-full space-y-8
                         transition-all duration-1000 delay-300
                         ${isVisible ? 'opacity-100 translate-x-0 rotate-0' : 'opacity-0 translate-x-12 -rotate-2'}
                     `}>
                         <div>
-                            <h2 className="text-3xl lg:text-4xl font-bold mb-2">
+                            <h2 className="text-2xl lg:text-3xl font-bold mb-2">
                                 FOR MORE DETAILS <br />
                                 <span className="text-cornflowerBlue">CONTACT US!</span>
                             </h2>
-                            <div className="h-1 w-32 bg-gradient-to-r from-cornflowerBlue to-juneBud rounded-full mt-6" />
+                            <div className="h-1 w-32 bg-gradient-to-r from-cornflowerBlue to-juneBud rounded-full mt-4 mb-8" />
                         </div>
 
-                        <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                             {contactItems.map((item, index) => (
                                 <div 
                                     key={index}
                                     className={`
-                                        flex gap-6 items-center
+                                        flex gap-4 items-center
                                         transition-all duration-500 group
                                         ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
                                     `}
-                                    style={{ transitionDelay: `${(index + 1) * 200}ms` }}
+                                    style={{ transitionDelay: `${(index % 4 + 1) * 150}ms` }}
                                 >
                                     <div className={`
-                                        w-14 h-14 rounded-2xl ${item.color} flex items-center justify-center
+                                        w-12 h-12 rounded-xl ${item.color} flex items-center justify-center flex-shrink-0
                                         transition-all duration-300 group-hover:scale-110 group-hover:rotate-6
                                     `}>
-                                        <item.icon className="w-7 h-7 text-signalBlack transition-transform duration-300 group-hover:scale-110" />
+                                        <item.icon className="w-6 h-6 text-signalBlack transition-transform duration-300 group-hover:scale-110" />
                                     </div>
-                                    <div>
-                                        <p className="font-semibold text-lg mb-1">{item.title}</p>
-                                        <p className="text-signalBlack/80">
-                                            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                                    <div className="min-w-0">
+                                        <p className="font-semibold text-base mb-1 truncate">{item.title}</p>
+                                        <p className="text-signalBlack/80 text-sm">
+                                            {item.contact}
                                         </p>
                                     </div>
                                 </div>
                             ))}
                         </div>
+
 
                         <div className={`
                             pt-4 transition-all duration-500 delay-1000
@@ -180,8 +236,11 @@ export default function Contact() {
                             <p className="font-medium text-lg mb-4">Connect with us!</p>
                             <div className="flex gap-4">
                                 {socialIcons.map((social, index) => (
-                                    <button
+                                    <a
                                         key={index}
+                                        href={social.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className={`
                                             w-12 h-12 rounded-xl ${social.color}
                                             flex items-center justify-center
@@ -190,7 +249,7 @@ export default function Contact() {
                                         `}
                                     >
                                         <social.icon className="w-6 h-6 text-signalBlack transition-transform duration-300 hover:scale-110" />
-                                    </button>
+                                    </a>
                                 ))}
                             </div>
                         </div>

@@ -54,6 +54,8 @@ export default async function ArticlePage({ params }: Props) {
         return (
             <div className="font-poppins">
                 <Navbar/>
+                <div className = "py-1"></div>
+                <div className = "py-11"></div>
                 <ShowArticle article={article}/>
                 <Footer />
             </div>
@@ -63,7 +65,7 @@ export default async function ArticlePage({ params }: Props) {
         return (
             <div className="font-poppins min-h-screen">
                 <Navbar/>
-                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <div className="flex flex-col items-center justify-center min-h-[60vh] py-11 gap-4">
                     <h2 className="text-2xl font-bold">Error Loading Article</h2>
                     <p>An error occurred while loading the article.</p>
                 </div>

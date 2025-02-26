@@ -2,7 +2,7 @@
 // lib/competitionService.ts
 
 import { db, storage } from './firebase';
-import { Timestamp } from 'firebase/firestore';
+import { limit, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
@@ -21,9 +21,22 @@ export const competitionService = {
   async registerTeam(
     userId: string,
     competitionId: string, 
-    teamData: Omit<Team,  'competitionId'| 'userId'| 'id' | 'stages' | 'registrationStatus' | 'createdAt' | 'updatedAt' | 'registrationDocURL'>,
+    teamData: Omit<Team, 'competitionId' | 'userId' | 'id' | 'stages' | 'registrationStatus' | 'createdAt' | 'updatedAt' | 'registrationDocURL'>,
     registrationFile: File
   ) {
+    // Validate file type (must be ZIP)
+    if (registrationFile.type !== 'application/zip' && 
+        registrationFile.type !== 'application/x-zip-compressed' && 
+        !registrationFile.name.endsWith('.zip')) {
+      throw new Error('Registration file must be a ZIP file');
+    }
+    
+    // Validate file size (max 30MB)
+    const maxSizeInBytes = 30 * 1024 * 1024; // 30MB
+    if (registrationFile.size > maxSizeInBytes) {
+      throw new Error('Registration file must be less than 30MB');
+    }
+    
     const teamId = crypto.randomUUID();
     const storageRef = ref(storage, `competitions/${competitionId}/registrations/${teamId}/${registrationFile.name}`);
     
@@ -56,6 +69,7 @@ export const competitionService = {
     
     return team;
   },
+  
   // Stage Submission
   async submitStageWork(
     teamId: string,
@@ -82,6 +96,127 @@ export const competitionService = {
       }
     });
   },
+ 
+async updateTeamInfo(
+  teamId: string,
+  updateData: Partial<Team>,
+  newRegistrationFile: File | null = null
+): Promise<Team> {
+  try {
+    // Get the current team data
+    const teamDoc = await getDoc(doc(db, 'teams', teamId));
+    if (!teamDoc.exists()) {
+      throw new Error('Team not found');
+    }
+
+    const teamData = teamDoc.data() as Team;
+    
+    
+    // Get the competition to check the deadline
+    const competitionDoc = await getDoc(doc(db, 'competitions', teamData.competitionId));
+    if (!competitionDoc.exists()) {
+      throw new Error('Competition not found');
+    }
+    
+    const competition = {
+      id: competitionDoc.id,
+      ...convertTimestampsToDates(competitionDoc.data())
+    } as Competition;
+    
+    // Check if registration deadline has passed
+    const registrationDeadline = new Date(competition.registrationDeadline);
+    const now = new Date();
+    
+    if (now > registrationDeadline) {
+      throw new Error('Registration deadline has passed');
+    }
+    
+    // Prepare update data
+    const updateFields: any = {
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
+    // If new registration file is provided, upload it
+    if (newRegistrationFile) {
+      // Validate file type (must be ZIP)
+      if (newRegistrationFile.type !== 'application/zip' && 
+        newRegistrationFile.type !== 'application/x-zip-compressed' && 
+        !newRegistrationFile.name.endsWith('.zip')) {
+          throw new Error('Registration file must be a ZIP file');
+        }
+        
+      // Validate file size (max 30MB)
+      const maxSizeInBytes = 30 * 1024 * 1024; // 30MB
+      if (newRegistrationFile.size > maxSizeInBytes) {
+        throw new Error('Registration file must be less than 30MB');
+      }
+      
+      // Upload and update the registration document URL
+      const storageRef = ref(storage, `competitions/${teamData.competitionId}/registrations/${teamId}/${newRegistrationFile.name}`);
+      await uploadBytes(storageRef, newRegistrationFile);
+      const registrationDocURL = await getDownloadURL(storageRef);
+      
+      updateFields.registrationDocURL = registrationDocURL;
+      
+      // If registration was previously rejected, set it back to pending for review
+      if (teamData.registrationStatus === 'rejected') {
+        updateFields.registrationStatus = 'pending';
+      }
+    }
+    
+    // Check if registration is already approved
+    if (teamData.registrationStatus === 'approved') {
+        updateFields.registrationStatus = 'pending';
+    }
+    // Convert dates to timestamps
+    const convertedData = convertDatesToTimestamps(updateFields);
+    
+    // Update in teams collection
+    await updateDoc(doc(db, 'teams', teamId), convertedData);
+    
+    // Also update in competitions/[competitionId]/teams/[teamId]
+    await updateDoc(doc(db, 'competitions', teamData.competitionId, 'teams', teamId), convertedData);
+    
+    // Return the updated team data
+    const updatedTeamDoc = await getDoc(doc(db, 'teams', teamId));
+    return {
+      id: updatedTeamDoc.id,
+      ...convertTimestampsToDates(updatedTeamDoc.data())
+    } as Team;
+  } catch (error) {
+    console.error('Error updating team:', error);
+    throw error;
+  }
+},
+
+// Get a specific team by both userId and competitionId
+async getTeamByUserAndCompetition(userId: string, competitionId: string): Promise<Team | null> {
+  try {
+    const teamsQuery = query(
+      collection(db, 'teams'),
+      where('userId', '==', userId),
+      where('competitionId', '==', competitionId),
+      limit(1)
+    );
+    
+    const teamsSnapshot = await getDocs(teamsQuery);
+    
+    if (teamsSnapshot.empty) {
+      return null;
+    }
+
+    const teamDoc = teamsSnapshot.docs[0];
+    return {
+      id: teamDoc.id,
+      ...convertTimestampsToDates(teamDoc.data())
+    } as Team;
+  } catch (error) {
+    console.error('Error fetching team:', error);
+    throw new Error('Failed to fetch team');
+  }
+},
+  
   async getCompetitionById(competitionId: string): Promise<Competition | null> {
     try {
       const competitionDoc = await getDoc(doc(db, 'competitions', competitionId));
@@ -102,6 +237,7 @@ export const competitionService = {
     }
   },
 };
+
 
 
 const convertDatesToTimestamps = (obj: any): any => {
@@ -125,6 +261,7 @@ const convertDatesToTimestamps = (obj: any): any => {
   }
   return converted;
 };
+
 export const convertTimestampsToDates = (obj: any): any => {
   if (obj === null || typeof obj !== 'object') {
     return obj;
@@ -147,13 +284,8 @@ export const convertTimestampsToDates = (obj: any): any => {
   return converted;
 };
 
-
-
-
-
 // Admin functions
 export const adminService = {
-
   async updateStageVisibility(
     competitionId: string,
     stageNumber: number,
@@ -198,22 +330,31 @@ export const adminService = {
     });
   },
 
-  // Update stage clearance
   async updateStageClearance(
     teamId: string,
     stageNumber: number,
     status: 'cleared' | 'rejected',
     feedback?: string
   ) {
-    await updateDoc(doc(db, 'teams', teamId), {
-      [`stages.${stageNumber}.status`]: status,
-      [`stages.${stageNumber}.feedback`]: feedback,
-      updatedAt: new Date()
-    });
+    try {
+      // Create update data object
+      const updateData: any = {
+        [`stages.${stageNumber}.status`]: status,
+        updatedAt: Timestamp.fromDate(new Date())
+      };
+
+      // Only add feedback field if it's provided
+      if (feedback) {
+        updateData[`stages.${stageNumber}.feedback`] = feedback;
+      }
+
+      await updateDoc(doc(db, 'teams', teamId), updateData);
+    } catch (error) {
+      console.error('Error updating stage clearance:', error);
+      throw new Error('Failed to update stage clearance');
+    }
   },
 
-
-  
   // Update stage guideline
   async updateStageGuideline(
     competitionId: string,
@@ -237,22 +378,49 @@ export const adminService = {
     }
   },
 
-  // Retrieve teams for a specific competition
   async getTeamsByCompetition(competitionId: string) {
     try {
       const teamsCollection = collection(db, 'teams');
       const q = query(teamsCollection, where('competitionId', '==', competitionId));
       const teamsSnapshot = await getDocs(q);
       
-      const teams: Team[] = teamsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Team));
-      
-      return teams;
+      return teamsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...convertTimestampsToDates(data),
+          // Handle nested structures with custom fields
+          teamLeader: {
+            ...data.teamLeader,
+            // Ensure all TeamLeader fields are present
+            phone: data.teamLeader?.phone || '',
+            institution: data.teamLeader?.institution || '',
+            major: data.teamLeader?.major || '',
+            batchYear: data.teamLeader?.batchYear || ''
+          },
+          members: {
+            member1: data.members?.member1 ? {
+              ...data.members.member1,
+              // Ensure all Member1 fields are present
+              phone: data.members.member1?.phone || '',
+              institution: data.members.member1?.institution || '',
+              major: data.members.member1?.major || '',
+              batchYear: data.members.member1?.batchYear || ''
+            } : undefined,
+            member2: data.members?.member2 ? {
+              ...data.members.member2,
+              // Ensure all Member2 fields are present
+              phone: data.members.member2?.phone || '',
+              institution: data.members.member2?.institution || '',
+              major: data.members.member2?.major || '',
+              batchYear: data.members.member2?.batchYear || ''
+            } : undefined
+          }
+        };
+      }) as Team[];
     } catch (error) {
-      console.error('Error retrieving teams for competition:', error);
-      throw new Error('Failed to retrieve teams for the specified competition');
+      console.error('Error getting teams:', error);
+      throw new Error('Failed to get teams');
     }
   },
 
@@ -263,17 +431,44 @@ export const adminService = {
       const q = query(teamsCollection, where('registrationStatus', '==', status));
       const teamsSnapshot = await getDocs(q);
       
-      const teams: Team[] = teamsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Team));
+      const teams: Team[] = teamsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...convertTimestampsToDates(data),
+          // Handle nested structures with custom fields
+          teamLeader: {
+            ...data.teamLeader,
+            phone: data.teamLeader?.phone || '',
+            institution: data.teamLeader?.institution || '',
+            major: data.teamLeader?.major || '',
+            batchYear: data.teamLeader?.batchYear || ''
+          },
+          members: {
+            member1: data.members?.member1 ? {
+              ...data.members.member1,
+              phone: data.members.member1?.phone || '',
+              institution: data.members.member1?.institution || '',
+              major: data.members.member1?.major || '',
+              batchYear: data.members.member1?.batchYear || ''
+            } : undefined,
+            member2: data.members?.member2 ? {
+              ...data.members.member2,
+              phone: data.members.member2?.phone || '',
+              institution: data.members.member2?.institution || '',
+              major: data.members.member2?.major || '',
+              batchYear: data.members.member2?.batchYear || ''
+            } : undefined
+          }
+        };
+      });
       
       return teams;
     } catch (error) {
       console.error('Error retrieving teams by registration status:', error);
       throw new Error('Failed to retrieve teams with specified registration status');
     }
-  }
+  },
 
-  
+
 };

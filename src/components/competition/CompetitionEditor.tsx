@@ -31,7 +31,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Stage {
   title: string;
-  guidelineFileURL: string; // Changed from guidelines
+  guidelineFileURL: string;
   description: string;
   deadline: Date;
   isVisible?: boolean;
@@ -56,7 +56,7 @@ interface CompetitionEditorProps {
   competition: Competition;
   onUpdateCompetition: (id: string, updates: Partial<Competition>) => Promise<void>;
   onUpdateStageVisibility: (stageId: string, isVisible: boolean) => Promise<void>;
-  onUpdateStageGuideline: (stageId: string, file: File) => Promise<void>;
+  onUpdateStageGuideline: (stageId: string, file: File, description: string) => Promise<void>;
 }
 
 interface EditMode {
@@ -190,22 +190,18 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
     try {
       setLoading(prev => ({ ...prev, [loadingKey]: true }));
       setError('');
-  
-      await onUpdateStageGuideline(stageNumber, file);
-      setFormData(prev => ({
-        ...prev,
-        stages: {
-          ...prev.stages,
-          [stageNumber]: {
-            ...prev.stages[stageNumber],
-            guidelineFileURL: file.name // This will be updated when the backend returns the URL
-          }
-        }
-      }));
 
+      const currentStage = formData.stages[stageNumber];
+      console.log('Uploading file:', {
+        stageNumber,
+        fileName: file.name,
+        description: currentStage.description
+      });
+
+      await onUpdateStageGuideline(stageNumber, file, currentStage.description);
       showSuccess('Guidelines uploaded successfully');
     } catch (error) {
-      console.log(error);
+      console.error('Error uploading file:', error);
       setError('Failed to upload guidelines');
     } finally {
       setLoading(prev => ({ ...prev, [loadingKey]: false }));
@@ -296,8 +292,7 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
       </div>
     );
   };
-  
-  // For file upload dialog:
+
   const FileUploadDialog = ({ stageNumber, stage }: { stageNumber: string; stage: Stage }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -307,17 +302,22 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
     const handleSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
+        console.log('File selected:', file.name);
         setSelectedFile(file);
       }
     };
   
     const handleUpload = async () => {
       if (selectedFile) {
-        await handleFileUpload(stageNumber, selectedFile);
-        setIsDialogOpen(false);
-        setSelectedFile(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+        try {
+          await handleFileUpload(stageNumber, selectedFile);
+          setIsDialogOpen(false);
+          setSelectedFile(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        } catch (error) {
+          console.error('Error in handleUpload:', error);
         }
       }
     };
@@ -351,12 +351,12 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-            {stage.guidelineFileURL ? 'Update Guidelines' : 'Upload Guidelines'}
+              {stage.guidelineFileURL ? 'Update Guidelines' : 'Upload Guidelines'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {stage.guidelineFileURL ?
-                 'Select a new PDF file to update the guidelines for this stage.'
-                : 'Select a PDF file to upload as guidelines for this stage.'}
+                'Select a new PDF file to update the guidelines for this stage.' :
+                'Select a PDF file to upload as guidelines for this stage.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4">
@@ -394,7 +394,7 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
       </AlertDialog>
     );
   };
-  
+
   return (
     <div className="space-y-6">
       <Card>
@@ -442,144 +442,144 @@ const CompetitionEditor: React.FC<CompetitionEditorProps> = ({
                           }
                         }}
                         disabled={loading['registrationDeadline'] || !tempDate}
+                        >
+                          {loading['registrationDeadline'] && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Confirm
+                        </Button>
+                      </DialogClose>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+  
+        <Card>
+          <CardHeader>
+            <CardTitle>Stages</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {Object.entries(formData.stages).map(([stageNumber, stage]) => (
+                <Card key={stageNumber} className="border rounded-lg">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Stage {stageNumber}: {stage.title}</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleStageVisibilityToggle(stageNumber)}
+                        disabled={loading[`visibility-${stageNumber}`]}
                       >
-                        {loading['registrationDeadline'] && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Confirm
+                        {loading[`visibility-${stageNumber}`] ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : stage.isVisible ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
                       </Button>
-                    </DialogClose>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Stages</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {Object.entries(formData.stages).map(([stageNumber, stage]) => (
-              <Card key={stageNumber} className="border rounded-lg">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Stage {stageNumber}: {stage.title}</CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleStageVisibilityToggle(stageNumber)}
-                      disabled={loading[`visibility-${stageNumber}`]}
-                    >
-                      {loading[`visibility-${stageNumber}`] ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : stage.isVisible ? (
-                        <Eye className="h-4 w-4" />
-                      ) : (
-                        <EyeOff className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Deadline</h4>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <div className="flex items-center gap-2 cursor-pointer">
-                          <span>{stage.deadline?.toLocaleDateString()}</span>
-                          <Button variant="ghost" size="sm">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Update Stage Deadline</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <Calendar
-                            mode="single"
-                            selected={tempDate || stage.deadline}
-                            onSelect={(day) => setTempDate(day || null)}
-                            disabled={loading[`stage-${stageNumber}`]}
-                          />
-                          <div className="flex justify-end gap-2">
-                            <DialogClose asChild>
-                              <Button variant="outline" onClick={() => setTempDate(null)}>
-                                Cancel
-                              </Button>
-                            </DialogClose>
-                            <DialogClose asChild>
-                              <Button 
-                                onClick={async () => {
-                                  if (tempDate) {
-                                    await handleStageUpdate(stageNumber, { deadline: tempDate });
-                                    setTempDate(null);
-                                  }
-                                }}
-                                disabled={loading[`stage-${stageNumber}`] || !tempDate}
-                              >
-                                {loading[`stage-${stageNumber}`] && 
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Confirm
-                              </Button>
-                            </DialogClose>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Deadline</h4>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <div className="flex items-center gap-2 cursor-pointer">
+                            <span>{stage.deadline?.toLocaleDateString()}</span>
+                            <Button variant="ghost" size="sm">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                           </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-
-                  {renderEditableField(
-                    `stage-${stageNumber}-description`,
-                    stage.description,
-                    'Description',
-                    'textarea',
-                    `stage-${stageNumber}`
-                  )}
-
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Guidelines</h4>
-                  <div className="flex items-center gap-4">
-                    <p className="text-sm">
-                      {stage.guidelineFileURL ? (
-                             <a 
-                             href={stage.guidelineFileURL}
-                             target="_blank"
-                             rel="noopener noreferrer"
-                             className="text-blue-600 hover:text-blue-800 hover:underline"
-                           >
-                             {decodeURIComponent(stage.guidelineFileURL).split('/').slice(-1)[0].split('?')[0]}
-                           </a>
-                      ) : (
-                        <span className="text-gray-500">No guidelines uploaded</span>
-                      )}
-                    </p>
-                    <FileUploadDialog stageNumber={stageNumber} stage={stage} />
-                  </div>
-                </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {success && (
-        <Alert className="bg-green-50 border-green-200">
-          <AlertDescription className="text-green-800">{success}</AlertDescription>
-        </Alert>
-      )}
-    </div>
-  );
-};
-
-export default CompetitionEditor;
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Update Stage Deadline</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <Calendar
+                              mode="single"
+                              selected={tempDate || stage.deadline}
+                              onSelect={(day) => setTempDate(day || null)}
+                              disabled={loading[`stage-${stageNumber}`]}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <DialogClose asChild>
+                                <Button variant="outline" onClick={() => setTempDate(null)}>
+                                  Cancel
+                                </Button>
+                              </DialogClose>
+                              <DialogClose asChild>
+                                <Button 
+                                  onClick={async () => {
+                                    if (tempDate) {
+                                      await handleStageUpdate(stageNumber, { deadline: tempDate });
+                                      setTempDate(null);
+                                    }
+                                  }}
+                                  disabled={loading[`stage-${stageNumber}`] || !tempDate}
+                                >
+                                  {loading[`stage-${stageNumber}`] && 
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                  Confirm
+                                </Button>
+                              </DialogClose>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+  
+                    {renderEditableField(
+                      `stage-${stageNumber}-description`,
+                      stage.description,
+                      'Description',
+                      'textarea',
+                      `stage-${stageNumber}`
+                    )}
+  
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Guidelines</h4>
+                      <div className="flex items-center gap-4">
+                        <p className="text-sm">
+                          {stage.guidelineFileURL ? (
+                            <a 
+                              href={stage.guidelineFileURL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              {decodeURIComponent(stage.guidelineFileURL).split('/').slice(-1)[0].split('?')[0]}
+                            </a>
+                          ) : (
+                            <span className="text-gray-500">No guidelines uploaded</span>
+                          )}
+                        </p>
+                        <FileUploadDialog stageNumber={stageNumber} stage={stage} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+  
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+  
+        {success && (
+          <Alert className="bg-green-50 border-green-200">
+            <AlertDescription className="text-green-800">{success}</AlertDescription>
+          </Alert>
+        )}
+      </div>
+    );
+  };
+  
+  export default CompetitionEditor;

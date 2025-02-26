@@ -5,18 +5,19 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserCircle2, Users, FileText, ChevronRight, ChevronLeft, Check, Building, BookOpen, Phone, Archive } from 'lucide-react';
+import { Loader2, UserCircle2, Users, FileText, ChevronRight, ChevronLeft, Check, Archive } from 'lucide-react';
 import { competitionService } from '@/lib/firebase/competitionService';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
 import { Competition } from '@/models/Competition';
+import { Team } from '@/models/Team';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface RegisterCompetitionProps {
-  competition: Competition;
+interface EditRegistrationProps {
+  competitionId: string;
 }
 
 interface FormData {
@@ -56,71 +57,167 @@ interface FormErrors {
 
 interface StepProps {
   title: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any;
   isCompleted: boolean;
   isActive: boolean;
 }
 
 const Step = ({ title, icon, isCompleted, isActive }: StepProps) => (
-    <div className={`flex items-center space-x-2 ${isActive ? 'text-juneBud' : 'text-gray-400'}`}>
-      <div className={`p-2 rounded-full ${
-        isCompleted 
-          ? 'bg-juneBud' 
-          : isActive 
-            ? 'bg-juneBud/80' 
-            : 'bg-gray-700'
-      } text-signalBlack`}>
-        {isCompleted ? <Check className="w-5 h-5" /> : icon}
-      </div>
-      <span className={`text-sm font-medium ${isActive ? 'text-juneBud' : 'text-gray-400'}`}>{title}</span>
+  <div className={`flex items-center space-x-2 ${isActive ? 'text-juneBud' : 'text-gray-400'}`}>
+    <div className={`p-2 rounded-full ${
+      isCompleted 
+        ? 'bg-juneBud' 
+        : isActive 
+          ? 'bg-juneBud/80' 
+          : 'bg-gray-700'
+    } text-signalBlack`}>
+      {isCompleted ? <Check className="w-5 h-5" /> : icon}
     </div>
-  );
+    <span className={`text-sm font-medium ${isActive ? 'text-juneBud' : 'text-gray-400'}`}>{title}</span>
+  </div>
+);
 
-export default function RegisterCompetition({ competition }: RegisterCompetitionProps) {
+export default function EditRegistration({ competitionId }: EditRegistrationProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { userId, loading } = useAuth(); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [competition, setCompetition] = useState<Competition | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState<FormData>({
     teamName: '',
-    
     leaderName: '',
     leaderEmail: '',
     leaderPhone: '',
     leaderInstitution: '',
     leaderMajor: '',
     leaderBatchYear: '',
-    
     member1Name: '',
     member1Email: '',
     member1Phone: '',
     member1Institution: '',
     member1Major: '',
     member1BatchYear: '',
-    
     member2Name: '',
     member2Email: '',
     member2Phone: '',
     member2Institution: '',
     member2Major: '',
     member2BatchYear: '',
-    
     registrationFile: null
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [canChangeDocuments, setCanChangeDocuments] = useState<boolean>(true);
 
   const batchYears = ['2024', '2023', '2022', '2021'];
 
+  // Fetch team and competition data
   useEffect(() => {
     if (loading) return;
     
-    if (!user) {
+    if (!userId) {
       router.push('/authentication/login');
       return;
     }
-  }, [user, loading, router]);
+    
+    const fetchData = async () => {
+      try {
+        // Fetch competition data
+        const competitionData = await competitionService.getCompetitionById(competitionId);
+        
+        if (!competitionData) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Competition not found",
+          });
+          router.push('/competition');
+          return;
+        }
+        
+        setCompetition(competitionData);
+        
+        // Use userId to get the team for this competition
+        const teamData = await competitionService.getTeamByUserAndCompetition(userId, competitionId);
+        
+        if (!teamData) {
+          // No team found for this user and competition
+          router.push(`/competition/${competitionId}/register`);
+          return;
+        }
+        
+        setTeam(teamData);
+        setCanChangeDocuments(teamData.registrationStatus === 'pending');
+        
+        // Check if registration status allows editing
+        if (teamData.registrationStatus === 'approved') {
+            toast({
+              variant: "destructive",
+              title: "Cannot Edit",
+              description: "Registration is already approved and cannot be edited.",
+            });
+          router.push('/competition/' + teamData.id);
+          return;
+        }
+        
+        // Check if registration deadline has passed
+        const registrationDeadline = new Date(competitionData.registrationDeadline);
+        const now = new Date();
+        
+        if (now > registrationDeadline) {
+          router.push('/competition/' + teamData.id);
+          toast({
+            variant: "destructive",
+            title: "Deadline Passed",
+            description: "Registration deadline has passed and cannot be edited.",
+          });
+          return;
+        }
+        
+        // Initialize form with team data
+        setFormData({
+          teamName: teamData.teamName || '',
+          
+          leaderName: teamData.teamLeader.name || '',
+          leaderEmail: teamData.teamLeader.email || '',
+          leaderPhone: teamData.teamLeader.phone || '',
+          leaderInstitution: teamData.teamLeader.institution || '',
+          leaderMajor: teamData.teamLeader.major || '',
+          leaderBatchYear: teamData.teamLeader.batchYear || '',
+          
+          member1Name: teamData.members.member1?.name || '',
+          member1Email: teamData.members.member1?.email || '',
+          member1Phone: teamData.members.member1?.phone || '',
+          member1Institution: teamData.members.member1?.institution || '',
+          member1Major: teamData.members.member1?.major || '',
+          member1BatchYear: teamData.members.member1?.batchYear || '',
+          
+          member2Name: teamData.members.member2?.name || '',
+          member2Email: teamData.members.member2?.email || '',
+          member2Phone: teamData.members.member2?.phone || '',
+          member2Institution: teamData.members.member2?.institution || '',
+          member2Major: teamData.members.member2?.major || '',
+          member2BatchYear: teamData.members.member2?.batchYear || '',
+          
+          registrationFile: null
+        });
+        
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load data",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [userId, loading, competitionId, router, toast]);
 
   const validateEmail = (email: string) => {
     return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email);
@@ -188,10 +285,8 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
       }
     }
 
-    if (step === 3) {
-      if (!formData.registrationFile) {
-        newErrors.registrationFile = 'Registration file is required';
-      } else {
+    if (step === 3 && canChangeDocuments) {
+      if (formData.registrationFile) {
         // Validate file type (must be ZIP)
         if (formData.registrationFile.type !== 'application/zip' && 
             formData.registrationFile.type !== 'application/x-zip-compressed' && 
@@ -278,12 +373,12 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
     try {
       setIsSubmitting(true);
 
-      if (!user) {
-        throw new Error('You must be logged in to register');
+      if (!userId || !team) {
+        throw new Error('You must be logged in to update your registration');
       }
 
       // Create team data structure that matches the Team model
-      const teamData = {
+      const updatedTeamData = {
         teamName: formData.teamName,
         teamLeader: {
           name: formData.leaderName,
@@ -311,38 +406,34 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
             batchYear: formData.member2BatchYear
           } : undefined,
         },
-        registrationDate: new Date(),
+        updatedAt: new Date(),
       };
 
-      if (!formData.registrationFile) {
-        throw new Error('Registration file is required');
-      }
-
-      await competitionService.registerTeam(
-        user.uid,
-        competition.id,
-        teamData,
-        formData.registrationFile
+      // Update team with new data
+      await competitionService.updateTeamInfo(
+        team.id,
+        updatedTeamData,
+        canChangeDocuments && formData.registrationFile ? formData.registrationFile : null
       );
 
       toast({
-        title: "Registration Successful",
-        description: "Your team has been registered. Please wait for admin approval.",
+        title: "Update Successful",
+        description: "Your team information has been updated successfully.",
       });
 
-      router.push('/competition/' +competition.id);
+      router.push('/competition/' + competitionId);
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Registration Failed",
-        description: error instanceof Error ? error.message : "Failed to register team",
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update team information",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-signalBlack flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-juneBud" />
@@ -350,7 +441,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
     );
   }
 
-  if (!user) {
+  if (!userId || !team || !competition) {
     return null;
   }
 
@@ -362,9 +453,9 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
       <div className="bg-gradient-to-r from-juneBud to-juneBud/90 text-signalBlack mt-24">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="max-w-3xl">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">{competition.name}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Edit Registration: {competition.name}</h1>
             <p className="text-xl text-signalBlack/80 leading-relaxed">
-              {competition.description || 'Join the competition and showcase your innovative ideas.'}
+              Update your team information for {competition.name}.
             </p>
           </div>
         </div>
@@ -402,6 +493,14 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
 
       {/* Form Section */}
       <div className="max-w-3xl mx-auto px-4 py-12">
+        {!canChangeDocuments && (
+          <Alert className="mb-6 bg-amber-500/10 border-amber-500/20 text-amber-500">
+            <AlertDescription>
+              Your registration has been {team.registrationStatus}. You can only update personal information and cannot change the uploaded documents.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <form onSubmit={onSubmit} className="bg-zinc-900/50 backdrop-blur-sm rounded-xl shadow-2xl p-8 border border-white/10">
           {/* Step 1: Team and Leader Information */}
           {currentStep === 1 && (
@@ -463,7 +562,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                       name="leaderPhone"
                       value={formData.leaderPhone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx"
+                      placeholder="Format: +62 xxx"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.leaderPhone && (
@@ -564,7 +663,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                       name="member1Phone"
                       value={formData.member1Phone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx"
+                      placeholder="Format: +62 xxx"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.member1Phone && (
@@ -663,14 +762,13 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                       name="member2Phone"
                       value={formData.member2Phone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx (optional)"
+                      placeholder="Format: +62 xxx (optional)"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.member2Phone && (
                       <p className="text-red-400 text-sm mt-1">{errors.member2Phone}</p>
                     )}
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">Institution (e.g. Universitas Indonesia)</label>
                     <Input
@@ -728,67 +826,100 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-4 text-juneBud">Required Documentation</h2>
-                <Alert className="bg-juneBud/10 border-juneBud/20 text-linen mb-6">
-                  <AlertDescription>
-                    <p className="mb-2"><strong>Combine all required documents into a single ZIP file (max 30MB).</strong></p>
-                    <p className="text-sm mb-1">Please include the following documents:</p>
-                    <ol className="list-decimal pl-5 text-sm space-y-2">
-                      <li>
-                        <span className="font-medium">Student ID Cards</span>
-                        <p className="text-xs text-gray-300">Combine all team members' ID cards into a single PDF file (max 10MB)</p>
-                      </li>
-                      <li>
-                        <span className="font-medium">Proof of following @makarapreneur on Instagram</span>
-                        <p className="text-xs text-gray-300">Combine all team members' proofs into a single PDF file (max 10MB)</p>
-                      </li>
-                      <li>
-                        <span className="font-medium">Proof of posting Competition Twibbon and tagging 3 friends</span>
-                        <p className="text-xs text-gray-300">Ensure your Instagram account is public and combine all members' proofs into a single PDF file (max 10MB)</p>
-                      </li>
-                      <li>
-                        <span className="font-medium">Proof of posting Competition poster on SG and tagging @makarapreneur</span>
-                        <p className="text-xs text-gray-300">Combine all members' proofs into a single PDF file (max 10MB)</p>
-                      </li>
-                    </ol>
-                  </AlertDescription>
-                </Alert>
+                
+                {!canChangeDocuments && (
+                  <Alert className="mb-6 bg-amber-500/10 border-amber-500/20 text-amber-500">
+                    <AlertDescription>
+                      Your application has been reviewed and you cannot change the uploaded documents at this time.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {canChangeDocuments && (
+                  <Alert className="bg-juneBud/10 border-juneBud/20 text-linen mb-6">
+                    <AlertDescription>
+                      <p className="mb-2"><strong>Combine all required documents into a single ZIP file (max 30MB).</strong></p>
+                      <p className="text-sm mb-1">Please include the following documents:</p>
+                      <ol className="list-decimal pl-5 text-sm space-y-2">
+                        <li>
+                          <span className="font-medium">Student ID Cards</span>
+                          <p className="text-xs text-gray-300">Combine all team members' ID cards into a single PDF file (max 10MB)</p>
+                        </li>
+                        <li>
+                          <span className="font-medium">Proof of following @makarapreneur on Instagram</span>
+                          <p className="text-xs text-gray-300">Combine all team members' proofs into a single PDF file (max 10MB)</p>
+                        </li>
+                        <li>
+                          <span className="font-medium">Proof of posting Competition Twibbon and tagging 3 friends</span>
+                          <p className="text-xs text-gray-300">Ensure your Instagram account is public and combine all members' proofs into a single PDF file (max 10MB)</p>
+                        </li>
+                        <li>
+                          <span className="font-medium">Proof of posting Competition poster on SG and tagging @makarapreneur</span>
+                          <p className="text-xs text-gray-300">Combine all members' proofs into a single PDF file (max 10MB)</p>
+                        </li>
+                      </ol>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Upload Registration ZIP File</label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-juneBud/30 rounded-lg hover:border-juneBud transition-colors bg-black/50">
-                      <div className="space-y-1 text-center">
-                        <Archive className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-300">
-                          <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-juneBud hover:text-juneBud/80">
-                            <span>Upload ZIP file</span>
-                            <Input
-                              id="file-upload"
-                              name="registrationFile"
-                              type="file"
-                              className="sr-only"
-                              onChange={handleFileChange}
-                              accept=".zip"
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          ZIP file only, maximum 30MB
-                        </p>
-                        {formData.registrationFile && (
-                          <div className="mt-4 p-2 bg-juneBud/10 rounded border border-juneBud/20 text-sm">
-                            <p className="font-medium text-linen">Selected file:</p>
-                            <p className="text-sm text-linen/80">{formData.registrationFile.name}</p>
-                            <p className="text-xs text-linen/60">
-                              {(formData.registrationFile.size / (1024 * 1024)).toFixed(2)} MB
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-300">Current Documentation</label>
+                      {team?.registrationDocURL && (
+                        <a 
+                          href={team.registrationDocURL} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-juneBud hover:underline"
+                        >
+                          View Uploaded Document
+                        </a>
+                      )}
+                    </div>
+                    
+                    {canChangeDocuments ? (
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Update Registration File</label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-juneBud/30 rounded-lg hover:border-juneBud transition-colors bg-black/50">
+                          <div className="space-y-1 text-center">
+                            <Archive className="mx-auto h-12 w-12 text-gray-400" />
+                            <div className="flex text-sm text-gray-300">
+                              <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-juneBud hover:text-juneBud/80">
+                                <span>Upload ZIP file</span>
+                                <Input
+                                  id="file-upload"
+                                  name="registrationFile"
+                                  type="file"
+                                  className="sr-only"
+                                  onChange={handleFileChange}
+                                  accept=".zip"
+                                />
+                              </label>
+                              <p className="pl-1">or drag and drop</p>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              ZIP file only, maximum 30MB
                             </p>
+                            {formData.registrationFile && (
+                              <div className="mt-4 p-2 bg-juneBud/10 rounded border border-juneBud/20 text-sm">
+                                <p className="font-medium text-linen">Selected file:</p>
+                                <p className="text-sm text-linen/80">{formData.registrationFile.name}</p>
+                                <p className="text-xs text-linen/60">
+                                  {(formData.registrationFile.size / (1024 * 1024)).toFixed(2)} MB
+                                </p>
+                              </div>
+                            )}
                           </div>
+                        </div>
+                        {errors.registrationFile && (
+                          <p className="text-red-400 text-sm mt-2">{errors.registrationFile}</p>
                         )}
                       </div>
-                    </div>
-                    {errors.registrationFile && (
-                      <p className="text-red-400 text-sm mt-2">{errors.registrationFile}</p>
+                    ) : (
+                      <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-gray-400">
+                        <p>You cannot update the documentation at this time.</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -828,11 +959,11 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Submitting...
+                    Updating...
                   </>
                 ) : (
                   <>
-                    Complete Registration
+                    Save Changes
                     <Check className="w-4 h-4 ml-2" />
                   </>
                 )}
