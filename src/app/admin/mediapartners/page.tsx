@@ -5,6 +5,7 @@ import { MediaPartnersTable } from "@/components/mediaPartners/media-partners-ta
 import { Button } from "@/components/ui/button"
 import { CreatePartnerDialog } from "@/components/mediaPartners/create-partner-dialog"
 import { useAuth } from '@/contexts/AuthContext';
+import AdminNavbar from "@/components/admin/NavbarAdmin"
 
 export default function MediaPartnersPage() {
   const { isAdmin } = useAuth();
@@ -13,6 +14,8 @@ export default function MediaPartnersPage() {
 
   return (
     <div className="container mx-auto py-10 px-10 font-poppins min-h-screen">
+      <AdminNavbar></AdminNavbar>
+      <div className='py-12'></div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Media Partners</h1>

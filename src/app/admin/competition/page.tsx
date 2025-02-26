@@ -5,19 +5,21 @@
 import React, { useEffect, useState} from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { db, storage } from '@/lib/firebase/firebase';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { db } from '@/lib/firebase/firebase';
 import { doc, collection, getDoc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import { initialCompetitions } from '@/lib/competitionData';
 import CompetitionEditor from '@/components/competition/CompetitionEditor';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { useRouter } from 'next/navigation';
+import { adminService } from '@/lib/firebase/competitionService';
+import AdminNavbar from '@/components/admin/NavbarAdmin';
 
 interface Stage {
   title: string;
   description: string;
   deadline: Date;
-  isVisible?: boolean;
+  visibility: boolean;
   guidelineFileURL: string;
 }
 
@@ -35,17 +37,30 @@ interface AdminDashboardProps {}
 
 const AdminDashboard: React.FC<AdminDashboardProps> = () => {
   const [selectedCompetition, setSelectedCompetition] = useState<string>(initialCompetitions[0].id);
-  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [visibilityDialogOpen, setVisibilityDialogOpen] = useState<boolean>(false);
   const [pendingVisibilityChange, setPendingVisibilityChange] = useState<{
     stageId: string;
-    isVisible: boolean;
-  } | null>(null);
-  const { isAdmin } = useAuth();
-  
+    visibility: boolean;
+} | null>(null);
+const [fileUploadDialog, setFileUploadDialog] = useState<{
+    isOpen: boolean;
+    stageId: string;
+    file: File | null;
+    description: string;
+} | null>(null);
 
+const [loading, setLoading] = useState<boolean>(true);
+  const { user, isAdmin } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading){return}
+    if ( user && !isAdmin) {
+      router.push('/');
+    }
+  }, [user, isAdmin, router, loading]);
   
   const initializeCompetitions = async (): Promise<void> => {
     try {
@@ -147,6 +162,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
         updatedAt: Timestamp.fromDate(new Date())
       }, { merge: true });
       
+      // Update local state after successful API call
       setCompetitions(prev => prev.map(comp => 
         comp.id === competitionId 
           ? { ...comp, ...updates, updatedAt: new Date() } 
@@ -159,26 +175,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
 
   const handleUpdateStageVisibility = async (
     stageId: string, 
-    isVisible: boolean
+    visibility: boolean
   ): Promise<void> => {
-    setPendingVisibilityChange({ stageId, isVisible });
+    // Store the pending change and open the confirmation dialog
+    setPendingVisibilityChange({ stageId, visibility });
     setVisibilityDialogOpen(true);
   };
 
   const confirmVisibilityChange = async (): Promise<void> => {
     if (!pendingVisibilityChange) return;
-    const { stageId, isVisible } = pendingVisibilityChange;
+    const { stageId, visibility } = pendingVisibilityChange;
 
     try {
       const competition = getCurrentCompetition();
       if (!competition) return;
 
-      const docRef = doc(db, 'competitions', competition.id);
-      await setDoc(docRef, {
-        [`stages.${stageId}.isVisible`]: isVisible,
-        updatedAt: Timestamp.fromDate(new Date())
-      }, { merge: true });
+      // Call the API to update visibility
+      await adminService.updateStageVisibility(competition.id, Number(stageId), visibility);
 
+      // Only update the local state after successful API call
       setCompetitions(prev => prev.map(comp => {
         if (comp.id === competition.id) {
           return {
@@ -187,7 +202,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
               ...comp.stages,
               [stageId]: {
                 ...comp.stages[stageId],
-                isVisible
+                visibility // Use the correct property name here
               }
             },
             updatedAt: new Date()
@@ -196,60 +211,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
         return comp;
       }));
 
+      // Close the dialog and reset the pending change
       setVisibilityDialogOpen(false);
       setPendingVisibilityChange(null);
     } catch (error) {
-      throw new Error('Failed to update stage visibility');
+      setError('Failed to update stage visibility');
     }
   };
 
-  const handleUpdateStageGuideline = async (
+  const handleStageGuidelineUpdate = async (
     stageId: string, 
-    file: File
-): Promise<void> => {
+    file: File,
+    description: string
+  ) => {
+    setFileUploadDialog({
+      isOpen: true,
+      stageId,
+      file,
+      description
+    });
+  };
+
+  const confirmGuidelineUpload = async () => {
+    if (!fileUploadDialog || !fileUploadDialog.file) return;
+    
     try {
-        const competition = getCurrentCompetition();
-        if (!competition) return;
+      const competition = getCurrentCompetition();
+      if (!competition) return;
 
-        // Create the storage reference
-        const url = `guidelines/${competition.id}/stage${stageId}/${file.name}`;
-        const storageRef = ref(storage, url);
-        
-        // Upload the file
-        await uploadBytes(storageRef, file);
-        
-        // Get the download URL after upload
-        const guidelineFileURL = await getDownloadURL(storageRef);
-        
-        // Update Firestore with the new URL
-        const docRef = doc(db, 'competitions', competition.id);
-        await setDoc(docRef, {
-            [`stages.${stageId}.guidelineFileURL`]: guidelineFileURL,
-            updatedAt: Timestamp.fromDate(new Date())
-        }, { merge: true });
+      await adminService.updateStageGuideline(
+        competition.id,
+        Number(fileUploadDialog.stageId),
+        fileUploadDialog.file,
+        fileUploadDialog.description
+      );
 
-        // Update local state
-        setCompetitions(prev => prev.map(comp => {
-            if (comp.id === competition.id) {
-                return {
-                    ...comp,
-                    stages: {
-                        ...comp.stages,
-                        [stageId]: {
-                            ...comp.stages[stageId],
-                            guidelineFileURL: guidelineFileURL
-                        }
-                    },
-                    updatedAt: new Date()
-                };
-            }
-            return comp;
-        }));
+      // Update local state after successful upload
+      await initializeCompetitions(); // Refresh competitions to get new URLs
+      setFileUploadDialog(null);
     } catch (error) {
-        console.error('Error updating guideline:', error);
-        throw new Error('Failed to update stage guideline');
+      console.error('Error uploading guideline:', error);
+      setError('Failed to upload guideline file');
     }
-};
+  };
 
   if (loading) {
     return (
@@ -263,6 +267,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
 
   return (
     <div className="container mx-auto p-6">
+        <AdminNavbar></AdminNavbar>
+         <div className='py-12'></div>
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Competition Management Dashboard</CardTitle>
@@ -275,7 +281,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
           >
             {competitions.map((comp) => (
               <option key={comp.id} value={comp.id}>
-                {comp.name}
+              {comp.name}
               </option>
             ))}
           </select>
@@ -294,19 +300,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
             competition={competition}
             onUpdateCompetition={handleUpdateCompetition}
             onUpdateStageVisibility={handleUpdateStageVisibility}
-            onUpdateStageGuideline={handleUpdateStageGuideline}
+            onUpdateStageGuideline={handleStageGuidelineUpdate}
           />
 
           <AlertDialog open={visibilityDialogOpen} onOpenChange={setVisibilityDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  {pendingVisibilityChange?.isVisible 
-                    ? 'Show Stage' 
+                  {pendingVisibilityChange?.visibility 
+                    ? 'Make Stage Public' 
                     : 'Hide Stage'}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  {pendingVisibilityChange?.isVisible
+                  {pendingVisibilityChange?.visibility
                     ? 'Are you sure you want to make this stage visible to participants?'
                     : 'Are you sure you want to hide this stage from participants?'}
                 </AlertDialogDescription>
@@ -320,6 +326,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = () => {
                 </AlertDialogCancel>
                 <AlertDialogAction onClick={confirmVisibilityChange}>
                   Confirm
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog 
+            open={fileUploadDialog?.isOpen ?? false} 
+            onOpenChange={(isOpen) => {
+              if (!isOpen) setFileUploadDialog(null);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Upload Guideline File</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to upload this guideline file? 
+                  This will replace any existing guideline for this stage.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setFileUploadDialog(null)}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={confirmGuidelineUpload}>
+                  Upload
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
