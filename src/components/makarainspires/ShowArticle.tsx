@@ -93,14 +93,14 @@ export default function ShowArticle({ article }: Props) {
             {/* Article Content */}
             <div className="max-w-4xl mx-auto px-6 py-12">
                 {/* Article Body */}
-                <div className="prose prose-lg max-w-none">
+                <div className="prose prose-lg max-w-none prose-img:mx-auto prose-img:rounded-lg">
                     <div className={twMerge(
                         "opacity-0 transition-all duration-1000 delay-700",
                         isVisible && "opacity-100"
                     )}>
                         <div 
                             dangerouslySetInnerHTML={{ __html: article.content }}
-                            className="space-y-6 text-lg leading-relaxed"
+                            className="space-y-6 text-lg leading-relaxed text-justify"
                         />
                     </div>
                 </div>
@@ -114,10 +114,10 @@ export default function ShowArticle({ article }: Props) {
                     <div className="flex flex-col md:grid grid-cols-2 gap-4 items-center md:justify-start w-full">
                         {relatedArticles.map((relatedArticle) => (
                             <div key={relatedArticle.id} className="flex w-full md:w-auto h-full">
-                            <MakaraCard 
-                            article={relatedArticle} 
-                        />
-                        </div>
+                                <MakaraCard 
+                                    article={relatedArticle} 
+                                />
+                            </div>
                         ))}
                     </div>
                 </div>

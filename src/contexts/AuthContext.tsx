@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/firebase';
 
 interface UserData {
+  userId: string | null;
   isAdmin: boolean;
   email: string;
   verified: boolean;
@@ -16,6 +17,7 @@ interface UserData {
 interface AuthContextType {
   user: User | null;
   userData: UserData | null;
+  userId: string | null;
   isAdmin: boolean;
   loading: boolean;
 }
@@ -24,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   userData: null,
   isAdmin: false,
+  userId: null,
   loading: true
 });
 
@@ -95,10 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isAdmin = userData?.isAdmin === true;
-
+  const userId = user?.uid || null;
   const value = {
     user,
     userData,
+    userId,
     isAdmin,
     loading
   };
