@@ -1,3 +1,5 @@
+'use client'
+
 import { Calendar, Clock, MapPin, Share2 } from "lucide-react";
 import Image from "next/image";
 import aboutUsDummy from "@/assets/aboutUsDummy.svg";
@@ -41,12 +43,27 @@ export default function EventDetail({ event }: EventDetailProps) {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <Button size="lg" className="">
-                            Daftar Sekarang
+                            Coming Soon
                         </Button>
                         <Button
                             variant="outline"
                             size="lg"
                             className="text-signalBlack bg-linen hover:bg-linen/50 border-0"
+                            onClick={() => {
+                                navigator.clipboard.writeText(window.location.href);
+                                const notification = document.createElement('div');
+                                notification.className = 'fixed bottom-4 right-4 bg-juneBud text-signalBlack px-4 py-2 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-500';
+                                notification.textContent = 'Link berhasil disalin!';
+                                document.body.appendChild(notification);
+                                
+                                setTimeout(() => {
+                                    notification.style.opacity = '0';
+                                    notification.style.transform = 'translateY(100%)';
+                                    setTimeout(() => {
+                                        document.body.removeChild(notification);
+                                    }, 500);
+                                }, 2000);
+                            }}
                         >
                             <Share2 className="mr-2 h-4 w-4" />
                             Bagikan
@@ -140,7 +157,7 @@ export default function EventDetail({ event }: EventDetailProps) {
             {/* Bottom CTA */}
             <div className="mt-12 text-center">
                 <Button size="lg" className="min-w-[200px]">
-                    Daftar Sekarang
+                    Coming Soon
                 </Button>
             </div>
         </div>
