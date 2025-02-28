@@ -1,9 +1,8 @@
-'use client'
+"use client";
 
 import { Calendar, Clock, MapPin, Share2 } from "lucide-react";
 import Image from "next/image";
 import aboutUsDummy from "@/assets/aboutUsDummy.svg";
-
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -12,6 +11,7 @@ type EventDetailProps = {
         title: string;
         description: string[];
         theme?: string;
+        link: string;
     };
 };
 
@@ -42,23 +42,41 @@ export default function EventDetail({ event }: EventDetailProps) {
                         </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <Button size="lg" className="">
-                            Coming Soon
+                        <Button
+                            size="lg"
+                            className=""
+                            disabled={event.link === "disabled"}
+                            onClick={() => {
+                                if (event.link !== "disabled") {
+                                    window.open(event.link, "_blank");
+                                }
+                            }}
+                        >
+                            {event.link === "disabled"
+                                ? "Coming Soon"
+                                : "Daftar Sekarang"}
                         </Button>
+
                         <Button
                             variant="outline"
                             size="lg"
                             className="text-signalBlack bg-linen hover:bg-linen/50 border-0"
                             onClick={() => {
-                                navigator.clipboard.writeText(window.location.href);
-                                const notification = document.createElement('div');
-                                notification.className = 'fixed bottom-4 right-4 bg-juneBud text-signalBlack px-4 py-2 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-500';
-                                notification.textContent = 'Link berhasil disalin!';
+                                navigator.clipboard.writeText(
+                                    window.location.href
+                                );
+                                const notification =
+                                    document.createElement("div");
+                                notification.className =
+                                    "fixed bottom-4 right-4 bg-juneBud text-signalBlack px-4 py-2 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-500";
+                                notification.textContent =
+                                    "Link berhasil disalin!";
                                 document.body.appendChild(notification);
-                                
+
                                 setTimeout(() => {
-                                    notification.style.opacity = '0';
-                                    notification.style.transform = 'translateY(100%)';
+                                    notification.style.opacity = "0";
+                                    notification.style.transform =
+                                        "translateY(100%)";
                                     setTimeout(() => {
                                         document.body.removeChild(notification);
                                     }, 500);
@@ -113,9 +131,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                         <h2 className="text-xl font-semibold mb-3 text-juneBud">
                             Theme
                         </h2>
-                        <p className="">
-                            {event.theme}
-                        </p>
+                        <p className="">{event.theme}</p>
                     </section>
                 )}
 
@@ -156,8 +172,19 @@ export default function EventDetail({ event }: EventDetailProps) {
 
             {/* Bottom CTA */}
             <div className="mt-12 text-center">
-                <Button size="lg" className="min-w-[200px]">
-                    Coming Soon
+                <Button
+                    size="lg"
+                    className="min-w-[200px]"
+                    disabled={event.link === "disabled"}
+                    onClick={() => {
+                        if (event.link !== "disabled") {
+                            window.open(event.link, "_blank");
+                        }
+                    }}
+                >
+                    {event.link === "disabled"
+                        ? "Coming Soon"
+                        : "Daftar Sekarang"}
                 </Button>
             </div>
         </div>
