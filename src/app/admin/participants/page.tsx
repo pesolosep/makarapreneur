@@ -140,7 +140,7 @@ const TeamManagementDashboard: React.FC<TeamManagementDashboardProps> = () => {
             case 3:
               if (team.stages[1]?.status !== 'cleared' || 
                   team.stages[2]?.status !== 'cleared' || 
-                  !team.stages[2]?.paidStatus) return false;
+                  !team?.paidStatus) return false;
               break;
           }
         }
@@ -196,7 +196,7 @@ if (searchTerm.trim()) {
 
   useEffect(() => {
     handleStageFilter();
-  }, [selectedStage, selectedStatus, checkPreviousStages, registrationStatus]);
+  }, [selectedStage, selectedStatus, checkPreviousStages, registrationStatus, teams, searchTerm]);
 
   const handleRegistrationUpdate = async (teamId: string, status: 'approved' | 'rejected') => {
     setConfirmDialog({
@@ -206,16 +206,27 @@ if (searchTerm.trim()) {
       action: async () => {
         try {
           await adminService.updateRegistrationStatus(teamId, status);
+          
+          // Update both teams and filteredTeams directly
           const updatedTeams = teams.map(team => 
             team.id === teamId 
               ? { ...team, registrationStatus: status }
               : team
           );
           setTeams(updatedTeams);
-          handleStageFilter();
+          
+          // Also directly update the filtered teams
+          const updatedFilteredTeams = filteredTeams.map(team => 
+            team.id === teamId 
+              ? { ...team, registrationStatus: status }
+              : team
+          );
+          setFilteredTeams(updatedFilteredTeams);
+          
+          // Close the dialog
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         } catch (error) {
           setError('Failed to update registration status');
-        } finally {
           setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         }
       }
@@ -541,7 +552,12 @@ const renderStageActions = (team: Team, stageNumber: string | number, submission
                           {team.teamLeader.email}
                         </span>
                       </TableCell>
-                      <TableCell>{formatDate(team.registrationDate)}</TableCell>
+                      <TableCell>Registrated on: {formatDate(team.registrationDate)}
+                        <br/>
+                        Payment status : {team.paidStatus ? 'Paid' : 'Not Paid'}
+
+
+                      </TableCell>
                       <TableCell>
                         <Badge className={getStatusBadge(team.registrationStatus)}>
                           {team.registrationStatus}

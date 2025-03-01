@@ -3,7 +3,7 @@
 
 import { db, storage } from './firebase';
 import { limit, Timestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { 
   collection, 
   doc, 
@@ -70,125 +70,177 @@ export const competitionService = {
     return team;
   },
   
-  // Stage Submission
-  async submitStageWork(
-    teamId: string,
-    stageNumber: number,
-    submissionFile: File
-  ) {
-    const team = await getDoc(doc(db, 'teams', teamId));
-    const teamData = team.data() as Team;
-    
-    // Check if previous stage is cleared
-    if (stageNumber > 1 && teamData.stages[stageNumber - 1].status !== 'cleared') {
-      throw new Error('Previous stage not cleared');
+// Stage Submission
+async submitStageWork(
+  teamId: string,
+  stageNumber: number,
+  submissionFile: File
+) {
+  const teamDoc = await getDoc(doc(db, 'teams', teamId));
+  if (!teamDoc.exists()) {
+    throw new Error('Team not found');
+  }
+  
+  const teamData = teamDoc.data() as Team;
+  
+  // Check if previous stage is cleared
+  if (stageNumber > 1 && teamData.stages[stageNumber - 1]?.status !== 'cleared') {
+    throw new Error('Previous stage not cleared');
+  }
+  
+  // Check for existing submission file and delete it if it exists
+  if (teamData.stages[stageNumber]?.submissionURL) {
+    try {
+      // Extract the path from the URL to delete the file
+      const oldFileRef = ref(storage, decodeURIComponent(teamData.stages[stageNumber].submissionURL.split('?')[0].split('/o/')[1]));
+      await deleteObject(oldFileRef);
+      console.log('Previous submission file deleted successfully');
+    } catch (deleteError) {
+      console.error('Error deleting previous file:', deleteError);
+      // Continue with upload even if deletion fails
     }
-    
-    const storageRef = ref(storage, `submissions/${teamId}/stage${stageNumber}/${submissionFile.name}`);
-    await uploadBytes(storageRef, submissionFile);
-    const submissionURL = await getDownloadURL(storageRef);
-    
-    await updateDoc(doc(db, 'teams', teamId), {
+  }
+  
+  // Upload new file
+  const storageRef = ref(storage, `competitions/${teamData.competitionId}/submissions/${teamId}/stage${stageNumber}/${submissionFile.name}`);
+  await uploadBytes(storageRef, submissionFile);
+  const submissionURL = await getDownloadURL(storageRef);
+  
+  // Update team document with new submission
+  await updateDoc(doc(db, 'teams', teamId), {
+    [`stages.${stageNumber}`]: {
+      status: 'pending',
+      submissionURL,
+      submissionDate: new Date()
+    }
+  });
+  
+  // Also update the submission in the competition's teams subcollection if needed
+  try {
+    await updateDoc(doc(db, 'competitions', teamData.competitionId, 'teams', teamId), {
       [`stages.${stageNumber}`]: {
         status: 'pending',
         submissionURL,
         submissionDate: new Date()
       }
     });
-  },
+  } catch (error) {
+    console.error('Error updating competition team document:', error);
+    // Continue even if this update fails
+  }
+  
+  return {
+    status: 'pending',
+    submissionURL,
+    submissionDate: new Date()
+  };
+},
  
-async updateTeamInfo(
-  teamId: string,
-  updateData: Partial<Team>,
-  newRegistrationFile: File | null = null
-): Promise<Team> {
-  try {
-    // Get the current team data
-    const teamDoc = await getDoc(doc(db, 'teams', teamId));
-    if (!teamDoc.exists()) {
-      throw new Error('Team not found');
-    }
-
-    const teamData = teamDoc.data() as Team;
-    
-    
-    // Get the competition to check the deadline
-    const competitionDoc = await getDoc(doc(db, 'competitions', teamData.competitionId));
-    if (!competitionDoc.exists()) {
-      throw new Error('Competition not found');
-    }
-    
-    const competition = {
-      id: competitionDoc.id,
-      ...convertTimestampsToDates(competitionDoc.data())
-    } as Competition;
-    
-    // Check if registration deadline has passed
-    const registrationDeadline = new Date(competition.registrationDeadline);
-    const now = new Date();
-    
-    if (now > registrationDeadline) {
-      throw new Error('Registration deadline has passed');
-    }
-    
-    // Prepare update data
-    const updateFields: any = {
-      ...updateData,
-      updatedAt: new Date()
-    };
-    
-    // If new registration file is provided, upload it
-    if (newRegistrationFile) {
-      // Validate file type (must be ZIP)
-      if (newRegistrationFile.type !== 'application/zip' && 
-        newRegistrationFile.type !== 'application/x-zip-compressed' && 
-        !newRegistrationFile.name.endsWith('.zip')) {
-          throw new Error('Registration file must be a ZIP file');
+  async updateTeamInfo(
+    teamId: string,
+    updateData: Partial<Team>,
+    newRegistrationFile: File | null = null
+  ): Promise<Team> {
+    try {
+      // Get the current team data
+      const teamDoc = await getDoc(doc(db, 'teams', teamId));
+      if (!teamDoc.exists()) {
+        throw new Error('Team not found');
+      }
+  
+      const teamData = teamDoc.data() as Team;
+      
+      // Get the competition to check the deadline
+      const competitionDoc = await getDoc(doc(db, 'competitions', teamData.competitionId));
+      if (!competitionDoc.exists()) {
+        throw new Error('Competition not found');
+      }
+      
+      const competition = {
+        id: competitionDoc.id,
+        ...convertTimestampsToDates(competitionDoc.data())
+      } as Competition;
+      
+      // Check if registration deadline has passed
+      const registrationDeadline = new Date(competition.registrationDeadline);
+      const now = new Date();
+      
+      if (now > registrationDeadline) {
+        throw new Error('Registration deadline has passed');
+      }
+      
+      // Prepare update data
+      const updateFields: any = {
+        ...updateData,
+        updatedAt: new Date()
+      };
+      
+      // If new registration file is provided, upload it
+      if (newRegistrationFile) {
+        // Validate file type (must be ZIP)
+        if (newRegistrationFile.type !== 'application/zip' && 
+          newRegistrationFile.type !== 'application/x-zip-compressed' && 
+          !newRegistrationFile.name.endsWith('.zip')) {
+            throw new Error('Registration file must be a ZIP file');
+          }
+          
+        // Validate file size (max 30MB)
+        const maxSizeInBytes = 30 * 1024 * 1024; // 30MB
+        if (newRegistrationFile.size > maxSizeInBytes) {
+          throw new Error('Registration file must be less than 30MB');
         }
         
-      // Validate file size (max 30MB)
-      const maxSizeInBytes = 30 * 1024 * 1024; // 30MB
-      if (newRegistrationFile.size > maxSizeInBytes) {
-        throw new Error('Registration file must be less than 30MB');
+        // Delete previous registration file if it exists
+        if (teamData.registrationDocURL) {
+          try {
+            // Extract the path from the URL to delete the file
+            const oldFileRef = ref(storage, decodeURIComponent(teamData.registrationDocURL.split('?')[0].split('/o/')[1]));
+            await deleteObject(oldFileRef);
+            console.log('Previous registration file deleted successfully');
+          } catch (deleteError) {
+            console.error('Error deleting previous file:', deleteError);
+            // Continue with upload even if deletion fails
+          }
+        }
+        
+        // Upload and update the registration document URL
+        const storageRef = ref(storage, `competitions/${teamData.competitionId}/registrations/${teamId}/${newRegistrationFile.name}`);
+        await uploadBytes(storageRef, newRegistrationFile);
+        const registrationDocURL = await getDownloadURL(storageRef);
+        
+        updateFields.registrationDocURL = registrationDocURL;
+        
+        // If registration was previously rejected, set it back to pending for review
+        if (teamData.registrationStatus === 'rejected') {
+          updateFields.registrationStatus = 'pending';
+        }
       }
       
-      // Upload and update the registration document URL
-      const storageRef = ref(storage, `competitions/${teamData.competitionId}/registrations/${teamId}/${newRegistrationFile.name}`);
-      await uploadBytes(storageRef, newRegistrationFile);
-      const registrationDocURL = await getDownloadURL(storageRef);
-      
-      updateFields.registrationDocURL = registrationDocURL;
-      
-      // If registration was previously rejected, set it back to pending for review
-      if (teamData.registrationStatus === 'rejected') {
-        updateFields.registrationStatus = 'pending';
+      // Check if registration is already approved
+      if (teamData.registrationStatus === 'approved') {
+          updateFields.registrationStatus = 'pending';
       }
+      
+      // Convert dates to timestamps
+      const convertedData = convertDatesToTimestamps(updateFields);
+      
+      // Update in teams collection
+      await updateDoc(doc(db, 'teams', teamId), convertedData);
+      
+      // Also update in competitions/[competitionId]/teams/[teamId]
+      await updateDoc(doc(db, 'competitions', teamData.competitionId, 'teams', teamId), convertedData);
+      
+      // Return the updated team data
+      const updatedTeamDoc = await getDoc(doc(db, 'teams', teamId));
+      return {
+        id: updatedTeamDoc.id,
+        ...convertTimestampsToDates(updatedTeamDoc.data())
+      } as Team;
+    } catch (error) {
+      console.error('Error updating team:', error);
+      throw error;
     }
-    
-    // Check if registration is already approved
-    if (teamData.registrationStatus === 'approved') {
-        updateFields.registrationStatus = 'pending';
-    }
-    // Convert dates to timestamps
-    const convertedData = convertDatesToTimestamps(updateFields);
-    
-    // Update in teams collection
-    await updateDoc(doc(db, 'teams', teamId), convertedData);
-    
-    // Also update in competitions/[competitionId]/teams/[teamId]
-    await updateDoc(doc(db, 'competitions', teamData.competitionId, 'teams', teamId), convertedData);
-    
-    // Return the updated team data
-    const updatedTeamDoc = await getDoc(doc(db, 'teams', teamId));
-    return {
-      id: updatedTeamDoc.id,
-      ...convertTimestampsToDates(updatedTeamDoc.data())
-    } as Team;
-  } catch (error) {
-    console.error('Error updating team:', error);
-    throw error;
-  }
-},
+  },
 
 // Get a specific team by both userId and competitionId
 async getTeamByUserAndCompetition(userId: string, competitionId: string): Promise<Team | null> {
@@ -355,28 +407,52 @@ export const adminService = {
     }
   },
 
-  // Update stage guideline
-  async updateStageGuideline(
-    competitionId: string,
-    stageNumber: number,
-    guidelineFile: File,
-    description: string
-  ) {
-    try {
-      const storageRef = ref(storage, `guidelines/${competitionId}/stage${stageNumber}/${guidelineFile.name}`);
-      await uploadBytes(storageRef, guidelineFile);
-      const guidelineFileURL = await getDownloadURL(storageRef);
-      
-      await updateDoc(doc(db, 'competitions', competitionId), {
-        [`stages.${stageNumber}.guidelineFileURL`]: guidelineFileURL,
-        [`stages.${stageNumber}.description`]: description,
-        updatedAt: new Date()
-      });
-    } catch (error) {
-      console.error('Error updating stage guideline:', error);
-      throw new Error('Failed to update stage guideline');
+// Update stage guideline
+async updateStageGuideline(
+  competitionId: string,
+  stageNumber: number,
+  guidelineFile: File,
+  description: string
+) {
+  try {
+    // First get the current competition data to access the existing file URL
+    const competitionDoc = await getDoc(doc(db, 'competitions', competitionId));
+    if (!competitionDoc.exists()) {
+      throw new Error('Competition not found');
     }
-  },
+    
+    const competitionData = competitionDoc.data();
+    const existingGuidelineURL = competitionData?.stages?.[stageNumber]?.guidelineFileURL;
+    
+    // Delete the previous file if it exists
+    if (existingGuidelineURL) {
+      try {
+        // Extract the path from the URL to delete the file
+        const oldFileRef = ref(storage, decodeURIComponent(existingGuidelineURL.split('?')[0].split('/o/')[1]));
+        await deleteObject(oldFileRef);
+        console.log('Previous guideline file deleted successfully');
+      } catch (deleteError) {
+        console.error('Error deleting previous guideline file:', deleteError);
+        // Continue with upload even if deletion fails
+      }
+    }
+    
+    // Upload the new file
+    const storageRef = ref(storage, `guidelines/${competitionId}/stage${stageNumber}/${guidelineFile.name}`);
+    await uploadBytes(storageRef, guidelineFile);
+    const guidelineFileURL = await getDownloadURL(storageRef);
+    
+    // Update the competition document
+    await updateDoc(doc(db, 'competitions', competitionId), {
+      [`stages.${stageNumber}.guidelineFileURL`]: guidelineFileURL,
+      [`stages.${stageNumber}.description`]: description,
+      updatedAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error updating stage guideline:', error);
+    throw new Error('Failed to update stage guideline');
+  }
+},
 
   async getTeamsByCompetition(competitionId: string) {
     try {
