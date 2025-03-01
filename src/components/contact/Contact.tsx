@@ -98,23 +98,23 @@ export default function Contact() {
         }
     ];
 
-    const socialIcons = [
-        { 
-            icon: Instagram, 
-            color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
-            link: "https://www.instagram.com/makarapreneur"
-        },
-        { 
-            icon: Twitter, 
-            color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
-            link: "https://x.com/makarapreneur"
-        },
-        { 
-            icon: Linkedin, 
-            color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
-            link: "https://www.linkedin.com/in/makarapreneur-hipmi-pt-ui-71a9262b9/?originalSubdomain=id"
-        }
-    ];
+        const socialIcons = [
+            { 
+                icon: Instagram, 
+                color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
+                link: "https://www.instagram.com/makarapreneur"
+            },
+            { 
+                icon: Twitter, 
+                color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
+                link: "https://x.com/makarapreneur"
+            },
+            { 
+                icon: Linkedin, 
+                color: "bg-gradient-to-br from-juneBud to-cornflowerBlue",
+                link: "https://www.linkedin.com/in/makarapreneur-hipmi-pt-ui-71a9262b9/?originalSubdomain=id"
+            }
+        ];
     
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -480,7 +480,7 @@ export default function Contact() {
                             ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
                         `}>
                             <p className="font-medium text-base">Email:</p>
-                            <p className="text-signalBlack/80 text-sm mb-4">Makarapreneur.hipmiptui@gmail.com</p>
+                            <p className="text-signalBlack/80 text-sm mb-4">{process.env.NEXT_PUBLIC_SMTP_USER}</p>
                         </div>
 
                         <div className={`
