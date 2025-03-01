@@ -6,6 +6,7 @@ export interface TeamMember {
   institution?: string;
   major?: string;
   batchYear?: string;
+  
 }
 
 export interface TeamStageSubmission {
@@ -15,7 +16,7 @@ export interface TeamStageSubmission {
   submissionURL?: string;
   submissionDate?: Date;
   feedback?: string;
-  paidStatus?: boolean;      // Only for semifinal stage
+ 
 }
 
 export interface Team {
@@ -24,6 +25,7 @@ export interface Team {
   competitionId: string;
   teamName: string;
   teamLeader: TeamMember;
+  paidStatus : boolean;
   members: {
     member1?: TeamMember;
     member2?: TeamMember;

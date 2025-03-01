@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
+import { useState, FormEvent, ChangeEvent, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserCircle2, Users, FileText, ChevronRight, ChevronLeft, Check, Archive } from 'lucide-react';
+import { Loader2, UserCircle2, Users, FileText, ChevronRight, ChevronLeft, Check, Archive, X, Eye } from 'lucide-react';
 import { competitionService } from '@/lib/firebase/competitionService';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -86,6 +86,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<FormData>({
     teamName: '',
     leaderName: '',
@@ -110,6 +111,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [canChangeDocuments, setCanChangeDocuments] = useState<boolean>(true);
+  const [originalDocURL, setOriginalDocURL] = useState<string | null>(null);
 
   const batchYears = ['2024', '2023', '2022', '2021'];
 
@@ -151,6 +153,11 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
         setTeam(teamData);
         setCanChangeDocuments(teamData.registrationStatus === 'pending');
         
+        // Save the original doc URL for reference
+        if (teamData.registrationDocURL) {
+          setOriginalDocURL(teamData.registrationDocURL);
+        }
+        
         // Check if registration status allows editing
         if (teamData.registrationStatus === 'approved') {
             toast({
@@ -158,7 +165,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
               title: "Cannot Edit",
               description: "Registration is already approved and cannot be edited.",
             });
-          router.push('/competition/' + teamData.id);
+          router.push('/competition/' + teamData.competitionId);
           return;
         }
         
@@ -167,7 +174,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
         const now = new Date();
         
         if (now > registrationDeadline) {
-          router.push('/competition/' + teamData.id);
+          router.push('/competition/' + teamData.competitionId);
           toast({
             variant: "destructive",
             title: "Deadline Passed",
@@ -339,17 +346,65 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
+    
+    // Validate the file before setting it in formData
+    if (file) {
+      // Basic validation for file type and size
+      const isZipFile = file.type === 'application/zip' || 
+                        file.type === 'application/x-zip-compressed' || 
+                        file.name.endsWith('.zip');
+                      
+      const isValidSize = file.size <= 30 * 1024 * 1024; // 30MB
+      
+      if (!isZipFile) {
+        setErrors(prev => ({
+          ...prev,
+          registrationFile: 'Registration file must be a ZIP file'
+        }));
+        // Clear the input so the user can try again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+      
+      if (!isValidSize) {
+        setErrors(prev => ({
+          ...prev,
+          registrationFile: 'Registration file must be less than 30MB'
+        }));
+        // Clear the input so the user can try again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+    }
+    
+    // If validation passes or file is null, update state
     setFormData(prev => ({
       ...prev,
       registrationFile: file
     }));
     
+    // Clear previous errors
     if (errors.registrationFile) {
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors.registrationFile;
         return newErrors;
       });
+    }
+  };
+
+  const clearFileSelection = () => {
+    setFormData(prev => ({
+      ...prev,
+      registrationFile: null
+    }));
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -363,75 +418,97 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateStep(currentStep)) {
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      if (!userId || !team) {
-        throw new Error('You must be logged in to update your registration');
-      }
-
-      // Create team data structure that matches the Team model
-      const updatedTeamData = {
-        teamName: formData.teamName,
-        teamLeader: {
-          name: formData.leaderName,
-          email: formData.leaderEmail,
-          phone: formData.leaderPhone,
-          institution: formData.leaderInstitution,
-          major: formData.leaderMajor,
-          batchYear: formData.leaderBatchYear
-        },
-        members: {
-          member1: {
-            name: formData.member1Name,
-            email: formData.member1Email,
-            phone: formData.member1Phone,
-            institution: formData.member1Institution,
-            major: formData.member1Major,
-            batchYear: formData.member1BatchYear
-          },
-          member2: formData.member2Name ? {
-            name: formData.member2Name,
-            email: formData.member2Email,
-            phone: formData.member2Phone,
-            institution: formData.member2Institution,
-            major: formData.member2Major,
-            batchYear: formData.member2BatchYear
-          } : undefined,
-        },
-        updatedAt: new Date(),
-      };
-
-      // Update team with new data
-      await competitionService.updateTeamInfo(
-        team.id,
-        updatedTeamData,
-        canChangeDocuments && formData.registrationFile ? formData.registrationFile : null
-      );
-
-      toast({
-        title: "Update Successful",
-        description: "Your team information has been updated successfully.",
-      });
-
-      router.push('/competition/' + competitionId);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update team information",
-      });
-    } finally {
-      setIsSubmitting(false);
+  const viewOriginalDocument = () => {
+    if (originalDocURL) {
+      window.open(originalDocURL, '_blank', 'noopener,noreferrer');
     }
   };
+
+// Updated onSubmit function that can be called both from form submission and button click
+const onSubmit = async (e?: FormEvent) => {
+  // Prevent default form submission if called from form submit event
+  if (e) {
+    e.preventDefault();
+  }
+  
+  if (!validateStep(currentStep)) {
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
+
+    if (!userId || !team) {
+      throw new Error('You must be logged in to update your registration');
+    }
+
+    // Create team data structure that matches the Team model
+    const updatedTeamData = {
+      teamName: formData.teamName,
+      teamLeader: {
+        name: formData.leaderName,
+        email: formData.leaderEmail,
+        phone: formData.leaderPhone,
+        institution: formData.leaderInstitution,
+        major: formData.leaderMajor,
+        batchYear: formData.leaderBatchYear
+      },
+      members: {
+        member1: {
+          name: formData.member1Name,
+          email: formData.member1Email,
+          phone: formData.member1Phone,
+          institution: formData.member1Institution,
+          major: formData.member1Major,
+          batchYear: formData.member1BatchYear
+        },
+        member2: formData.member2Name ? {
+          name: formData.member2Name,
+          email: formData.member2Email,
+          phone: formData.member2Phone,
+          institution: formData.member2Institution,
+          major: formData.member2Major,
+          batchYear: formData.member2BatchYear
+        } : undefined,
+      },
+      updatedAt: new Date(),
+    };
+
+    // Update team with new data
+    await competitionService.updateTeamInfo(
+      team.id,
+      updatedTeamData,
+      canChangeDocuments && formData.registrationFile ? formData.registrationFile : null
+    );
+
+    // Clear the file input after successful submission
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
+    // Reset the file in formData
+    setFormData(prev => ({
+      ...prev,
+      registrationFile: null
+    }));
+
+    toast({
+      title: "Update Successful",
+      description: "Your team information has been updated successfully.",
+    });
+
+    router.push('/competition/' + competitionId);
+  } catch (error) {
+    toast({
+      variant: "destructive",
+      title: "Update Failed",
+      description: error instanceof Error ? error.message : "Failed to update team information",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   if (loading || isLoading) {
     return (
@@ -501,7 +578,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
           </Alert>
         )}
         
-        <form onSubmit={onSubmit} className="bg-zinc-900/50 backdrop-blur-sm rounded-xl shadow-2xl p-8 border border-white/10">
+        <form onSubmit={(e) => e.preventDefault()} className="bg-zinc-900/50 backdrop-blur-sm rounded-xl shadow-2xl p-8 border border-white/10">
           {/* Step 1: Team and Leader Information */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -562,7 +639,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
                       name="leaderPhone"
                       value={formData.leaderPhone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62 xxx"
+                      placeholder="Format: +62xxx"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.leaderPhone && (
@@ -663,7 +740,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
                       name="member1Phone"
                       value={formData.member1Phone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62 xxx"
+                      placeholder="Format: +62xxx"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.member1Phone && (
@@ -762,7 +839,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
                       name="member2Phone"
                       value={formData.member2Phone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62 xxx (optional)"
+                      placeholder="Format: +62xxx (optional)"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.member2Phone && (
@@ -866,15 +943,16 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-sm font-medium text-gray-300">Current Documentation</label>
-                      {team?.registrationDocURL && (
-                        <a 
-                          href={team.registrationDocURL} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-juneBud hover:underline"
+                      {originalDocURL && (
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                          className="text-sm text-juneBud hover:text-juneBud hover:bg-juneBud/10 border-juneBud/30"
+                          onClick={viewOriginalDocument}
                         >
-                          View Uploaded Document
-                        </a>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Current Document
+                        </Button>
                       )}
                     </div>
                     
@@ -894,6 +972,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
                                   className="sr-only"
                                   onChange={handleFileChange}
                                   accept=".zip"
+                                  ref={fileInputRef}
                                 />
                               </label>
                               <p className="pl-1">or drag and drop</p>
@@ -902,12 +981,25 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
                               ZIP file only, maximum 30MB
                             </p>
                             {formData.registrationFile && (
-                              <div className="mt-4 p-2 bg-juneBud/10 rounded border border-juneBud/20 text-sm">
-                                <p className="font-medium text-linen">Selected file:</p>
-                                <p className="text-sm text-linen/80">{formData.registrationFile.name}</p>
-                                <p className="text-xs text-linen/60">
+                              <div className="mt-4 p-3 bg-juneBud/10 rounded border border-juneBud/20 text-sm">
+                                <div className="flex justify-between items-center">
+                                  <p className="font-medium text-linen">Selected file:</p>
+                                  <Button 
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={clearFileSelection}
+                                    className="h-7 w-7 rounded-full p-0 text-gray-400 hover:text-gray-100 hover:bg-red-500/20"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                                <p className="text-sm text-linen/80 mt-1">{formData.registrationFile.name}</p>
+                                <p className="text-xs text-linen/60 mt-1">
                                   {(formData.registrationFile.size / (1024 * 1024)).toFixed(2)} MB
                                 </p>
+                                <div className="mt-2 text-xs text-juneBud/90 bg-juneBud/5 p-2 rounded">
+                                  This file will be uploaded when you click "Save Changes" at the bottom.
+                                </div>
                               </div>
                             )}
                           </div>
@@ -927,49 +1019,50 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
             </div>
           )}
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
-            {currentStep > 1 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                className="flex items-center bg-black/50 border-gray-700 hover:bg-black/80 text-linen"
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Previous Step
-              </Button>
-            )}
-            
-            {currentStep < 3 ? (
-              <Button
-                type="button"
-                onClick={nextStep}
-                className="flex items-center ml-auto bg-juneBud hover:bg-juneBud/90 text-signalBlack"
-              >
-                Next Step
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex items-center ml-auto bg-gradient-to-r from-juneBud to-cornflowerBlue hover:opacity-90 text-signalBlack"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    Save Changes
-                    <Check className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+       {/* Navigation Buttons */}
+<div className="flex justify-between mt-8 pt-6 border-t border-white/10">
+  {currentStep > 1 && (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={prevStep}
+      className="flex items-center bg-black/50 border-gray-700 hover:bg-black/80 text-linen"
+    >
+      <ChevronLeft className="w-4 h-4 mr-2" />
+      Previous Step
+    </Button>
+  )}
+  
+  {currentStep < 3 ? (
+    <Button
+      type="button"
+      onClick={nextStep}
+      className="flex items-center ml-auto bg-juneBud hover:bg-juneBud/90 text-signalBlack"
+    >
+      Next Step
+      <ChevronRight className="w-4 h-4 ml-2" />
+    </Button>
+  ) : (
+    <Button
+      type="button" 
+      onClick={onSubmit}
+      disabled={isSubmitting}
+      className="flex items-center ml-auto bg-gradient-to-r from-juneBud to-cornflowerBlue hover:opacity-90 text-signalBlack"
+    >
+      {isSubmitting ? (
+        <>
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          Updating...
+        </>
+      ) : (
+        <>
+          Save Changes
+          <Check className="w-4 h-4 ml-2" />
+        </>
+      )}
+    </Button>
+  )}
+</div>
         </form>
       </div>
 

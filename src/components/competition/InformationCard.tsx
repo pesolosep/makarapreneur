@@ -114,7 +114,7 @@ const determineCurrentStage = (team: Team, competition: Competition) => {
           statusColor: 'text-juneBud',
           statusBg: 'bg-juneBud'
         };
-      } else if (!currentStageSubmission.paidStatus) {
+      } else if (!team.paidStatus) {
         return {
           stageNumber: nextStage,
           stageInfo: competitionStages[parseInt(nextStage)],
@@ -122,7 +122,7 @@ const determineCurrentStage = (team: Team, competition: Competition) => {
           statusColor: 'text-linen/60',
           statusBg: 'bg-muted'
         };
-      } else if (currentStageSubmission.paidStatus && currentStageSubmission.status === 'pending') {
+      } else if (team.paidStatus && currentStageSubmission.status === 'pending') {
         return {
           stageNumber: nextStage,
           stageInfo: competitionStages[parseInt(nextStage)],

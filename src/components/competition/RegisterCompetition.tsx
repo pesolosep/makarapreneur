@@ -312,6 +312,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
           } : undefined,
         },
         registrationDate: new Date(),
+        paidStatus: false,
       };
 
       if (!formData.registrationFile) {

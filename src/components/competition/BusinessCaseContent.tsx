@@ -174,22 +174,22 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
     }
   };
 
-  const handleUpload = async (stageId: string) => {
+  const handleUpload = async (stageId: string, file: File) => {
     if (!handleAuthenticatedAction(
       () => {}, 
       "Please log in to submit your work"
     )) return;
-
+  
     try {
       if (!team) {
         throw new Error('You must be registered to submit');
       }
-
+  
       const stage = competition?.stages[parseInt(stageId)];
       if (!stage) {
         throw new Error('Stage not found');
       }
-
+  
       const stageNumber = parseInt(stageId);
       const previousStage = team.stages[stageNumber - 1];
       
@@ -197,80 +197,62 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
       if (team.registrationStatus !== 'approved') {
         throw new Error('Your team registration must be approved first');
       }
-
+  
       // Check if previous stage was rejected (except for stage 1)
       if (stageNumber > 1 && previousStage?.status === 'rejected') {
         throw new Error('Previous stage submission was rejected');
       }
-
+  
       // Verify stage visibility
       if (!stage.visibility) {
         throw new Error('This stage is not currently available');
       }
-
+  
       // Check submission deadline
       if (new Date() > new Date(stage.deadline)) {
         throw new Error('Submission deadline has passed');
       }
-
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.pdf,.doc,.docx';
+  
+      // Since we already have the file, directly submit it
+      await competitionService.submitStageWork(team.id, stageNumber, file);
       
-      input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-
-        try {
-          await competitionService.submitStageWork(team.id, stageNumber, file);
-          
-          toast({
-            title: "Success",
-            description: "Submission uploaded successfully",
-          });
-
-          // Refresh team data
-          const teamDoc = await getDoc(doc(db, 'teams', team.id));
-          if (teamDoc.exists()) {
-            const updatedTeam = {
-              ...teamDoc.data(),
-              id: teamDoc.id,
-              createdAt: teamDoc.data().createdAt?.toDate(),
-              updatedAt: teamDoc.data().updatedAt?.toDate(),
-              registrationDate: teamDoc.data().registrationDate?.toDate(),
-              stages: Object.entries(teamDoc.data().stages || {}).reduce((acc, [key, value]: [string, any]) => ({
-                ...acc,
-                [key]: {
-                  ...value,
-                  submissionDate: value.submissionDate?.toDate()
+      toast({
+        title: "Success",
+        description: "Submission uploaded successfully",
+      });
+  
+      // Refresh team data
+      const teamDoc = await getDoc(doc(db, 'teams', team.id));
+      if (teamDoc.exists()) {
+        const updatedTeam = {
+          ...teamDoc.data(),
+          id: teamDoc.id,
+          createdAt: teamDoc.data().createdAt?.toDate(),
+          updatedAt: teamDoc.data().updatedAt?.toDate(),
+          registrationDate: teamDoc.data().registrationDate?.toDate(),
+          stages: Object.entries(teamDoc.data().stages || {}).reduce((acc, [key, value]: [string, any]) => ({
+            ...acc,
+            [key]: {
+              ...value,
+              submissionDate: value.submissionDate?.toDate()
+            }
+          }), {})
+        } as Team;
+        
+        setTeam(updatedTeam);
+        
+        setAssignments(prev => 
+          prev.map(assignment => 
+            assignment.id === stageId 
+              ? { 
+                  ...assignment, 
+                  submission: updatedTeam.stages[stageNumber],
+                  submissionEnabled: true
                 }
-              }), {})
-            } as Team;
-            
-            setTeam(updatedTeam);
-            
-            setAssignments(prev => 
-              prev.map(assignment => 
-                assignment.id === stageId 
-                  ? { 
-                      ...assignment, 
-                      submission: updatedTeam.stages[stageNumber],
-                      submissionEnabled: true
-                    }
-                  : assignment
-              )
-            );
-          }
-        } catch (error) {
-          toast({
-            variant: "destructive",
-            title: "Upload Error",
-            description: error instanceof Error ? error.message : "Failed to upload submission",
-          });
-        }
-      };
-      
-      input.click();
+              : assignment
+          )
+        );
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -323,7 +305,7 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
               team={team}
             />
             
-            {team?.stages[2]?.status === 'cleared' && !team.stages[2]?.paidStatus && (
+            {team?.stages[1]?.status === 'cleared' && !team?.paidStatus && (
               <div className="mt-8">
                 <SemifinalPaymentButton 
                   teamId={team.id} 
