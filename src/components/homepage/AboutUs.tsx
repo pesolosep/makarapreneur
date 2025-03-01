@@ -37,7 +37,7 @@ export default function AboutUs({ variant, height }: Variant) {
                     setHasAnimated(true)
                 }
             },
-            { threshold: 0.5 }
+            { threshold: 0.1 } // Reduced threshold for mobile
         )
 
         const currentSectionRef = sectionRef.current;
@@ -138,7 +138,7 @@ export default function AboutUs({ variant, height }: Variant) {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-4 py-16 w-full px-6 justify-center max-w-[1200px] mx-auto">
                     {/* Left Column - Main Content */}
                     <div className={twMerge(
-                        "lg:col-span-7 space-y-4 xmax-w-[600px] opacity-0 translate-x-8",
+                        "lg:col-span-7 space-y-4 max-w-[600px] opacity-0 translate-x-8",
                         isActive && "animate-slideFromRight"
                     )}>
                         <h1 className={twMerge(
@@ -159,13 +159,13 @@ export default function AboutUs({ variant, height }: Variant) {
                         {/* Two Column Layout for Middle Paragraphs */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-justify">
                             <p className={twMerge(
-                                "text-base xlg:text-lg leading-relaxed opacity-0 transition-all duration-1000 delay-300 transform translate-y-4",
+                                "text-base lg:text-lg leading-relaxed opacity-0 transition-all duration-1000 delay-300 transform translate-y-4",
                                 isActive && "opacity-100 translate-y-0"
                             )}>
                                 {textSecondary[1]}
                             </p>
                             <p className={twMerge(
-                                "text-base xlg:text-lg leading-relaxed opacity-0 transition-all duration-1000 delay-400 transform translate-y-4",
+                                "text-base lg:text-lg leading-relaxed opacity-0 transition-all duration-1000 delay-400 transform translate-y-4",
                                 isActive && "opacity-100 translate-y-0"
                             )}>
                                 {textSecondary[2]}
@@ -204,7 +204,7 @@ export default function AboutUs({ variant, height }: Variant) {
                     {/* Full Width Bottom Paragraph */}
                     <div className="lg:col-span-12">
                         <p className={twMerge(
-                            "text-base xlg:text-lg leading-relaxed opacity-0 transform translate-y-4 transition-all duration-1000 delay-800",
+                            "text-base lg:text-lg leading-relaxed opacity-0 transform translate-y-4 transition-all duration-1000 delay-800",
                             isActive && "opacity-100 translate-y-0"
                         )}>
                             {textSecondary[3]}

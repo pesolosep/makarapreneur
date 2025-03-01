@@ -89,7 +89,7 @@ export default function AdminNavbar() {
         } items-center justify-between px-6 lg:px-8`}
       >
         {/* Admin Logo and Title */}
-        <Link href="/admin" className="flex items-center gap-3">
+        <Link href="/admin/competition" className="flex items-center gap-3">
           <div className="bg-juneBud text-signalBlack p-2 rounded-md">
             <Shield className="h-5 w-5" />
           </div>

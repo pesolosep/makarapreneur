@@ -36,20 +36,20 @@ export default function Footer() {
                         </h3>
                         <ul className="font-medium flex flex-col gap-2">
                             {[
-                                "Home",
-                                "About",
-                                "Competition",
-                                "Event",
-                                "Makara Inspires",
-                                "Contact",
+                                { name: "Home", href: "/" },
+                                { name: "About", href: "/aboutus" },
+                                { name: "Competition", href: "/competition" },
+                                { name: "Event", href: "/event" },
+                                { name: "Makara Inspires", href: "/makarainspires" },
+                                { name: "Contact", href: "/contact" }
                             ].map((item) => (
                                 <Link
-                                    key={item}
-                                    href="#"
+                                    key={item.name}
+                                    href={item.href}
                                     className="w-fit group/link"
                                 >
                                     <li className="relative text-signalBlack/80 hover:text-signalBlack transition-colors duration-300">
-                                        {item}
+                                        {item.name}
                                         <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-cornflowerBlue transition-all duration-300 group-hover/link:w-full" />
                                     </li>
                                 </Link>
