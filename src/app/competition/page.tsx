@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 
 export default function page() {
     const cards = [
-        { id: 1, title: "BUSINESS PLAN COMPETITION - SMA", link: "/business-plan" },
-        { id: 2, title: "BUSINESS PLAN COMPETITION - MAHASISWA", link: "/highschool-business-plan" },
-        { id: 3, title: "BUSINESS CASE COMPETITION", link: "/business-case" },
+        { id: 1, title: "BUSINESS PLAN COMPETITION - SMA", link: "/competition/highschool-business-plan" },
+        { id: 2, title: "BUSINESS PLAN COMPETITION - MAHASISWA", link: "/competition/business-plan" },
+        { id: 3, title: "BUSINESS CASE COMPETITION", link: "/competition/business-case" },
     ];
 
     return (
