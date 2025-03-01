@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, LogOut, UserCircle, Shield, Home } from "lucide-react";
 import { logoutUser } from "@/lib/firebase/authService";
@@ -17,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -29,6 +27,7 @@ const adminNavigationItems = [
   { name: "Competitions", href: "/admin/competition", icon: "🏆" },
   { name: "Email Manager", href: "/admin/email", icon: "📧" },
   { name: "Media Partners", href: "/admin/mediapartners", icon: "🤝" },
+  { name: "Sponsors", href: "/admin/sponsors", icon: "💰" },
   { name: "Participants", href: "/admin/participants", icon: "👥" },
 ];
 
@@ -99,7 +98,7 @@ export default function AdminNavbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex lg:items-center space-x-6">
+        <div className="hidden xl:flex lg:items-center space-x-6">
           {adminNavigationItems.map((item) => (
             <Link
               key={item.name}
@@ -148,7 +147,7 @@ export default function AdminNavbar() {
         </div>
 
         {/* Mobile Navigation */}
-        <div className="lg:hidden">
+        <div className="xl:hidden">
           <Sheet>
             <SheetTrigger asChild>
               <button className="rounded-md p-2 text-linen hover:bg-white/10">

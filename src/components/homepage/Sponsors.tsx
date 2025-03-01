@@ -9,31 +9,10 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 
-import bankMandiri from "@/assets/sponsorsLogo/bankMandiri.svg";
-import gojek from "@/assets/sponsorsLogo/gojek.png";
-import jasaMarga from "@/assets/sponsorsLogo/jasaMarga.png";
-import jiwasraya from "@/assets/sponsorsLogo/jiwasraya.png";
 import Image from "next/image";
 
 import { getDocuments } from "@/lib/firebase/crud";
 import { Medpar } from "@/models/Medpar";
-
-const sponsorsLink = [
-    bankMandiri,
-    gojek,
-    jasaMarga,
-    jiwasraya,
-    bankMandiri,
-    gojek,
-    jasaMarga,
-    jiwasraya,
-];
-
-const sponsors = Array.from({ length: sponsorsLink.length }).map((_, i) => ({
-    id: (i + 1).toString(),
-    name: `Sponsor ${i + 1}`,
-    imageUrl: sponsorsLink[i],
-}));
 
 interface CarouselWrapperProps {
     items: Array<{ id?: string; name: string; imageUrl: string }>;
@@ -54,7 +33,7 @@ function CarouselWrapper({ items, className = "" }: CarouselWrapperProps) {
                 }}
             >
                 <CarouselContent className="-ml-2 md:-ml-4">
-                    {items.map((item, index) => (
+                    {[...items, ...items].map((item, index) => (
                         <CarouselItem key={`${item.id}-${index}`} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <Card className={`bg-linen backdrop-blur-sm hover:bg-linen/80 transition-colors ${className}`}>
                                 <CardContent className="flex aspect-square items-center justify-center p-6">
@@ -76,13 +55,19 @@ function CarouselWrapper({ items, className = "" }: CarouselWrapperProps) {
 
 export default function Sponsors() {
     const [mediaPartners, setMediaPartners] = useState<Medpar[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [sponsorsList, setSponsorsList] = useState<any[]>([]);
 
     useEffect(() => {
-        const fetchPartners = async () => {
-            const partners = await getDocuments<Medpar>("mediaPartners")
-            setMediaPartners(partners)
+        const fetchData = async () => {
+            const [partners, sponsorsData] = await Promise.all([
+                getDocuments<Medpar>("mediaPartners"),
+                getDocuments("sponsors")
+            ]);
+            setMediaPartners(partners);
+            setSponsorsList(sponsorsData);
         }   
-        fetchPartners()
+        fetchData();
     }, [])
 
     return (
@@ -93,7 +78,7 @@ export default function Sponsors() {
                 </h2>
                 <div className="mt-8 w-full px-6">
                     <CarouselWrapper
-                        items={sponsors}
+                        items={sponsorsList}
                         className="border-juneBud/20 hover:border-juneBud/40"
                     />
                 </div>
