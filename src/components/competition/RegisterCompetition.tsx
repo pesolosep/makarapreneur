@@ -127,7 +127,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
   };
 
   const validatePhone = (phone: string) => {
-    return /^\+62\d{3,}$/.test(phone);
+    return /^08\d{3,}$/.test(phone);
   };
 
   const validateStep = (step: number) => {
@@ -144,7 +144,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
       if (!formData.leaderPhone) {
         newErrors.leaderPhone = 'Leader phone number is required';
       } else if (!validatePhone(formData.leaderPhone)) {
-        newErrors.leaderPhone = 'Phone number must be in format +62xxx';
+        newErrors.leaderPhone = 'Phone number must be in format 08xxx';
       }
       if (!formData.leaderInstitution) newErrors.leaderInstitution = 'Institution is required';
       if (!formData.leaderMajor) newErrors.leaderMajor = 'Major is required';
@@ -161,7 +161,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
       if (!formData.member1Phone) {
         newErrors.member1Phone = 'Member 1 phone number is required';
       } else if (!validatePhone(formData.member1Phone)) {
-        newErrors.member1Phone = 'Phone number must be in format +62xxx';
+        newErrors.member1Phone = 'Phone number must be in format 08xxx';
       }
       if (!formData.member1Institution) newErrors.member1Institution = 'Institution is required';
       if (!formData.member1Major) newErrors.member1Major = 'Major is required';
@@ -180,7 +180,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
         if (!formData.member2Phone) {
           newErrors.member2Phone = 'Member 2 phone number is required';
         } else if (!validatePhone(formData.member2Phone)) {
-          newErrors.member2Phone = 'Phone number must be in format +62xxx';
+          newErrors.member2Phone = 'Phone number must be in format 08xxx';
         }
         if (!formData.member2Institution) newErrors.member2Institution = 'Institution is required';
         if (!formData.member2Major) newErrors.member2Major = 'Major is required';
@@ -464,7 +464,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                       name="leaderPhone"
                       value={formData.leaderPhone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx"
+                      placeholder="Format: 08xxx"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.leaderPhone && (
@@ -565,7 +565,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                       name="member1Phone"
                       value={formData.member1Phone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx"
+                      placeholder="Format: 08xxx"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.member1Phone && (
@@ -655,7 +655,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                     />
                     {errors.member2Email && (
                       <p className="text-red-400 text-sm mt-1">{errors.member2Email}</p>
-                    )}
+                    )}https://desktop-business.oyindonesia.com/home
                   </div>
                   
                   <div>
@@ -664,7 +664,7 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                       name="member2Phone"
                       value={formData.member2Phone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx (optional)"
+                      placeholder="Format: 08xxx (optional)"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.member2Phone && (
@@ -758,25 +758,25 @@ export default function RegisterCompetition({ competition }: RegisterCompetition
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">Upload Registration ZIP File</label>
                     <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-juneBud/30 rounded-lg hover:border-juneBud transition-colors bg-black/50">
-                      <div className="space-y-1 text-center">
-                        <Archive className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-300">
-                          <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-juneBud hover:text-juneBud/80">
-                            <span>Upload ZIP file</span>
-                            <Input
-                              id="file-upload"
-                              name="registrationFile"
-                              type="file"
-                              className="sr-only"
-                              onChange={handleFileChange}
-                              accept=".zip"
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
+                    <div className="space-y-1 text-center">
+                        <label htmlFor="file-upload" className="cursor-pointer">
+                          <Archive className="mx-auto h-12 w-12 text-juneBud hover:text-juneBud/80 transition-colors" />
+                        </label>
+                        <div className="flex text-sm text-gray-300 justify-center">
+                          <p className="text-gray-400">Upload ZIP file</p>
+                        
+                          <Input
+                            id="file-upload"
+                            name="registrationFile"
+                            type="file"
+                            className="sr-only"
+                            onChange={handleFileChange}
+                            accept=".zip"
+                          />
                         </div>
                         <p className="text-xs text-gray-500">
-                          ZIP file only, maximum 30MB
-                        </p>
+                              ZIP file only, maximum 30MB
+                            </p>
                         {formData.registrationFile && (
                           <div className="mt-4 p-2 bg-juneBud/10 rounded border border-juneBud/20 text-sm">
                             <p className="font-medium text-linen">Selected file:</p>

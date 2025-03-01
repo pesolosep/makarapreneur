@@ -231,7 +231,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
   };
 
   const validatePhone = (phone: string) => {
-    return /^\+62\d{3,}$/.test(phone);
+    return /^08\d{3,}$/.test(phone);
   };
 
   const validateStep = (step: number) => {
@@ -248,7 +248,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
       if (!formData.leaderPhone) {
         newErrors.leaderPhone = 'Leader phone number is required';
       } else if (!validatePhone(formData.leaderPhone)) {
-        newErrors.leaderPhone = 'Phone number must be in format +62xxx';
+        newErrors.leaderPhone = 'Phone number must be in format 08xxx';
       }
       if (!formData.leaderInstitution) newErrors.leaderInstitution = 'Institution is required';
       if (!formData.leaderMajor) newErrors.leaderMajor = 'Major is required';
@@ -265,7 +265,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
       if (!formData.member1Phone) {
         newErrors.member1Phone = 'Member 1 phone number is required';
       } else if (!validatePhone(formData.member1Phone)) {
-        newErrors.member1Phone = 'Phone number must be in format +62xxx';
+        newErrors.member1Phone = 'Phone number must be in format 08xxx';
       }
       if (!formData.member1Institution) newErrors.member1Institution = 'Institution is required';
       if (!formData.member1Major) newErrors.member1Major = 'Major is required';
@@ -284,7 +284,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
         if (!formData.member2Phone) {
           newErrors.member2Phone = 'Member 2 phone number is required';
         } else if (!validatePhone(formData.member2Phone)) {
-          newErrors.member2Phone = 'Phone number must be in format +62xxx';
+          newErrors.member2Phone = 'Phone number must be in format 08xxx';
         }
         if (!formData.member2Institution) newErrors.member2Institution = 'Institution is required';
         if (!formData.member2Major) newErrors.member2Major = 'Major is required';
@@ -639,7 +639,7 @@ const onSubmit = async (e?: FormEvent) => {
                       name="leaderPhone"
                       value={formData.leaderPhone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx"
+                      placeholder="Format: 08xxx"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.leaderPhone && (
@@ -740,7 +740,7 @@ const onSubmit = async (e?: FormEvent) => {
                       name="member1Phone"
                       value={formData.member1Phone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx"
+                      placeholder="Format: 08xxx"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.member1Phone && (
@@ -839,7 +839,7 @@ const onSubmit = async (e?: FormEvent) => {
                       name="member2Phone"
                       value={formData.member2Phone}
                       onChange={handleInputChange}
-                      placeholder="Format: +62xxx (optional)"
+                      placeholder="Format: 08xxx (optional)"
                       className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
                     />
                     {errors.member2Phone && (
@@ -947,7 +947,7 @@ const onSubmit = async (e?: FormEvent) => {
                         <Button 
                           variant="outline"
                           size="sm"
-                          className="text-sm text-juneBud hover:text-juneBud hover:bg-juneBud/10 border-juneBud/30"
+                          className="text-sm text-juneBud :bg-juneBud/10 hover:text-juneBud hover:bg-juneBud/20 border-juneBud/30"
                           onClick={viewOriginalDocument}
                         >
                           <Eye className="w-4 h-4 mr-2" />
@@ -957,29 +957,30 @@ const onSubmit = async (e?: FormEvent) => {
                     </div>
                     
                     {canChangeDocuments ? (
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Update Registration File</label>
-                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-juneBud/30 rounded-lg hover:border-juneBud transition-colors bg-black/50">
-                          <div className="space-y-1 text-center">
-                            <Archive className="mx-auto h-12 w-12 text-gray-400" />
-                            <div className="flex text-sm text-gray-300">
-                              <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-juneBud hover:text-juneBud/80">
-                                <span>Upload ZIP file</span>
-                                <Input
-                                  id="file-upload"
-                                  name="registrationFile"
-                                  type="file"
-                                  className="sr-only"
-                                  onChange={handleFileChange}
-                                  accept=".zip"
-                                  ref={fileInputRef}
-                                />
-                              </label>
-                              <p className="pl-1">or drag and drop</p>
-                            </div>
-                            <p className="text-xs text-gray-500">
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Update Registration File</label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-juneBud/30 rounded-lg hover:border-juneBud transition-colors bg-black/50">
+                      <div className="space-y-1 text-center">
+                        <label htmlFor="file-upload" className="cursor-pointer">
+                          <Archive className="mx-auto h-12 w-12 text-juneBud hover:text-juneBud/80 transition-colors" />
+                        </label>
+                        <div className="flex text-sm text-gray-300 justify-center">
+                          <p className="text-gray-400">Upload ZIP file</p>
+                        
+                          <Input
+                            id="file-upload"
+                            name="registrationFile"
+                            type="file"
+                            className="sr-only"
+                            onChange={handleFileChange}
+                            accept=".zip"
+                            ref={fileInputRef}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
                               ZIP file only, maximum 30MB
                             </p>
+                        <p className="text-xs text-gray-500"></p>
                             {formData.registrationFile && (
                               <div className="mt-4 p-3 bg-juneBud/10 rounded border border-juneBud/20 text-sm">
                                 <div className="flex justify-between items-center">
