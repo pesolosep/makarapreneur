@@ -1,7 +1,7 @@
 import Image from "next/image";
 import map from "@/assets/dummyMap.png";
 import Link from "next/link";
-import { FaInstagram, FaLinkedinIn, FaYoutube } from "react-icons/fa";
+import { FaInstagram, FaLinkedinIn, FaTwitter, FaYoutube } from "react-icons/fa";
 
 export default function Footer() {
     return (
@@ -85,33 +85,40 @@ export default function Footer() {
                             Follow us:
                         </span>
                         <div className="flex gap-4">
-                            <Link
-                                href="#"
-                                className="transition-all duration-300 hover:-translate-y-1 hover:opacity-80"
-                            >
-                                <FaInstagram
-                                    className="w-5 h-5"
-                                    style={{ color: "#E4405F" }}
-                                />
-                            </Link>
-                            <Link
-                                href="#"
-                                className="transition-all duration-300 hover:-translate-y-1 hover:opacity-80"
-                            >
-                                <FaLinkedinIn
-                                    className="w-5 h-5"
-                                    style={{ color: "#0A66C2" }}
-                                />
-                            </Link>
-                            <Link
-                                href="#"
-                                className="transition-all duration-300 hover:-translate-y-1 hover:opacity-80"
-                            >
-                                <FaYoutube
-                                    className="w-5 h-5"
-                                    style={{ color: "#FF0000" }}
-                                />
-                            </Link>
+                    <Link
+                        href="https://www.instagram.com/makarapreneur"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-all duration-300 hover:-translate-y-1 hover:opacity-80"
+                    >
+                        <FaInstagram
+                            className="w-5 h-5"
+                            style={{ color: "#E4405F" }}
+                        />
+                    </Link>
+                    <Link
+                        href="https://x.com/makarapreneur"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-all duration-300 hover:-translate-y-1 hover:opacity-80"
+                    >
+                        <FaTwitter
+                            className="w-5 h-5"
+                            style={{ color: "#1DA1F2" }}
+                        />
+                    </Link>
+                    <Link
+                        href="https://www.linkedin.com/in/makarapreneur-hipmi-pt-ui-71a9262b9/?originalSubdomain=id"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-all duration-300 hover:-translate-y-1 hover:opacity-80"
+                    >
+                        <FaLinkedinIn
+                            className="w-5 h-5"
+                            style={{ color: "#0A66C2" }}
+                        />
+                    </Link>
+                                        
                         </div>
                     </div>
                 </div>
