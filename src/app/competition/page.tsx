@@ -5,6 +5,9 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import ShowCard from "@/components/EventCompList";
 import type { Metadata } from "next";
+import bpcsma from "@/assets/makarapreneur/bpcsma.jpg"
+import bpcmahasiswa from "@/assets/makarapreneur/bpcmahasiswa.jpg"
+import bccmahasiswa from "@/assets/makarapreneur/bccmahasiswa.jpg"
 
 export const metadata: Metadata = {
     title: "Competition | Makarapreneur",
@@ -13,9 +16,9 @@ export const metadata: Metadata = {
 
 export default function page() {
     const cards = [
-        { id: 1, title: "BUSINESS PLAN COMPETITION - SMA", link: "/competition/highschool-business-plan" },
-        { id: 2, title: "BUSINESS PLAN COMPETITION - MAHASISWA", link: "/competition/business-plan" },
-        { id: 3, title: "BUSINESS CASE COMPETITION", link: "/competition/business-case" },
+        { id: 1, title: "BUSINESS PLAN COMPETITION - SMA", link: "/competition/highschool-business-plan", image: bpcsma },
+        { id: 2, title: "BUSINESS PLAN COMPETITION - MAHASISWA", link: "/competition/business-plan", image: bpcmahasiswa },
+        { id: 3, title: "BUSINESS CASE COMPETITION", link: "/competition/business-case", image: bccmahasiswa },
     ];
 
     return (

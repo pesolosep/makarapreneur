@@ -3,16 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
-import aboutUsDummy from "@/assets/aboutUsDummy.svg";
 import { Button } from "./ui/button";
 import { twMerge } from "tailwind-merge";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { StaticImageData } from "next/image";
+import aboutUsDummy from "@/assets/aboutUsDummy.svg";
 
 interface cardInformation { 
     id: number; 
     title: string; 
     link: string; 
+    image: StaticImageData;
 }
 
 interface ShowCardProps {
@@ -49,9 +51,9 @@ export default function ShowCard({ title, variant, cardsList }: ShowCardProps) {
     }, []);
 
     const cards = cardsList || [
-        { id: 1, title: "BUSINESS CASE COMPETITION", link: isSecondary ? "/event/1" : "#1" },
-        { id: 2, title: "STARTUP INNOVATION CHALLENGE", link: isSecondary ? "/event/2" : "#2" },
-        { id: 3, title: "LEADERSHIP DEVELOPMENT PROGRAM", link: isSecondary ? "/event/3" : "#3" }
+        { id: 1, title: "BUSINESS CASE COMPETITION", link: isSecondary ? "/event/1" : "#1", image: aboutUsDummy },
+        { id: 2, title: "STARTUP INNOVATION CHALLENGE", link: isSecondary ? "/event/2" : "#2", image: aboutUsDummy },
+        { id: 3, title: "LEADERSHIP DEVELOPMENT PROGRAM", link: isSecondary ? "/event/3" : "#3", image: aboutUsDummy }
     ];
 
     return (
@@ -144,7 +146,7 @@ export default function ShowCard({ title, variant, cardsList }: ShowCardProps) {
 
                             {/* Background Image with enhanced effects */}
                             <Image
-                                src={aboutUsDummy}
+                                src={card.image}
                                 alt="image"
                                 className="object-cover absolute rounded-2xl transition-all duration-700 
                                          brightness-[0.3] group-hover:brightness-[0.4]

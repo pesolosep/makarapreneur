@@ -1,8 +1,7 @@
 "use client";
 
 import { Calendar, Clock, MapPin, Share2 } from "lucide-react";
-import Image from "next/image";
-import aboutUsDummy from "@/assets/aboutUsDummy.svg";
+import Image, { StaticImageData } from "next/image";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -12,6 +11,7 @@ type EventDetailProps = {
         description: string[];
         theme?: string;
         link: string;
+        image: StaticImageData;
     };
 };
 
@@ -19,13 +19,11 @@ export default function EventDetail({ event }: EventDetailProps) {
     return (
         <div className="container max-w-4xl mx-auto px-4 py-6 text-linen">
             {/* Header Image */}
-            <div className="relative overflow-hidden rounded-lg mb-8">
+            <div className="relative mx-auto overflow-hidden rounded-lg mb-8 flex justify-center items-center w-full max-h-[300px]">
                 <Image
-                    src={aboutUsDummy}
+                    src={event.image}
                     alt="HIPMI Talks UI 2025"
-                    width={900}
-                    height={300}
-                    className="object-top"
+                    className="object-cover"
                     priority
                 />
             </div>

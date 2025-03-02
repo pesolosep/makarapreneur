@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { Button } from "../ui/button"
-import aboutUsDummy from "@/assets/aboutUsDummy.svg"
+import aboutus from "@/assets/makarapreneur/aboutus.jpg"
+import aboutus2 from "@/assets/makarapreneur/aboutus2.jpg"
 import { twMerge } from "tailwind-merge"
 import Link from "next/link"
 
@@ -113,9 +114,9 @@ export default function AboutUs({ variant, height }: Variant) {
                             )}
                         >
                             <Image
-                                src={aboutUsDummy}
+                                src={aboutus}
                                 alt="About Us Illustration"
-                                className="object-contain w-full max-h-[500px] rounded-md transition-transform duration-300 group-hover:rotate-3"
+                                className="object-contain w-full max-h-[500px] max-w-[500px] rounded-md transition-transform duration-300 group-hover:rotate-3"
                             />
                         </div>
                     </div>
@@ -187,9 +188,9 @@ export default function AboutUs({ variant, height }: Variant) {
                                 isActive && "scale-100"
                             )}>
                                 <Image
-                                    src={aboutUsDummy}
+                                    src={aboutus2}
                                     alt="About Us Illustration"
-                                    className="object-contain w-full max-h-[500px] rounded-md transition-transform duration-300 group-hover:rotate-3"
+                                    className="object-contain w-full max-h-[500px] max-w-[500px] rounded-md transition-transform duration-300 group-hover:rotate-3"
                                 />
                             </div>
                             <blockquote className={twMerge(

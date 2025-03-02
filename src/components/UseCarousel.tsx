@@ -10,11 +10,17 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
-import aboutUsDummy from "@/assets/aboutUsDummy.svg";
 import { Button } from "./ui/button";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+
+import bpcsma from "@/assets/makarapreneur/bpcsma.jpg"
+import bpcmahasiswa from "@/assets/makarapreneur/bpcmahasiswa.jpg"
+import bccmahasiswa from "@/assets/makarapreneur/bccmahasiswa.jpg"
+import hipmiTalks from "@/assets/makarapreneur/hipmitalks.jpg"
+import internalBusinessClass from "@/assets/makarapreneur/internalbusinessclass.jpg"
+import networkingNight from "@/assets/makarapreneur/aboutus.jpg"
 
 export default function Slideshow() {
     const [isVisible, setIsVisible] = useState(false);
@@ -79,12 +85,12 @@ export default function Slideshow() {
     };
 
     const cardContent = [
-        { title: 'BUSINESS PLAN COMPETITION - SMA', description: 'Dirancang untuk menginspirasi siswa dalam menciptakan ide bisnis yang kreatif, inovatif, dan praktis, serta membangun pemahaman dasar tentang kewirausahaan.', link: '/competition/highschool-business-plan' },
-        { title: 'BUSINESS PLAN COMPETITION - MAHASISWA', description: 'Platform bagi mahasiswa untuk mengasah keterampilan dalam perencanaan dan pelaksanaan bisnis, dengan fokus pada strategi pertumbuhan dan keberlanjutan.', link: '/competition/business-plan' },
-        { title: 'BUSINESS CASE COMPETITION - MAHASISWA', description: 'Menantang peserta untuk menganalisis dan memberikan solusi strategis terhadap permasalahan bisnis di dunia nyata, mengasah kemampuan berpikir kritis, inovatif, dan berbasis data.', link: '/competition/business-case' },
-        { title: 'HIPMI TALKS', description: 'HIPMI Talks UI 2025 adalah acara pra-event untuk Makarapreneur 2025 yang bertujuan memberikan wawasan berharga dan menginspirasi generasi muda dalam dunia kewirausahaan.', link: '/event/hipmitalks' },
-        { title: 'INTERNAL BUSINESS CLASS', description: 'Internal Business Class (IBC) 2025 adalah workshop kewirausahaan yang dirancang khusus untuk fungsionaris dan anggota HIPMI PT UI.', link: '/event/internalbusinessclass' },
-        { title: 'NETWORKING NIGHT', description: 'Networking Night 2025 merupakan salah satu rangkaian acara dalam Makarapreneur 2025 yang bertujuan untuk menyatukan individu dari berbagai sektor bisnis dan wilayah.', link: '/event/networkingnight' }
+        { title: 'BUSINESS PLAN COMPETITION - SMA', description: 'Dirancang untuk menginspirasi siswa dalam menciptakan ide bisnis yang kreatif, inovatif, dan praktis, serta membangun pemahaman dasar tentang kewirausahaan.', link: '/competition/highschool-business-plan', image: bpcsma },
+        { title: 'BUSINESS PLAN COMPETITION - MAHASISWA', description: 'Platform bagi mahasiswa untuk mengasah keterampilan dalam perencanaan dan pelaksanaan bisnis, dengan fokus pada strategi pertumbuhan dan keberlanjutan.', link: '/competition/business-plan', image: bpcmahasiswa },
+        { title: 'BUSINESS CASE COMPETITION - MAHASISWA', description: 'Menantang peserta untuk menganalisis dan memberikan solusi strategis terhadap permasalahan bisnis di dunia nyata, mengasah kemampuan berpikir kritis, inovatif, dan berbasis data.', link: '/competition/business-case', image: bccmahasiswa },
+        { title: 'HIPMI TALKS', description: 'HIPMI Talks UI 2025 adalah acara pra-event untuk Makarapreneur 2025 yang bertujuan memberikan wawasan berharga dan menginspirasi generasi muda dalam dunia kewirausahaan.', link: '/event/hipmitalks', image: hipmiTalks },
+        { title: 'INTERNAL BUSINESS CLASS', description: 'Internal Business Class (IBC) 2025 adalah workshop kewirausahaan yang dirancang khusus untuk fungsionaris dan anggota HIPMI PT UI.', link: '/event/internalbusinessclass', image: internalBusinessClass },
+        { title: 'NETWORKING NIGHT', description: 'Networking Night 2025 merupakan salah satu rangkaian acara dalam Makarapreneur 2025 yang bertujuan untuk menyatukan individu dari berbagai sektor bisnis dan wilayah.', link: '/event/networkingnight', image: networkingNight }
     ]
 
     return (
@@ -152,7 +158,7 @@ export default function Slideshow() {
 
                                             {/* Background Image */}
                                             <Image
-                                                src={aboutUsDummy}
+                                                src={cardContent[index].image}
                                                 alt="image"
                                                 className="object-cover absolute rounded-2xl transition-all duration-700 group-hover:scale-105 brightness-[0.3] group-hover:brightness-[0.4]"
                                                 fill
