@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
 // Set timeout to 60 seconds
-export const maxDuration = 120; // This is in seconds
+export const maxDuration = 60; // This is in seconds
 
 export async function POST(request: Request) {
   try {
