@@ -2,18 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { Competition } from '@/models/Competition';
-import { Team } from '@/models/Team';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Users, Timer, Target, Check, ChevronRight, AlertCircle, Calendar } from 'lucide-react';
+import { Trophy, Timer, ChevronRight, Calendar, Download, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface InformationCardProps {
   competition?: Competition | null;
-  team?: Team | null;
   onRegister: () => void;
-  onEdit?: () => void;
 }
 
 interface TimeLeft {
@@ -26,13 +23,13 @@ interface TimeLeft {
 const containerVariants = {
   hidden: { 
     opacity: 0,
-    y: -20 // Mulai dari atas
+    y: -20
   },
   visible: { 
     opacity: 1,
     y: 0,
     transition: {
-      duration: 2,
+      duration: 1.2,
       staggerChildren: 0.1
     }
   }
@@ -41,206 +38,24 @@ const containerVariants = {
 const itemVariants = {
   hidden: { 
     opacity: 0,
-    y: -20 // Mulai dari atas
+    y: -15
   },
   visible: { 
     opacity: 1,
     y: 0,
     transition: {
       type: "spring",
-      duration: 1
+      duration: 0.8
     }
   }
-};
-
-// Function to determine current stage and status
-const determineCurrentStage = (team: Team, competition: Competition) => {
-  
-  if (!team || !competition?.stages) return null;
-  
-  // Get all team stage submissions
-  const teamStages = team.stages;
-  const competitionStages = competition.stages;
-  
-  // Check if registration is approved but no stages are cleared
-  if (team.registrationStatus === 'approved' && 
-      (!teamStages || Object.keys(teamStages).length === 0)) {
-    return {
-      stageNumber: '1',
-      stageInfo: competitionStages['1'],
-      statusText: 'Awaiting Submission',
-      statusColor: 'text-linen/60',
-      statusBg: 'bg-muted'
-    };
-  }
-  
-  // Find the last cleared stage
-  let lastClearedStage: string | null = null;
-  let nextStage: string | null = null;
-  
-  // Sort stage keys numerically
-  const stageKeys = Object.keys(teamStages).sort((a, b) => parseInt(a) - parseInt(b));
-  
-  for (const stageKey of stageKeys) {
-    const stage = teamStages[parseInt(stageKey)];
-    
-    if (stage.status === 'cleared' || stage.status === 'approved') {
-      lastClearedStage = stageKey;
-    }
-  }
-  
-  // Determine the next stage
-  if (lastClearedStage) {
-    const nextStageNumber = (parseInt(lastClearedStage) + 1).toString();
-    if (competitionStages[parseInt(nextStageNumber)]) {
-      nextStage = nextStageNumber;
-    }
-  } else if (Object.keys(teamStages).length > 0) {
-    // If no stages are cleared, use the first stage
-    nextStage = '1';
-  }
-  
-  // Check current stage status
-  if (nextStage) {
-    const currentStageSubmission = teamStages[parseInt(nextStage)];
-    
-    // Handle semifinal stage payment status
-    if (nextStage === '2' && currentStageSubmission) {
-      if (currentStageSubmission.status === 'cleared') {
-        return {
-          stageNumber: nextStage,
-          stageInfo: competitionStages[parseInt(nextStage)],
-          statusText: 'Stage Cleared',
-          statusColor: 'text-juneBud',
-          statusBg: 'bg-juneBud'
-        };
-      } else if (!team.paidStatus) {
-        return {
-          stageNumber: nextStage,
-          stageInfo: competitionStages[parseInt(nextStage)],
-          statusText: 'Awaiting Payment',
-          statusColor: 'text-linen/60',
-          statusBg: 'bg-muted'
-        };
-      } else if (team.paidStatus && currentStageSubmission.status === 'pending') {
-        return {
-          stageNumber: nextStage,
-          stageInfo: competitionStages[parseInt(nextStage)],
-          statusText: 'Under Review',
-          statusColor: 'text-linen/60',
-          statusBg: 'bg-muted'
-        };
-      }
-    } else if (currentStageSubmission) {
-      // Handle other stages
-      switch (currentStageSubmission.status) {
-        case 'pending':
-          return {
-            stageNumber: nextStage,
-            stageInfo: competitionStages[parseInt(nextStage)],
-            statusText: 'Under Review',
-            statusColor: 'text-linen/60',
-            statusBg: 'bg-muted'
-          };
-        case 'cleared':
-        case 'approved':
-          return {
-            stageNumber: nextStage,
-            stageInfo: competitionStages[parseInt(nextStage)],
-            statusText: 'Stage Cleared',
-            statusColor: 'text-juneBud',
-            statusBg: 'bg-juneBud'
-          };
-        case 'rejected':
-          return {
-            stageNumber: nextStage,
-            stageInfo: competitionStages[parseInt(nextStage)],
-            statusText: 'Submission Rejected',
-            statusColor: 'text-destructive',
-            statusBg: 'bg-destructive'
-          };
-        default:
-          return {
-            stageNumber: nextStage,
-            stageInfo: competitionStages[parseInt(nextStage)],
-            statusText: 'Awaiting Submission',
-            statusColor: 'text-linen/60',
-            statusBg: 'bg-muted'
-          };
-      }
-    } else {
-      // Stage exists in competition but not yet in team submissions
-      return {
-        stageNumber: nextStage,
-        stageInfo: competitionStages[parseInt(nextStage)],
-        statusText: 'Awaiting Submission',
-        statusColor: 'text-linen/60',
-        statusBg: 'bg-muted'
-      };
-    }
-  }
-  
-  // If all stages are cleared or no next stage is found
-  if (lastClearedStage && lastClearedStage === Object.keys(competitionStages).length.toString()) {
-    return {
-      stageNumber: lastClearedStage,
-      stageInfo: competitionStages[parseInt(lastClearedStage)],
-      statusText: 'All Stages Completed',
-      statusColor: 'text-juneBud',
-      statusBg: 'bg-juneBud'
-    };
-  }
-  
-  // Default fallback
-  return {
-    stageNumber: '1',
-    stageInfo: competitionStages['1'],
-    statusText: 'Awaiting Submission',
-    statusColor: 'text-linen/60',
-    statusBg: 'bg-muted'
-  };
-};
-
-// Helper function to determine application status display
-const getApplicationStatus = (team: Team, currentStageInfo: { stageNumber: string; stageInfo: any; statusText: string; statusColor: string; statusBg: string; } | null) => {
-  // If registration is not approved yet, show registration status
-  if (team.registrationStatus !== 'approved') {
-    return {
-      statusText: team.registrationStatus === 'pending' ? 'Awaiting Registration Approval' : 'Application Rejected',
-      statusColor: team.registrationStatus === 'pending' ? 'text-linen/60' : 'text-destructive',
-      statusBg: team.registrationStatus === 'pending' ? 'bg-muted' : 'bg-destructive'
-    };
-  }
-  
-  // If registration is approved but no current stage info, default to approved status
-  if (!currentStageInfo) {
-    return {
-      statusText: 'Application Approved',
-      statusColor: 'text-juneBud',
-      statusBg: 'bg-juneBud'
-    };
-  }
-  
-  // Otherwise, use the current stage status
-  return {
-    statusText: currentStageInfo.statusText,
-    statusColor: currentStageInfo.statusColor,
-    statusBg: currentStageInfo.statusBg
-  };
 };
 
 export default function InformationCard({ 
   competition,
-  team,
-  onRegister,
-  onEdit
+  onRegister
 }: InformationCardProps) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const currentStageInfo = team && competition?.stages ? determineCurrentStage(team, competition) : null;
-  const statusDisplay = team ? getApplicationStatus(team, currentStageInfo) : null;
   
-  // Get the status display information
-
   useEffect(() => {
     if (!competition?.registrationDeadline) return;
 
@@ -265,282 +80,208 @@ export default function InformationCard({
     return () => clearInterval(timer);
   }, [competition?.registrationDeadline]);
 
+  const handleRedirectToRegister = () => {
+    // Use registration URL from the competition model or fallback to default
+    const registrationUrl = competition?.registrationUrl || 'https://makarapreneur.id/register';
+    window.open(registrationUrl, '_blank');
+  };
+
+  const handleDownloadGuidelines = () => {
+    // Use guideline file URL from the competition model stage 1 or fallback to default
+    const guidelineUrl = competition?.stages?.[1]?.guidelineFileURL || 'https://makarapreneur.id/guidelines';
+    window.open(guidelineUrl, '_blank');
+  };
+
   return (
-    <section className=" bg-gradient-to-b from-juneBud to-cornflowerBlue py-16">
+    <section className="bg-gradient-to-b from-juneBud/90 to-cornflowerBlue/90 py-20">
       <motion.div 
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-7xl mx-auto px-4 relative"
+        className="max-w-5xl mx-auto px-4 relative"
       >
-        <div className="flex flex-col lg:flex-row gap-12 items-start">
-          {/* Left Section - Competition Info */}
+        {/* Competition Badge & Title */}
+        <motion.div 
+          variants={itemVariants}
+          className="text-center mb-10"
+        >
           <motion.div 
             variants={itemVariants}
-            className="flex-1 space-y-8"
+            className="inline-flex items-center gap-2 px-5 py-2 mb-6 rounded-full bg-cornflowerBlue/80 backdrop-blur-sm shadow-md"
           >
-            <div className="relative">              
-              <div className="relative">
-                <motion.div 
-                  variants={itemVariants}
-                  className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-lg bg-cornflowerBlue"
-                >
-                  <Trophy className="w-5 h-5 text-linen" />
-                  <span className="text-sm font-medium text-linen font-poppins">
-                    Business Competition
-                  </span>
-                </motion.div>
-
-                <motion.h1 
-                  variants={itemVariants}
-                  className="text-5xl font-bold mb-6 text-signalBlack font-poppins leading-tight"
-                >
-                  {competition?.name || 'Competition Name'}
-                </motion.h1>
-
-                <motion.p 
-                  variants={itemVariants}
-                  className="text-lg lg:text-xl font-medium text-signalBlack leading-relaxed font-sans"
-                >
-                  {competition?.description || 'Competition description loading...'}
-                </motion.p>
-              </div>
-            </div>
+            <Trophy className="w-5 h-5 text-white" />
+            <span className="text-sm font-medium text-white font-poppins tracking-wide">
+              BUSINESS COMPETITION
+            </span>
           </motion.div>
 
-          {/* Right Section - Registration Card */}
-          <motion.div 
+          <motion.h1 
             variants={itemVariants}
-            className="lg:w-[480px] sticky top-8"
+            className="text-4xl md:text-6xl font-bold mb-6 text-signalBlack font-poppins leading-tight"
           >
-            <Card className="backdrop-blur-xl bg-signalBlack/95">
-              <CardContent className="p-8">
-                <motion.div 
-                  variants={itemVariants}
-                  className="flex items-center justify-between mb-8"
-                >
-                  <h2 className="text-2xl font-bold font-poppins text-background">Registration Status</h2>
-                  <AnimatePresence mode="wait">
-    {team ? (
-      team.registrationStatus === 'pending' ? (
-        <motion.div
-          key="pending"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 text-amber-500 rounded-full"
-        >
-          <Timer className="w-4 h-4" />
-          <span className="text-sm font-medium">Pending</span>
+            {competition?.name || 'Competition Name'}
+          </motion.h1>
+
+          <motion.p 
+            variants={itemVariants}
+            className="text-lg md:text-xl font-medium text-signalBlack/90 leading-relaxed max-w-3xl mx-auto"
+          >
+            {competition?.description || 'Competition description loading...'}
+          </motion.p>
         </motion.div>
-      ) : team.registrationStatus === 'approved' ? (
-        <motion.div
-          key="approved"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          className="flex items-center gap-2 px-4 py-2 bg-juneBud/20 text-juneBud rounded-full"
+
+        {/* Registration Card - Centered with clean design */}
+        <motion.div 
+          variants={itemVariants}
+          className="max-w-xl mx-auto"
         >
-          <Check className="w-4 h-4" />
-          <span className="text-sm font-medium">Approved</span>
-        </motion.div>
-      ) : (
-        <motion.div
-          key="rejected"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          className="flex items-center gap-2 px-4 py-2 bg-destructive/20 text-destructive rounded-full"
-        >
-          <AlertCircle className="w-4 h-4" />
-          <span className="text-sm font-medium">Rejected</span>
-        </motion.div>
-      )
-    ) : (
-      <motion.div
-        key="not-registered"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        className="flex items-center gap-2 px-4 py-2 bg-destructive/20 text-destructive rounded-full"
-      >
-        <AlertCircle className="w-4 h-4" />
-        <span className="text-sm font-medium">Not Registered</span>
-      </motion.div>
-    )}
-  </AnimatePresence>
-                </motion.div>
+          <Card className="backdrop-blur-xl bg-gray-800/60 border border-white/20 overflow-hidden rounded-2xl shadow-xl">
+            <CardContent className="p-8">
+              {/* Top section with deadline */}
+              <motion.div variants={itemVariants} className="mb-8">
+                <div className="flex items-center gap-2 text-white/90 mb-2">
+                  <Calendar className="w-5 h-5 text-red-300" />
+                  <span className="font-bold uppercase tracking-wide text-sm">Registration Deadline</span>
+                </div>
+                <p className="text-2xl font-bold text-white mb-2">
+                  {new Date(competition?.registrationDeadline || '').toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+                <p className="text-base text-white/80 font-medium">
+                  {new Date(competition?.registrationDeadline || '').toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </p>
+              </motion.div>
 
-                {!team ? (
-                  <motion.div 
-                    variants={containerVariants}
-                    className="space-y-8"
-                  >
-                    <motion.div variants={itemVariants}>
-                      <div className="flex items-center gap-2 text-linen/60 mb-2">
-                        <Calendar className="w-5 h-5" />
-                        <span>Registration Deadline</span>
-                      </div>
-                      <p className="text-xl font-medium text-linen">
-                        {new Date(competition?.registrationDeadline || '').toLocaleString()}
-                      </p>
-                    </motion.div>
+              {/* Countdown Timer */}
+              <motion.div 
+                variants={itemVariants}
+                className="flex justify-between mb-8 p-4 rounded-xl bg-gradient-to-br from-gray-900/60 to-gray-700/40"
+              >
+                <CountdownBlock label="Days" value={timeLeft.days} />
+                <CountdownBlock label="Hours" value={timeLeft.hours} />
+                <CountdownBlock label="Minutes" value={timeLeft.minutes} />
+                <CountdownBlock label="Seconds" value={timeLeft.seconds} />
+              </motion.div>
 
-                    <motion.div 
-                      variants={itemVariants}
-                      className="flex justify-between"
-                    >
-                      <CountdownBlock label="Days" value={timeLeft.days} />
-                      <CountdownBlock label="Hours" value={timeLeft.hours} />
-                      <CountdownBlock label="Min" value={timeLeft.minutes} />
-                      <CountdownBlock label="Sec" value={timeLeft.seconds} />
-                    </motion.div>
-
-                    <motion.div variants={itemVariants}>
-                      <Button
-                        onClick={onRegister}
-                        className={cn(
-                          "w-full py-6 text-lg font-medium",
-                          "bg-gradient-to-r from-juneBud to-cornflowerBlue text-signalBlack",
-                          "hover:shadow-lg hover:shadow-cornflowerBlue/20",
-                          "transition-all duration-300",
-                          "disabled:opacity-50 disabled:cursor-not-allowed"
-                        )}
-                        disabled={new Date() > new Date(competition?.registrationDeadline || 0)}
-                      >
-                        <motion.div 
-                          className="flex items-center justify-center gap-2"
-                          whileHover={{ x: 5 }}
-                          whileTap={{ x: -2 }}
-                        >
-                          {new Date() > new Date(competition?.registrationDeadline || 0) ? (
-                            <>
-                              <Timer className="w-5 h-5" />
-                              Registration Closed
-                            </>
-                          ) : (
-                            <>
-                              Register Now
-                              <ChevronRight className="w-5 h-5" />
-                            </>
-                          )}
-                        </motion.div>
-                      </Button>
-                    </motion.div>
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    variants={containerVariants}
-                    className="space-y-6"
-                  >
-                    {/* Team Details */}
-                    <motion.div variants={itemVariants}>
-                      <div className="flex items-center gap-2 text-linen mb-3">
-                        <Users className="w-5 h-5" />
-                        <h3 className="text-xl font-semibold font-poppins">Team Details</h3>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <TeamInfoItem label="Team" value={team.teamName} />
-                          <TeamInfoItem label="Leader" value={team.teamLeader.name} />
-                          {team.members.member1 && (
-                            <TeamInfoItem label="Member 1" value={team.members.member1.name} />
-                          )}
-                          {team.members.member2 && (
-                            <TeamInfoItem label="Member 2" value={team.members.member2.name} />
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Status & Current Stage */}
-                    <motion.div variants={itemVariants}>
-                      <div className="flex items-center gap-2 text-linen mb-3">
-                        <Target className="w-5 h-5" />
-                        <h3 className="text-xl font-semibold font-poppins">Progress</h3>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-4 space-y-4">
-                        {/* Stage Info - Always show current stage if available */}
-                        {currentStageInfo && (
-                          <div>
-                            <label className="text-sm text-linen/60 block mb-1">Current Stage</label>
-                            <div className="bg-white/5 rounded p-3 border border-white/10">
-                              <h4 className="text-lg font-medium text-cornflowerBlue mb-2">
-                                {currentStageInfo.stageInfo.title}
-                              </h4>
-                              <div className="flex items-center gap-2 text-sm text-linen/60">
-                                <Calendar className="w-4 h-4" />
-                                <span>Due {new Date(currentStageInfo.stageInfo.deadline).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric'
-                                })}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Combined Application Status */}
-                        <div>
-                          <label className="text-sm text-linen/60 block mb-1">Application Status</label>
-                          <div className="flex items-center gap-2 bg-white/5 rounded p-3 border border-white/10">
-                                            <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        team.registrationStatus === 'pending' ? "bg-amber-500" :
-                        team.registrationStatus === 'approved' ? 
-                          (currentStageInfo ? statusDisplay?.statusBg : "bg-juneBud") : 
-                          "bg-destructive"
-                      )} />
-                      <span className={cn(
-                        "text-sm font-medium",
-                        team.registrationStatus === 'pending' ? "text-amber-500" :
-                        team.registrationStatus === 'approved' ? 
-                          (currentStageInfo ? statusDisplay?.statusColor : "text-juneBud") : 
-                          "text-destructive"
-                      )}>
-                        {team.registrationStatus === 'pending' ? "Awaiting Registration Approval" :
-                        team.registrationStatus === 'approved' ? 
-                          (currentStageInfo ? statusDisplay?.statusText : "Application Approved") : 
-                          "Application Rejected"}
-                      </span>
-                    </div>
-                        </div>
-                      </div>
-                    </motion.div>
-       
-
-                  {/* Only show Edit button if registration is pending and deadline hasn't passed */}
-                  {onEdit && 
-                    team.registrationStatus !== 'approved' && 
-                    new Date() <= new Date(competition?.registrationDeadline || 0) && (
-                    <motion.div variants={itemVariants}>
-                      <Button
-                        onClick={onEdit}
-                        className="w-full py-6 text-lg font-medium bg-gradient-to-r from-juneBud to-cornflowerBlue 
-                        text-signalBlack hover:shadow-lg hover:shadow-cornflowerBlue/20 transition-all duration-500
-                        hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        <motion.div 
-                          className="flex items-center justify-center gap-2"
-                          whileHover={{ x: 5 }}
-                          whileTap={{ x: -2 }}
-                          transition={{ 
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 10
-                          }}
-                        >
-                          Edit Team Information
-                          <ChevronRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-                        </motion.div>
-                      </Button>
-                    </motion.div>
+              {/* Action Buttons */}
+              <motion.div variants={itemVariants} className="space-y-4">
+                <Button
+                  onClick={handleRedirectToRegister}
+                  className={cn(
+                    "w-full py-6 text-base font-semibold",
+                    "bg-gradient-to-r from-juneBud to-cornflowerBlue text-signalBlack",
+                    "hover:shadow-lg hover:from-juneBud/90 hover:to-cornflowerBlue/90",
+                    "transition-all duration-300 rounded-xl",
+                    "disabled:opacity-60 disabled:cursor-not-allowed"
                   )}
-                  </motion.div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+                  disabled={new Date() > new Date(competition?.registrationDeadline || 0)}
+                >
+                  <motion.span 
+                    className="flex items-center justify-center gap-2"
+                    whileHover={{ x: 3 }}
+                    whileTap={{ x: -2 }}
+                  >
+                    {new Date() > new Date(competition?.registrationDeadline || 0) ? (
+                      <>
+                        <Timer className="w-5 h-5" />
+                        Registration Closed
+                      </>
+                    ) : (
+                      <>
+                        Register Now
+                        <ExternalLink className="w-5 h-5" />
+                      </>
+                    )}
+                  </motion.span>
+                </Button>
+                
+                <Button
+                  onClick={handleDownloadGuidelines}
+                  variant="outline"
+                  className="w-full py-5 text-base font-medium bg-white/20 text-white border-white/30 
+                           hover:bg-white/30 transition-all duration-300 rounded-xl"
+                >
+                  <motion.span
+                    className="flex items-center justify-center gap-2" 
+                    whileHover={{ y: -2 }}
+                    whileTap={{ y: 1 }}
+                  >
+                    <Download className="w-5 h-5" />
+                    Download Guidelines
+                  </motion.span>
+                </Button>
+              </motion.div>
+              
+              {/* Registration Status Badge - Only show when closed */}
+              {new Date() > new Date(competition?.registrationDeadline || 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-6 bg-red-900/40 text-red-300 px-4 py-3 rounded-lg text-sm font-medium flex items-center"
+                >
+                  <Timer className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Registration is now closed. Please contact us for more information.</span>
+                </motion.div>
+              )}
+              
+              {/* Contact Information - Separate Box */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, duration: 0.5 }}
+                className="mt-12 bg-gray-700/50 backdrop-blur-md border border-white/20 rounded-xl p-5 shadow-lg"
+              >
+                <h3 className="font-bold text-base text-white mb-4 text-center uppercase tracking-wider">
+                  Need Help? Contact Our Team
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <a 
+                    href="https://wa.me/6282230057560" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-cornflowerBlue/80 hover:bg-cornflowerBlue transition-all duration-300 rounded-lg p-3 flex items-center justify-between group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="currentColor" strokeWidth="0" className="text-white">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                      <span className="font-semibold text-white">Rafli</span>
+                    </span>
+                    <span className="text-white text-sm bg-white/20 px-3 py-1 rounded-full group-hover:bg-white/30 transition-all">
+                      +62 822-3005-7560
+                    </span>
+                  </a>
+                  
+                  <a 
+                    href="https://wa.me/6287775002425" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-juneBud/80 hover:bg-juneBud transition-all duration-300 rounded-lg p-3 flex items-center justify-between group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="currentColor" strokeWidth="0" className="text-white">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                      <span className="font-semibold text-grey">Adelia</span>
+                    </span>
+                    <span className="text-grey text-sm bg-white/20 px-3 py-1 rounded-full group-hover:bg-white/30 transition-all">
+                      +62 877-7500-2425
+                    </span>
+                  </a>
+                </div>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </motion.div>
     </section>
   );
@@ -552,24 +293,12 @@ const CountdownBlock = ({ label, value }: { label: string; value: number }) => (
     whileHover={{ scale: 1.05 }}
     transition={{ type: "spring", stiffness: 400, damping: 10 }}
   >
-    <div className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center mb-2">
-      <span className="text-2xl font-bold text-linen font-mono tabular-nums">
+    <div className="w-16 h-16 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 
+                 flex items-center justify-center mb-2 shadow-md">
+      <span className="text-2xl font-bold text-white font-mono tabular-nums tracking-tight">
         {value < 10 ? `0${value}` : value}
       </span>
     </div>
-    <span className="text-sm font-medium text-linen/60">{label}</span>
+    <span className="text-sm font-semibold text-white/90">{label}</span>
   </motion.div>
-);
-
-
-const TeamInfoItem = ({ label, value, className }: { label: string; value: string; className?: string }) => (
-  <div className="flex flex-col">
-    <label className="text-sm text-linen/60 mb-1">{label}</label>
-    <motion.p 
-      className={cn("text-lg font-medium text-linen truncate", className)}
-      whileHover={{ x: 2 }}
-    >
-      {value}
-    </motion.p>
-  </div>
 );
