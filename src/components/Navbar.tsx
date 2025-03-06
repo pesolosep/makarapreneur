@@ -384,4 +384,6 @@ export default function Navbar({ notTransparent }: NavbarProps) {
             </nav>
         </header>
     );
+
 }
+
