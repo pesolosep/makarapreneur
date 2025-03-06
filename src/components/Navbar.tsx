@@ -11,8 +11,8 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
-import { logoutUser } from "@/lib/firebase/authService";
-import { useAuth } from "@/contexts/AuthContext";
+// import { logoutUser } from "@/lib/firebase/authService";
+// import { useAuth } from "@/contexts/AuthContext";
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -63,7 +63,7 @@ type NavbarProps = {
 };
 export default function Navbar({ notTransparent }: NavbarProps) {
     const [isScrolled, setIsScrolled] = useState(false);
-    const { user, userData, isAdmin, loading } = useAuth();
+    // const { user, userData, isAdmin, loading } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
 
@@ -83,6 +83,7 @@ export default function Navbar({ notTransparent }: NavbarProps) {
     }, []);
 
     // Handle logout with proper error handling and navigation
+    /*
     const handleLogout = async () => {
         try {
             await logoutUser();
@@ -92,7 +93,9 @@ export default function Navbar({ notTransparent }: NavbarProps) {
             // You might want to add toast notification here
         }
     };
+    */
 
+    /*
     const AuthButton = () => {
         if (loading) {
             return null; // Or a loading spinner
@@ -145,8 +148,10 @@ export default function Navbar({ notTransparent }: NavbarProps) {
             </Link>
         );
     };
+    */
 
     // Mobile auth button component with enhanced user data display
+    /*
     const MobileAuthButton = () => {
         if (loading) {
             return null; // Or a loading spinner
@@ -190,6 +195,7 @@ export default function Navbar({ notTransparent }: NavbarProps) {
             </Link>
         );
     };
+    */
 
     return (
         <header
@@ -199,13 +205,11 @@ export default function Navbar({ notTransparent }: NavbarProps) {
                     : "bg-zinc-900/80 backdrop-blur-sm"
             }`}
         >
-            {/* Rest of the navbar structure remains the same */}
             <nav
                 className={`mx-auto flex duration-500 ${
                     isScrolled ? "h-20" : "h-24"
                 } items-center justify-between px-6 lg:px-8`}
             >
-                {/* ... Previous Link and Image components ... */}
                 <Link href="/" className="flex items-center gap-3">
                     <Image
                         src="/icon.svg"
@@ -285,8 +289,13 @@ export default function Navbar({ notTransparent }: NavbarProps) {
                         </NavigationMenuList>
                     </NavigationMenu>
 
-                    {/* Desktop Auth Button */}
-                    <AuthButton />
+                    {/* Placeholder for Auth Button (commented out) */}
+                    {/* <Link
+                        href="/authentication/login"
+                        className="ml-8 px-6 py-2.5 bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+                    >
+                        Login
+                    </Link> */}
                 </div>
 
                 {/* Mobile Navigation */}
@@ -361,8 +370,13 @@ export default function Navbar({ notTransparent }: NavbarProps) {
                                         </Link>
                                     )
                                 )}
-                                {/* Mobile Login Button */}
-                                <MobileAuthButton />
+                                {/* Placeholder for Mobile Auth Button (commented out) */}
+                                {/* <Link
+                                    href="/authentication/login"
+                                    className="w-full px-6 py-2.5 font-poppins text-center bg-juneBud hover:bg-juneBud/90 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+                                >
+                                    Login
+                                </Link> */}
                             </div>
                         </SheetContent>
                     </Sheet>

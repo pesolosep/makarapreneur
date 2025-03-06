@@ -8,6 +8,7 @@ export interface Stage {
   }
   
   export interface Competition {
+    registrationUrl: string;
     id: string;
     name: string;
     description: string;
