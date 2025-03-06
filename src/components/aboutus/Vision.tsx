@@ -1,6 +1,6 @@
 "use client";
 
-import dummyVision from "@/assets/dummyVision.svg";
+import vision from "@/assets/makarapreneur/vision.jpg"
 import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
 
@@ -94,7 +94,7 @@ export default function Vision() {
             >
                 <div className="relative group">
                     <Image
-                        src={dummyVision}
+                        src={vision}
                         alt="Vision illustration"
                         className="w-[420px] transition-transform duration-500 group-hover:scale-[1.02]"
                     />

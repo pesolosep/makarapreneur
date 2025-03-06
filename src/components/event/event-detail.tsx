@@ -1,7 +1,7 @@
-import { Calendar, Clock, MapPin, Share2 } from "lucide-react";
-import Image from "next/image";
-import aboutUsDummy from "@/assets/aboutUsDummy.svg";
+"use client";
 
+import { Calendar, Clock, MapPin, Share2 } from "lucide-react";
+import Image, { StaticImageData } from "next/image";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -10,6 +10,8 @@ type EventDetailProps = {
         title: string;
         description: string[];
         theme?: string;
+        link: string;
+        image: StaticImageData;
     };
 };
 
@@ -17,13 +19,11 @@ export default function EventDetail({ event }: EventDetailProps) {
     return (
         <div className="container max-w-4xl mx-auto px-4 py-6 text-linen">
             {/* Header Image */}
-            <div className="relative overflow-hidden rounded-lg mb-8">
+            <div className="relative mx-auto overflow-hidden rounded-lg mb-8 flex justify-center items-center w-full max-h-[300px]">
                 <Image
-                    src={aboutUsDummy}
+                    src={event.image}
                     alt="HIPMI Talks UI 2025"
-                    width={900}
-                    height={300}
-                    className="object-top"
+                    className="object-cover"
                     priority
                 />
             </div>
@@ -40,13 +40,46 @@ export default function EventDetail({ event }: EventDetailProps) {
                         </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <Button size="lg" className="">
-                            Daftar Sekarang
+                        <Button
+                            size="lg"
+                            className=""
+                            disabled={event.link === "disabled"}
+                            onClick={() => {
+                                if (event.link !== "disabled") {
+                                    window.open(event.link, "_blank");
+                                }
+                            }}
+                        >
+                            {event.link === "disabled"
+                                ? "Coming Soon"
+                                : "Daftar Sekarang"}
                         </Button>
+
                         <Button
                             variant="outline"
                             size="lg"
                             className="text-signalBlack bg-linen hover:bg-linen/50 border-0"
+                            onClick={() => {
+                                navigator.clipboard.writeText(
+                                    window.location.href
+                                );
+                                const notification =
+                                    document.createElement("div");
+                                notification.className =
+                                    "fixed bottom-4 right-4 bg-juneBud text-signalBlack px-4 py-2 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-500";
+                                notification.textContent =
+                                    "Link berhasil disalin!";
+                                document.body.appendChild(notification);
+
+                                setTimeout(() => {
+                                    notification.style.opacity = "0";
+                                    notification.style.transform =
+                                        "translateY(100%)";
+                                    setTimeout(() => {
+                                        document.body.removeChild(notification);
+                                    }, 500);
+                                }, 2000);
+                            }}
                         >
                             <Share2 className="mr-2 h-4 w-4" />
                             Bagikan
@@ -96,9 +129,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                         <h2 className="text-xl font-semibold mb-3 text-juneBud">
                             Theme
                         </h2>
-                        <p className="">
-                            {event.theme}
-                        </p>
+                        <p className="">{event.theme}</p>
                     </section>
                 )}
 
@@ -139,8 +170,19 @@ export default function EventDetail({ event }: EventDetailProps) {
 
             {/* Bottom CTA */}
             <div className="mt-12 text-center">
-                <Button size="lg" className="min-w-[200px]">
-                    Daftar Sekarang
+                <Button
+                    size="lg"
+                    className="min-w-[200px]"
+                    disabled={event.link === "disabled"}
+                    onClick={() => {
+                        if (event.link !== "disabled") {
+                            window.open(event.link, "_blank");
+                        }
+                    }}
+                >
+                    {event.link === "disabled"
+                        ? "Coming Soon"
+                        : "Daftar Sekarang"}
                 </Button>
             </div>
         </div>
