@@ -14,14 +14,28 @@ jobs:
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          
+        
       - name: Deploy to VM
+        env:
+            REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} << 'EOF'
-            cd /path/to/deployment
-            git pull origin main
-            docker build -t nextjs-app .
-            docker stop nextjs-container || true
-            docker rm nextjs-container || true
-            docker run -d --name nextjs-container -p 3000:3000 nextjs-app
-          EOF
+            ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} << EOF
+                # Create deployment directory if it doesn't exist
+                mkdir -p ~/nextjs-app
+                
+                # Go to the directory
+                cd ~/nextjs-app
+                
+                # Clone the repo if .git doesn't exist, otherwise pull latest changes
+                if [ ! -d .git ]; then
+                git clone https://x-access-token:${REPO_ACCESS_TOKEN}@github.com/pesolosep/makarapreneur.git .
+                else
+                git pull origin main
+                fi
+                
+                # Build and run the Docker container
+                docker build -t nextjs-app .
+                docker stop nextjs-container || true
+                docker rm nextjs-container || true
+                docker run -d --name nextjs-container -p 3000:3000 nextjs-app
+            EOF
