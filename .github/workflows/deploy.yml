@@ -44,16 +44,9 @@ jobs:
                   git pull origin main
                 fi
                 
-                # Update Dockerfile to use npm install instead of npm ci
-                sed -i 's/RUN npm ci/RUN npm install/' Dockerfile
-                
-                # Fix ENV format in Dockerfile
-                sed -i 's/ENV NODE_ENV production/ENV NODE_ENV=production/' Dockerfile
-                sed -i 's/ENV PORT 3000/ENV PORT=3000/' Dockerfile
-                sed -i 's/ENV HOSTNAME "0.0.0.0"/ENV HOSTNAME="0.0.0.0"/' Dockerfile
-                
-                # Create .env.local file with all environment variables
-                cat > ~/nextjs-app/.env.local << ENVFILE
+                # Create .env.local file with Firebase config
+                echo "Creating .env.local file..."
+                cat > .env.local << ENVFILE
                 NEXT_PUBLIC_DEV=${NEXT_PUBLIC_DEV}
                 NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
                 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
@@ -68,9 +61,56 @@ jobs:
                 NEXT_PUBLIC_SMTP_FROM_EMAIL=${NEXT_PUBLIC_SMTP_FROM_EMAIL}
                 ENVFILE
                 
-                # Build and run the Docker container
-                docker build -t nextjs-app .
+                # Modify Dockerfile to use a simpler config for testing
+                echo "Updating Dockerfile..."
+                cat > Dockerfile << 'DOCKERFILE'
+                FROM node:20-alpine
+                
+                WORKDIR /app
+                
+                COPY package*.json ./
+                RUN npm install
+                
+                COPY . .
+                COPY .env.local .
+                
+                ENV NODE_ENV=production
+                ENV PORT=3000
+                ENV HOSTNAME="0.0.0.0"
+                
+                RUN npm run build
+                
+                EXPOSE 3000
+                
+                CMD ["npm", "start"]
+                DOCKERFILE
+                
+                # Clean up any previous failed builds
+                echo "Cleaning up previous containers..."
                 docker stop nextjs-container || true
                 docker rm nextjs-container || true
+                docker rmi nextjs-app || true
+                
+                # Build the Docker image with verbose output
+                echo "Building Docker image..."
+                docker build -t nextjs-app . || { echo "Docker build failed"; exit 1; }
+                
+                # Run the container and check its status
+                echo "Starting Docker container..."
                 docker run -d --name nextjs-container -p 3000:3000 nextjs-app
+                
+                # Give the container a moment to start
+                sleep 10
+                
+                # Check if container is running
+                echo "Checking container status..."
+                docker ps | grep nextjs-container || echo "Container not running"
+                
+                # Check container logs for errors
+                echo "Container logs:"
+                docker logs nextjs-container
+                
+                # Test if the application is responding
+                echo "Testing application response:"
+                curl -v http://localhost:3000 || echo "Application not responding"
             EOF
