@@ -1,7 +1,7 @@
 // Banner.tsx (Server Component)
 import Image from "next/image";
 import { BannerTitle } from './BannerTitle';
-import teamCompressed from '@/assets/teamCompressed.jpg';
+import heroBanner from "@/assets/makarapreneur/herobanner.jpg"
 
 interface BannerProps {
     title: string;
@@ -14,7 +14,7 @@ export default function Banner({ title }: BannerProps) {
             <div className="absolute inset-0 w-full h-full">
                 <Image 
                     className="object-cover w-full h-full blur-[3px]" 
-                    src={teamCompressed} 
+                    src={heroBanner} 
                     alt="banner" 
                     priority
                 />

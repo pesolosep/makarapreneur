@@ -1,5 +1,5 @@
 "use client"
-import team from "@/assets/teamCompressed.jpg"
+import hero from '@/assets/makarapreneur/herobanner.jpg'
 import Image from "next/image"
 import { ChevronDown } from "lucide-react"
 
@@ -24,7 +24,7 @@ export default function Hero() {
             
             <div className="absolute inset-0 w-full h-full overflow-hidden">
                 <Image 
-                    src={team} 
+                    src={hero} 
                     alt="team" 
                     className="object-cover w-full h-screen blur-[0.5px]"
                     priority

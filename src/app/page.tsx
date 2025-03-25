@@ -33,11 +33,15 @@ import rikaAmelia from "@/assets/hipmiTalksSpeakers/RikaAmelia.png";
 import satrioRama from "@/assets/hipmiTalksSpeakers/SatrioRama.png";
 import sonaMaesana from "@/assets/hipmiTalksSpeakers/SonaMaesana.png";
 
+import hipmiTalks from "@/assets/makarapreneur/hipmitalks.jpg"
+import internalBusinessClass from "@/assets/makarapreneur/internalbusinessclass.jpg"
+import networkingNight from "@/assets/makarapreneur/aboutus.jpg"
+
 export default function page() {
     const cards = [
-        { id: 1, title: "HIPMI TALKS", link: "#1" },
-        { id: 2, title: "INTERNAL BUSINESS CLASS", link: "#2" },
-        { id: 3, title: "NETWORKING NIGHT", link: "#3" },
+        { id: 1, title: "HIPMI TALKS", link: "/event/hipmitalks", image: hipmiTalks },
+        { id: 2, title: "INTERNAL BUSINESS CLASS", link: "/event/internalbusinessclass", image: internalBusinessClass },
+        { id: 3, title: "NETWORKING NIGHT", link: "/event/networkingnight", image: networkingNight }
     ];
 
     const grandTalkShowJudges = [
