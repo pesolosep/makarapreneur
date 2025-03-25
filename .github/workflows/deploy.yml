@@ -28,10 +28,18 @@ jobs:
                 
                 # Clone the repo if .git doesn't exist, otherwise pull latest changes
                 if [ ! -d .git ]; then
-                git clone https://x-access-token:${REPO_ACCESS_TOKEN}@github.com/pesolosep/makarapreneur.git .
+                  git clone https://x-access-token:${REPO_ACCESS_TOKEN}@github.com/pesolosep/makarapreneur.git .
                 else
-                git pull origin main
+                  git pull origin main
                 fi
+                
+                # Update Dockerfile to use npm install instead of npm ci
+                sed -i 's/RUN npm ci/RUN npm install/' Dockerfile
+                
+                # Fix ENV format in Dockerfile
+                sed -i 's/ENV NODE_ENV production/ENV NODE_ENV=production/' Dockerfile
+                sed -i 's/ENV PORT 3000/ENV PORT=3000/' Dockerfile
+                sed -i 's/ENV HOSTNAME "0.0.0.0"/ENV HOSTNAME="0.0.0.0"/' Dockerfile
                 
                 # Build and run the Docker container
                 docker build -t nextjs-app .
