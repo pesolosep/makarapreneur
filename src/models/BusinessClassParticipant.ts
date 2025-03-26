@@ -1,4 +1,5 @@
 // models/BusinessClass.ts
+import { Timestamp } from 'firebase/firestore';
 
 // Episode categories
 export enum ParticipantLevel {
@@ -31,14 +32,14 @@ export enum ParticipantLevel {
     
     // Verification and status - single ZIP file containing all required proofs
     socialMediaProofURL?: string | null; // URL to the ZIP file containing all proofs
-    registrationDate: Date;
+    registrationDate: Date | Timestamp;
     
     // Limited slots tracking
     queuePosition?: number;
     assignedEmailSent: boolean;
     
     // System fields
-    createdAt: Date;
-    updatedAt?: Date;
+    createdAt: Date | Timestamp;
+    updatedAt?: Date | Timestamp;
   }
   

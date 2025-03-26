@@ -56,7 +56,44 @@ const convertDatesToTimestamps = (obj: any): any => {
   const converted: any = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      converted[key] = convertDatesToTimestamps(obj[key]);
+      // Special handling for date fields to ensure they are Firestore Timestamps
+      if (key === 'registrationDate' || key === 'createdAt' || key === 'updatedAt') {
+        if (obj[key] instanceof Date) {
+          // Convert Date directly to Firestore Timestamp 
+          converted[key] = Timestamp.fromDate(obj[key]);
+        } else if (obj[key] instanceof Timestamp) {
+          // Already a Timestamp, use as is
+          converted[key] = obj[key];
+        } else if (obj[key] && (typeof obj[key] === 'string' || typeof obj[key] === 'number')) {
+          // Try to parse as Date then convert to Timestamp
+          try {
+            converted[key] = Timestamp.fromDate(new Date(obj[key]));
+          } catch (e) {
+            // If parsing fails, use current date
+            converted[key] = Timestamp.fromDate(new Date());
+          }
+        } else if (obj[key] && typeof obj[key] === 'object') {
+          // Handle case where it might be a serialized Timestamp object with seconds/nanoseconds
+          if ('seconds' in obj[key] && 'nanoseconds' in obj[key]) {
+            converted[key] = new Timestamp(obj[key].seconds, obj[key].nanoseconds);
+          } else {
+            // Fallback to current date
+            converted[key] = Timestamp.fromDate(new Date());
+          }
+        } else {
+          // Default to current date if all else fails
+          converted[key] = Timestamp.fromDate(new Date());
+        }
+      } else if (obj[key] instanceof Date) {
+        // Handle any other date fields that might not be one of the special keys
+        converted[key] = Timestamp.fromDate(obj[key]);
+      } else if (obj[key] !== null && typeof obj[key] === 'object') {
+        // Recursively convert nested objects
+        converted[key] = convertDatesToTimestamps(obj[key]);
+      } else {
+        // For non-date fields, keep as is
+        converted[key] = obj[key];
+      }
     }
   }
   return converted;
@@ -128,28 +165,36 @@ export const businessClassService = {
       await uploadBytes(storageRef, proofZipFile);
       const socialMediaProofURL = await getDownloadURL(storageRef);
       
-      // Create participant document with explicit dates
-      const now = new Date();
-      const participant: BusinessClassParticipant = {
+      // Create participant data with all fields except date fields
+      const participantDataWithoutDates = {
         id: participantId,
         ...participantData,
         socialMediaProofURL,
-        registrationDate: now,
-        assignedEmailSent: false,
-        createdAt: now,
-        updatedAt: now
+        assignedEmailSent: false
       };
       
       // Clean the object to remove any undefined values
-      const cleanedParticipant = cleanObject(participant);
+      const cleanedData = cleanObject(participantDataWithoutDates);
       
-      // Convert dates to timestamps before saving to Firestore
-      const firestoreData = convertDatesToTimestamps(cleanedParticipant);
+      // Add date fields directly as Firestore Timestamps (not Date objects)
+      const now = new Date();
+      const firestoreData = {
+        ...cleanedData,
+        registrationDate: Timestamp.fromDate(now),
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now)
+      };
       
-      // Store in a flat collection structure
+      // Store in Firestore
       await setDoc(doc(db, 'businessClassParticipants', participantId), firestoreData);
       
-      return participant;
+      // Return as JavaScript Date objects for client use
+      return {
+        ...cleanedData,
+        registrationDate: now,
+        createdAt: now,
+        updatedAt: now
+      } as BusinessClassParticipant;
     } catch (error) {
       console.error('Error registering participant:', error);
       throw new Error('Failed to register participant: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -217,11 +262,13 @@ export const businessClassService = {
       
       const participantData = convertTimestampsToDates(participantDoc.data()) as BusinessClassParticipant;
       
-      // Prepare update fields
-      const updateFields: any = {
-        ...updateData,
-        updatedAt: new Date()
-      };
+      // Prepare update fields without date fields
+      const updateFieldsWithoutDates = { ...updateData };
+      
+      // If updatedAt is included, remove it so we can add it as a proper Timestamp
+      if ('updatedAt' in updateFieldsWithoutDates) {
+        delete updateFieldsWithoutDates.updatedAt;
+      }
       
       // If new proof file is provided, handle it
       if (newProofZipFile) {
@@ -254,7 +301,7 @@ export const businessClassService = {
         // Upload new proof file
         const storageRef = ref(storage, `businessClass/proofs/${participantId}/socialMedia_proof.zip`);
         await uploadBytes(storageRef, newProofZipFile);
-        updateFields.socialMediaProofURL = await getDownloadURL(storageRef);
+        updateFieldsWithoutDates.socialMediaProofURL = await getDownloadURL(storageRef);
       }
       
       // If information source is updated to OTHER, check for otherInformationSource
@@ -265,12 +312,16 @@ export const businessClassService = {
       }
       
       // Clean the object to remove any undefined values
-      const cleanedUpdateFields = cleanObject(updateFields);
+      const cleanedUpdateFields = cleanObject(updateFieldsWithoutDates);
       
-      // Convert dates to timestamps before saving to Firestore
-      const firestoreData = convertDatesToTimestamps(cleanedUpdateFields);
+      // Add timestamp directly as a Firestore Timestamp
+      const now = new Date();
+      const firestoreData = {
+        ...cleanedUpdateFields,
+        updatedAt: Timestamp.fromDate(now)
+      };
       
-      // Update participant document
+      // Update participant document 
       await updateDoc(doc(db, 'businessClassParticipants', participantId), firestoreData);
       
       // Return updated participant data

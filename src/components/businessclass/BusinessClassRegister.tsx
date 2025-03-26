@@ -57,7 +57,7 @@ interface BusinessClassRegistrationFormProps {
 }
 
 const Step = ({ title, icon, isCompleted, isActive }: StepProps) => (
-  <div className={`flex items-center space-x-2 ${isActive ? 'text-juneBud' : 'text-gray-400'}`}>
+  <div className={`flex items-center space-x-2 ${isActive ? 'text-juneBud' : 'text-juneBud'}`}>
     <div className={`p-2 rounded-full ${
       isCompleted 
         ? 'bg-juneBud' 
@@ -67,7 +67,7 @@ const Step = ({ title, icon, isCompleted, isActive }: StepProps) => (
     } text-signalBlack`}>
       {isCompleted ? <Check className="w-5 h-5" /> : icon}
     </div>
-    <span className={`text-sm font-medium ${isActive ? 'text-juneBud' : 'text-gray-400'}`}>{title}</span>
+    <span className={`text-sm font-medium ${isActive ? 'text-juneBud' : 'text-juneBud'}`}>{title}</span>
   </div>
 );
 
@@ -533,7 +533,7 @@ const BusinessClassRegistrationForm: React.FC<BusinessClassRegistrationFormProps
                         <RadioGroupItem value={ParticipantLevel.BEGINNER} id="beginner" className="text-juneBud" />
                         <Label htmlFor="beginner" className="flex-1 cursor-pointer">
                           <span className="font-medium">Beginner</span>
-                          <p className="text-sm text-gray-400">For those who are new to entrepreneurship</p>
+                          <p className="text-sm text-juneBud">For those who are new to entrepreneurship</p>
                         </Label>
                       </div>
                       
@@ -541,7 +541,7 @@ const BusinessClassRegistrationForm: React.FC<BusinessClassRegistrationFormProps
                         <RadioGroupItem value={ParticipantLevel.ADVANCE} id="advance" className="text-juneBud" />
                         <Label htmlFor="advance" className="flex-1 cursor-pointer">
                           <span className="font-medium">Advanced</span>
-                          <p className="text-sm text-gray-400">For those who already have business experience</p>
+                          <p className="text-sm text-juneBud">For those who already have business experience</p>
                         </Label>
                       </div>
                     </RadioGroup>
@@ -618,29 +618,58 @@ const BusinessClassRegistrationForm: React.FC<BusinessClassRegistrationFormProps
               <div>
                 <h2 className="text-xl font-semibold mb-4 text-juneBud">Required Documentation</h2>
                 <Alert className="bg-juneBud/10 border-juneBud/20 mb-6">
-                  <AlertDescription>
-                    <p className="mb-2"><strong>
-                      {editMode 
-                        ? 'You can upload a new proof file if needed. If you don\'t upload a new file, your previous submission will be kept.'
-                        : 'Combine all required proofs into a single ZIP file (max 10MB).'}
-                    </strong></p>
-                    <p className="text-sm mb-1">Please include the following proofs:</p>
-                    <ol className="list-decimal pl-5 text-sm space-y-2">
-                      <li>
-                        <span className="font-medium">Proof of following HIPMI UI social media</span>
-                        <p className="text-xs text-gray-300">Take a screenshot showing that you follow our Instagram and TikTok accounts</p>
-                      </li>
-                      <li>
-                        <span className="font-medium">Proof of joining WhatsApp group</span>
-                        <p className="text-xs text-gray-300">Take a screenshot showing you've joined the WhatsApp group</p>
-                      </li>
-                      <li>
-                        <span className="font-medium">Proof of sharing event poster</span>
-                        <p className="text-xs text-gray-300">Take a screenshot showing you've shared our event poster on your social media</p>
-                      </li>
-                    </ol>
-                  </AlertDescription>
-                </Alert>
+  <AlertDescription>
+    <p className="mb-2 text-juneBud"><strong>
+      {editMode 
+        ? 'You can upload a new proof file if needed. If you don\'t upload a new file, your previous submission will be kept.'
+        : 'Combine all required proofs into a single ZIP file (max 10MB).'}
+    </strong></p>
+    <p className="text-sm mb-1 text-juneBud">Please include the following proofs:</p>
+    <ol className="list-decimal pl-5 text-sm text-juneBud space-y-2">
+      <li>
+        <span className="font-medium text-juneBud">Proof of following HIPMI UI social media</span>
+        <p className="text-xs text-white">
+          Take a screenshot showing that you follow our {" "}
+          <a 
+            href="https://www.instagram.com/makarapreneur/" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-juneBud transition-colors"
+          >
+            Instagram account
+          </a>{" "}
+          and {" "}
+          <a 
+            href="https://www.tiktok.com/@makarapreneur?lang=en" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-juneBud transition-colors"
+          >
+            TikTok account
+          </a>{" "}
+        </p>
+      </li>
+      <li>
+        <span className="font-medium text-juneBud">Proof of joining WhatsApp group</span>
+        <p className="text-xs text-white">
+          Take a screenshot showing you've joined the{" "}
+          <a 
+            href="https://chat.whatsapp.com/K0v2XGU5mLxEZkkUToVgGS" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-juneBud transition-colors"
+          >
+            WhatsApp group
+          </a>
+        </p>
+      </li>
+      <li>
+        <span className="font-medium text-juneBud">Proof of sharing episode poster and tag three friends</span>
+        <p className="text-xs text-white">Take a screenshot showing you've reposted our business class episode post on instagram and tag three friends </p>
+      </li>
+    </ol>
+  </AlertDescription>
+</Alert>
 
                 <div className="space-y-4">
                   <div>
@@ -695,7 +724,7 @@ const BusinessClassRegistrationForm: React.FC<BusinessClassRegistrationFormProps
                                 variant="ghost"
                                 size="sm"
                                 onClick={clearFileSelection}
-                                className="h-7 w-7 rounded-full p-0 text-gray-400 hover:text-gray-100 hover:bg-red-500/20"
+                                className="h-7 w-7 rounded-full p-0 text-juneBud hover:text-gray-100 hover:bg-red-500/20"
                               >
                                 <X className="w-4 h-4" />
                               </Button>
