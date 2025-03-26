@@ -19,7 +19,7 @@
 //     }
     
 //     // Pass competitionId to client component to handle auth and team fetching
-//     return <EditRegistration competitionId={params.id} />;
+    // return <EditRegistration competitionId={params.id} />;
 //   } catch (error) {
 //     console.error('Error in edit registration page:', error);
 //     return null;

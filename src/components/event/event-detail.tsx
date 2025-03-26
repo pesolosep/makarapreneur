@@ -4,6 +4,8 @@ import { Calendar, Clock, MapPin, Share2 } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import ReactMarkdown from 'react-markdown';
+import { useRouter } from "next/navigation";
 
 type EventDetailProps = {
     event: {
@@ -12,17 +14,58 @@ type EventDetailProps = {
         theme?: string;
         link: string;
         image: StaticImageData;
+        date?: string;
+        time?: string;
+        location?: string;
+        benefits?: string[];
+        id: string; // Add id field to identify event type
     };
 };
 
 export default function EventDetail({ event }: EventDetailProps) {
+    const router = useRouter();
+    
+    const benefits = event.benefits || [
+        "Wawasan praktis tentang strategi customer-centric",
+        "Pengalaman langsung dari 4 pembicara berpengalaman",
+        "Networking dengan sesama wirausahawan muda",
+        "Strategi menghadapi tantangan bisnis",
+    ];
+
+    const handleRegisterClick = () => {
+        if (event.link === "disabled") return;
+        
+        // For external links (like Google Forms)
+        if (event.link.startsWith('http')) {
+            window.open(event.link, "_blank");
+            return;
+        }
+        
+        // For internal registration routes
+        const registrationPath = getRegistrationPath();
+        if (registrationPath) {
+            router.push(`/event/register/${registrationPath}`);
+        }
+    };
+
+    const getRegistrationPath = () => {
+        switch (event.id) {
+            case "internalbusinessclass":
+                return "business-class";
+            case "networkingnight":
+                return "networking";
+            default:
+                return "";
+        }
+    };
+
     return (
         <div className="container max-w-4xl mx-auto px-4 py-6 text-linen">
             {/* Header Image */}
             <div className="relative mx-auto overflow-hidden rounded-lg mb-8 flex justify-center items-center w-full max-h-[300px]">
                 <Image
                     src={event.image}
-                    alt="HIPMI Talks UI 2025"
+                    alt={`${event.title} Event Image`}
                     className="object-cover"
                     priority
                 />
@@ -44,11 +87,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                             size="lg"
                             className=""
                             disabled={event.link === "disabled"}
-                            onClick={() => {
-                                if (event.link !== "disabled") {
-                                    window.open(event.link, "_blank");
-                                }
-                            }}
+                            onClick={handleRegisterClick}
                         >
                             {event.link === "disabled"
                                 ? "Coming Soon"
@@ -94,7 +133,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                         <div>
                             <p className="text-sm font-medium">Tanggal</p>
                             <p className="text-sm text-signalBlack">
-                                Coming Soon
+                                {event.date || "Coming Soon"}
                             </p>
                         </div>
                     </div>
@@ -103,7 +142,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                         <div>
                             <p className="text-sm font-medium">Waktu</p>
                             <p className="text-sm text-signalBlack">
-                                Coming Soon
+                                {event.time || "Coming Soon"}
                             </p>
                         </div>
                     </div>
@@ -112,7 +151,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                         <div>
                             <p className="text-sm font-medium">Lokasi</p>
                             <p className="text-sm text-signalBlack">
-                                Coming Soon
+                                {event.location || "Coming Soon"}
                             </p>
                         </div>
                     </div>
@@ -138,9 +177,9 @@ export default function EventDetail({ event }: EventDetailProps) {
                     <h2 className="text-xl font-semibold mb-3 text-juneBud">
                         About Event
                     </h2>
-                    <div className="space-y-4 ">
+                    <div className="space-y-4 prose prose-invert max-w-none">
                         {event.description.map((description, index) => (
-                            <p key={index}>{description}</p>
+                            <ReactMarkdown key={index}>{description}</ReactMarkdown>
                         ))}
                     </div>
                 </section>
@@ -148,15 +187,10 @@ export default function EventDetail({ event }: EventDetailProps) {
                 {/* Benefits */}
                 <section>
                     <h2 className="text-xl font-semibold mb-3 text-juneBud">
-                        What You&apos;ll Get
+                        What You&apos;ll Get From Our Events
                     </h2>
                     <ul className="grid sm:grid-cols-2 gap-4">
-                        {[
-                            "Wawasan praktis tentang strategi customer-centric",
-                            "Pengalaman langsung dari 4 pembicara berpengalaman",
-                            "Networking dengan sesama wirausahawan muda",
-                            "Strategi menghadapi tantangan bisnis",
-                        ].map((benefit, index) => (
+                        {benefits.map((benefit, index) => (
                             <li key={index} className="flex items-start gap-3">
                                 <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                                     {index + 1}
@@ -174,11 +208,7 @@ export default function EventDetail({ event }: EventDetailProps) {
                     size="lg"
                     className="min-w-[200px]"
                     disabled={event.link === "disabled"}
-                    onClick={() => {
-                        if (event.link !== "disabled") {
-                            window.open(event.link, "_blank");
-                        }
-                    }}
+                    onClick={handleRegisterClick}
                 >
                     {event.link === "disabled"
                         ? "Coming Soon"
