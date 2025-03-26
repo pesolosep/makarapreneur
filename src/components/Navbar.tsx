@@ -113,7 +113,7 @@ export default function Navbar({ notTransparent }: NavbarProps) {
                         {isAdmin && (
                             <>
                                 <DropdownMenuItem
-                                    onClick={() => router.push("/admin/competition")}
+                                    onClick={() => router.push("/admin/article")}
                                     className="text-juneBud hover:bg-white/10 cursor-pointer"
                                 >
                                     <Shield className="mr-2 h-4 w-4" />

@@ -30,7 +30,10 @@ export default function LoginForm() {
 
     try {
       await loginUser(email, password)
-      if (isAdmin) {
+      const redirectPath = searchParams.get('redirect')
+      if (redirectPath) {
+        router.push(redirectPath)
+      } else if  (isAdmin){
         router.push('/admin')
       } else {
         router.push('/')

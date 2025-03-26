@@ -570,7 +570,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
         fileInputRef.current.value = '';
       }
 
-      router.push('/event');
+      router.push('/event/networkingnight');
     } catch (error) {
       toast({
         variant: "destructive",
