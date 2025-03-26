@@ -214,7 +214,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
     if (loading) return;
     
     if (!user) {
-      router.push('/authentication/login?redirect=/networking/register');
+      router.push('/authentication/login?redirect=/event/register/networking');
       return;
     }
   }, [user, loading, router]);

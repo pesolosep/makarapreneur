@@ -32,7 +32,7 @@ export default function NetworkingEventRegistrationPage() {
     if (loading) return;
     
     if (!user) {
-        router.push('/authentication/login?redirect=/event/register/business-class');
+        router.push('/authentication/login?redirect=/event/register/networking');
         return;
       }
     const checkRegistrationStatus = async () => {

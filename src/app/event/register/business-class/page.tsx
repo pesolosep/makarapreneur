@@ -9,8 +9,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Edit, ArrowLeft, PenBox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BusinessClassParticipant } from '@/models/BusinessClassParticipant';
+import { useRouter } from 'next/navigation';
 
 export default function BusinessClassRegistrationPage() {
+  const router = useRouter();
   const { user, loading } = useAuth();
   const [checkingRegistration, setCheckingRegistration] = useState(true);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
@@ -20,8 +22,10 @@ export default function BusinessClassRegistrationPage() {
   useEffect(() => {
     if (loading) return;
     
-    if (!user) return;
-    
+    if (!user) {
+        router.push('/authentication/login?redirect=/event/register/business-class');
+        return;
+      }
     const checkRegistrationStatus = async () => {
       try {
         setCheckingRegistration(true);
