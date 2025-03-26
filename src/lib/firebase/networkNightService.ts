@@ -339,73 +339,7 @@ export const networkingEventAdminService = {
   },
   
 
-  // Verify payment and update status
-  async verifyPayment(
-    participantId: string,
-    isVerified: boolean,
-    adminNotes?: string
-  ): Promise<NetworkingParticipant> {
-    try {
-      const updateData: any = {
-        updatedAt: new Date()
-      };
-      
-      if (adminNotes) {
-        updateData.notes = adminNotes;
-      }
-      
-      // Convert dates to timestamps
-      const convertedData = convertDatesToTimestamps(updateData);
-      
-      // Update in participants collection
-      await updateDoc(doc(db, 'networkingEventParticipants', participantId), convertedData);
-      
-      // Return the updated participant data
-      const updatedParticipantDoc = await getDoc(doc(db, 'networkingEventParticipants', participantId));
-      return {
-        id: updatedParticipantDoc.id,
-        ...convertTimestampsToDates(updatedParticipantDoc.data())
-      } as NetworkingParticipant;
-    } catch (error) {
-      console.error('Error verifying payment:', error);
-      throw error;
-    }
-  },
-  
-  // Update attendance status
-  async updateAttendanceStatus(
-    participantId: string,
-    attendanceStatus: 'CONFIRMED' | 'ATTENDED' | 'ABSENT',
-    badgeIssued?: boolean
-  ): Promise<NetworkingParticipant> {
-    try {
-      const updateData: any = {
-        attendanceStatus,
-        updatedAt: new Date()
-      };
-      
-      if (badgeIssued !== undefined) {
-        updateData.badgeIssued = badgeIssued;
-      }
-      
-      // Convert dates to timestamps
-      const convertedData = convertDatesToTimestamps(updateData);
-      
-      // Update in participants collection
-      await updateDoc(doc(db, 'networkingEventParticipants', participantId), convertedData);
-      
-      // Return the updated participant data
-      const updatedParticipantDoc = await getDoc(doc(db, 'networkingEventParticipants', participantId));
-      return {
-        id: updatedParticipantDoc.id,
-        ...convertTimestampsToDates(updatedParticipantDoc.data())
-      } as NetworkingParticipant;
-    } catch (error) {
-      console.error('Error updating attendance status:', error);
-      throw error;
-    }
-  },
-  
+
   // Export participants data (e.g., for generating name badges, attendance lists)
   async exportParticipantsData(): Promise<Array<{
     id: string;
@@ -417,8 +351,6 @@ export const networkingEventAdminService = {
     hasBusiness: boolean;
     businessName?: string;
     businessField?: string;
-    attendanceStatus?: string;
-    badgeIssued?: boolean;
   }>> {
     try {
       const participantsSnapshot = await getDocs(collection(db, 'networkingEventParticipants'));

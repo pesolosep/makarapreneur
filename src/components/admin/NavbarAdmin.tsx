@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, LogOut, UserCircle, Shield, Home } from "lucide-react";
+import { Menu, X, LogOut, UserCircle, Shield, Home, ChevronDown, Mail } from "lucide-react";
 import { logoutUser } from "@/lib/firebase/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -21,21 +21,46 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { twMerge } from "tailwind-merge";
 
+// Define types for navigation items
+type SubNavItem = {
+  name: string;
+  href: string;
+};
+
+type NavItem = {
+  name: string;
+  href?: string;
+  icon: string;
+  isDropdown?: boolean;
+  items?: SubNavItem[];
+};
+
 // Define admin navigation items
-const adminNavigationItems = [
+const adminNavigationItems: NavItem[] = [
   { name: "Articles", href: "/admin/article", icon: "📝" },
-  { name: "Competitions", href: "/admin/competition", icon: "🏆" },
-  { name: "Email Manager", href: "/admin/email", icon: "📧" },
+  // { name: "Competitions", href: "/admin/competition", icon: "🏆" },
+  // Email dropdown replaced the single item
+  { 
+    name: "Email Manager", 
+    icon: "📧",
+    isDropdown: true,
+    items: [
+      // { name: "Competition", href: "/admin/email/competition" },
+      { name: "Business Case Class", href: "/admin/email/businesscaseclass" },
+      { name: "Networking", href: "/admin/email/networking" },
+    ]
+  },
   { name: "Media Partners", href: "/admin/mediapartners", icon: "🤝" },
   { name: "Sponsors", href: "/admin/sponsors", icon: "💰" },
   { name: "Participants", href: "/admin/participants", icon: "👥" },
 ];
 
 export default function AdminNavbar() {
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const { user, userData, isAdmin, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,6 +93,17 @@ export default function AdminNavbar() {
     }
   };
 
+  // Check if current path is in dropdown
+  const isInDropdown = (item: NavItem): boolean => {
+    if (!item.isDropdown || !item.items) return false;
+    return item.items.some(subItem => pathname === subItem.href);
+  };
+
+  // Toggle dropdown menu
+  const toggleDropdown = (name: string): void => {
+    setOpenDropdown(openDropdown === name ? null : name);
+  };
+
   if (loading || !isAdmin) {
     return (
       <div className="fixed top-0 z-50 w-full h-20 bg-zinc-900 flex items-center justify-center">
@@ -88,7 +124,7 @@ export default function AdminNavbar() {
         } items-center justify-between px-6 lg:px-8`}
       >
         {/* Admin Logo and Title */}
-        <Link href="/admin/competition" className="flex items-center gap-3">
+        <Link href="/admin/sponsors" className="flex items-center gap-3">
           <div className="bg-juneBud text-signalBlack p-2 rounded-md">
             <Shield className="h-5 w-5" />
           </div>
@@ -100,20 +136,56 @@ export default function AdminNavbar() {
         {/* Desktop Navigation */}
         <div className="hidden xl:flex lg:items-center space-x-6">
           {adminNavigationItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={twMerge(
-                "relative px-3 py-2 text-sm font-medium text-linen rounded-md transition-colors hover:bg-white/10",
-                pathname === item.href &&
-                  "bg-white/5 text-juneBud after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-2/3 after:-translate-x-1/2 after:bg-juneBud"
-              )}
-            >
-              <span className="flex items-center gap-2">
-                <span>{item.icon}</span>
-                {item.name}
-              </span>
-            </Link>
+            item.isDropdown ? (
+              <div key={item.name} className="relative">
+                <button
+                  onClick={() => toggleDropdown(item.name)}
+                  className={twMerge(
+                    "px-3 py-2 text-sm font-medium text-linen rounded-md transition-colors hover:bg-white/10 flex items-center gap-2",
+                    (openDropdown === item.name || isInDropdown(item)) &&
+                      "bg-white/5 text-juneBud"
+                  )}
+                >
+                  <span>{item.icon}</span>
+                  {item.name}
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openDropdown === item.name ? 'rotate-180' : ''}`} />
+                </button>
+                {openDropdown === item.name && item.items && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-zinc-900 rounded-md shadow-lg overflow-hidden">
+                    {item.items.map((subItem) => (
+                      <Link
+                        key={subItem.name}
+                        href={subItem.href}
+                        className={twMerge(
+                          "block px-4 py-2 text-sm text-linen hover:bg-white/10",
+                          pathname === subItem.href && "bg-white/5 text-juneBud"
+                        )}
+                        onClick={() => setOpenDropdown(null)}
+                      >
+                        {subItem.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              item.href && (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={twMerge(
+                    "relative px-3 py-2 text-sm font-medium text-linen rounded-md transition-colors hover:bg-white/10",
+                    pathname === item.href &&
+                      "bg-white/5 text-juneBud after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-2/3 after:-translate-x-1/2 after:bg-juneBud"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <span>{item.icon}</span>
+                    {item.name}
+                  </span>
+                </Link>
+              )
+            )
           ))}
 
           {/* Return to Main Site */}
@@ -173,18 +245,55 @@ export default function AdminNavbar() {
               </div>
               <div className="px-4 py-6 flex flex-col gap-2">
                 {adminNavigationItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={twMerge(
-                      "rounded-md px-4 py-3 text-base font-medium text-linen transition-colors hover:bg-white/10 flex items-center gap-3",
-                      pathname === item.href &&
-                        "bg-white/5 text-juneBud border-l-2 border-juneBud"
-                    )}
-                  >
-                    <span>{item.icon}</span>
-                    {item.name}
-                  </Link>
+                  item.isDropdown ? (
+                    <div key={item.name} className="flex flex-col">
+                      <button
+                        onClick={() => toggleDropdown(item.name)}
+                        className={twMerge(
+                          "rounded-md px-4 py-3 text-base font-medium text-linen transition-colors hover:bg-white/10 flex items-center justify-between",
+                          isInDropdown(item) &&
+                            "bg-white/5 text-juneBud border-l-2 border-juneBud"
+                        )}
+                      >
+                        <span className="flex items-center gap-3">
+                          <span>{item.icon}</span>
+                          {item.name}
+                        </span>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${openDropdown === item.name ? 'rotate-180' : ''}`} />
+                      </button>
+                      {openDropdown === item.name && item.items && (
+                        <div className="flex flex-col pl-8 mt-1 space-y-1">
+                          {item.items.map((subItem) => (
+                            <Link
+                              key={subItem.name}
+                              href={subItem.href}
+                              className={twMerge(
+                                "rounded-md px-4 py-2 text-sm text-linen transition-colors hover:bg-white/10",
+                                pathname === subItem.href && "bg-white/5 text-juneBud"
+                              )}
+                            >
+                              {subItem.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    item.href && (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={twMerge(
+                          "rounded-md px-4 py-3 text-base font-medium text-linen transition-colors hover:bg-white/10 flex items-center gap-3",
+                          pathname === item.href &&
+                            "bg-white/5 text-juneBud border-l-2 border-juneBud"
+                        )}
+                      >
+                        <span>{item.icon}</span>
+                        {item.name}
+                      </Link>
+                    )
+                  )
                 ))}
                 
                 {/* Divider */}
