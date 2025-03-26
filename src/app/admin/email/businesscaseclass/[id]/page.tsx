@@ -73,37 +73,13 @@ const isFirestoreTimestamp = (value: any): value is FirestoreTimestamp => {
 
 const convertTimestampToDate = (timestamp: FirestoreTimestamp | Date | null | undefined) => {
   if (!timestamp) return undefined;
-  
   if (isFirestoreTimestamp(timestamp)) {
     return new Date(timestamp.seconds * 1000);
   }
-  
   if (timestamp instanceof Date) {
     return timestamp;
   }
-  
-  // Try to convert unknown format as fallback
-  try {
-    return new Date(timestamp as any);
-  } catch (e) {
-    console.error("Error converting timestamp to date:", e);
-    return undefined;
-  }
-};
-
-const formatDate = (date: Date | FirestoreTimestamp | null | undefined) => {
-  if (!date) return 'N/A';
-  
-  const dateObj = date instanceof Date ? date : convertTimestampToDate(date);
-  
-  if (!dateObj) return 'Invalid Date';
-  
-  try {
-    return format(dateObj, 'MMM dd, yyyy HH:mm');
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'Invalid Date';
-  }
+  return undefined;
 };
 
 const ParticipantDetailPage: React.FC<PageProps> = ({ params }) => {
@@ -178,6 +154,16 @@ const ParticipantDetailPage: React.FC<PageProps> = ({ params }) => {
     }
   };
 
+  const formatDate = (date: Date | null | undefined) => {
+    if (!date) return 'N/A';
+    try {
+      return format(date, 'MMM dd, yyyy HH:mm');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!participant) return;
     
@@ -232,6 +218,21 @@ const ParticipantDetailPage: React.FC<PageProps> = ({ params }) => {
     } finally {
       setSendingEmail(false);
     }
+  };
+
+  // Add default email template with styling
+  const getDefaultEmailTemplate = (participant: BusinessClassParticipant): string => {
+    return `
+  <p>Dear ${participant.name},</p>
+  
+  <p>Thank you for being part of HIPMI UI Business Class as a <strong>${participant.participantLevel}</strong> level participant.</p>
+  
+  <p>We wanted to reach out to provide you with important information about your participation in our program.</p>
+  
+  <p>If you have any questions or need assistance, please don't hesitate to reply to this email.</p>
+  
+  <p>Best regards,<br>HIPMI UI Business Class Team</p>
+    `;
   };
 
   // Debugging view - Shows when we have an error
@@ -315,7 +316,7 @@ const ParticipantDetailPage: React.FC<PageProps> = ({ params }) => {
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  Registered on {formatDate(participant.registrationDate)}
+                  Registered on {formatDate(participant.registrationDate instanceof Date ? participant.registrationDate : new Date(participant.registrationDate as any))}
                 </CardDescription>
               </CardHeader>
               
@@ -348,7 +349,7 @@ const ParticipantDetailPage: React.FC<PageProps> = ({ params }) => {
                           <label className="text-sm font-medium text-gray-500 flex items-center">
                             <Calendar className="mr-2 h-4 w-4" /> Registration Date
                           </label>
-                          <p className="mt-1">{formatDate(participant.registrationDate)}</p>
+                          <p className="mt-1">{formatDate(participant.registrationDate instanceof Date ? participant.registrationDate : new Date(participant.registrationDate as any))}</p>
                         </div>
                       </div>
                     </div>
@@ -463,7 +464,19 @@ const ParticipantDetailPage: React.FC<PageProps> = ({ params }) => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="emailContent">Content</Label>
+              <div className="flex justify-between items-center mb-2">
+                <Label htmlFor="emailContent">Content</Label>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setEmailSubject(`HIPMI UI Business Class - Information for ${participant.name}`);
+                    setEmailContent(getDefaultEmailTemplate(participant));
+                  }}
+                >
+                  Use Template
+                </Button>
+              </div>
               <Textarea
                 id="emailContent"
                 value={emailContent}

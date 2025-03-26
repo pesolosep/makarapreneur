@@ -328,241 +328,132 @@ export async function sendBusinessClassUpdateEmail(formData: any, registrationId
     }
   }
 
-  export async function sendNetworkingEventBulkEmail(
-    recipients: NetworkingParticipant[],
-    subject: string,
-    htmlContent: string
-  ): Promise<{ success: boolean; failedEmails: string[] }> {
-    try {
-      // Track failed emails
-      const failedEmails: string[] = [];
-      
-      // Process the HTML content for each recipient and send individual emails
-      for (const participant of recipients) {
-        try {
-          // Replace template variables with actual participant data
-          let personalizedContent = htmlContent;
+/**
+ * Send a confirmation email to a user who just registered for Business Class
+ */
+export async function sendBusinessClassConfirmationEmail(formData: any, registrationId: string) {
+  try {
+    // Get the level for display
+    const levelDisplay = formData.participantLevel === 'BEGINNER' ? 'Beginner' : 'Advanced';
+    
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: formData.email,
+        subject: 'Registration Confirmation - HIPMI UI Business Class',
+        html: `
+          <p>Dear ${formData.name},</p>
           
-          // Replace known variables with participant data
-          personalizedContent = personalizedContent
-            .replace(/{{name}}/g, participant.name || '')
-            .replace(/{{whatsappNumber}}/g, participant.whatsappNumber || '')
-            .replace(/{{membershipStatus}}/g, 
-              participant.membershipStatus === 'FUNGSIONARIS' ? 'Fungsionaris' : 'Non-Fungsionaris')
-            .replace(/{{position}}/g, participant.position || '')
-            .replace(/{{businessName}}/g, participant.business?.name || 'N/A')
-            .replace(/{{registrationDate}}/g, 
-              participant.registrationDate ? new Date(participant.registrationDate).toLocaleDateString() : 'N/A')
-            .replace(/{{paymentAmount}}/g, 
-              participant.paymentAmount ? participant.paymentAmount.toLocaleString() : 'N/A')
-            .replace(/{{hipmiPtOrigin}}/g, participant.hipmiPtOrigin || 'N/A');
+          <p>Thank you for registering for the HIPMI UI Business Class as a <strong>${levelDisplay}</strong> level participant. Your registration has been successfully received.</p>
           
-          // Call the email sending API
-          const response = await fetch('/api/send-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              to: participant.whatsappNumber, // Using whatsappNumber as it's the contact method
-              subject: subject,
-              html: personalizedContent,
-              // You could add CC or BCC here if needed
-            }),
-          });
+          <p><strong>Registration Details:</strong></p>
+          <ul>
+            <li><strong>Registration ID:</strong> ${registrationId}</li>
+            <li><strong>Name:</strong> ${formData.name}</li>
+            <li><strong>Email:</strong> ${formData.email}</li>
+            <li><strong>Institution:</strong> ${formData.institution}</li>
+            <li><strong>Level:</strong> ${levelDisplay}</li>
+          </ul>
           
-          if (!response.ok) {
-            throw new Error(`Failed to send email to ${participant.name}`);
-          }
-        } catch (emailError) {
-          console.error(`Error sending email to ${participant.name}:`, emailError);
-          failedEmails.push(participant.whatsappNumber);
-        }
-      }
-      
-      return {
-        success: failedEmails.length === 0,
-        failedEmails
-      };
-    } catch (error) {
-      console.error('Error in bulk email sending:', error);
-      throw new Error('Failed to send bulk emails');
+          <p>Please stay connected with our WhatsApp group for immediate updates and announcements. We will also send important information to your registered email address.</p>
+          
+          <p>If you have any questions or need assistance, please don't hesitate to contact us by replying to this email.</p>
+          
+          <p>We look forward to your participation in the HIPMI UI Business Class program.</p>
+          
+          <p>Best regards,<br>HIPMI UI Business Class Team</p>
+        `
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to send confirmation email');
     }
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
+    return false;
   }
-  
-  /**
-   * Send a notification email to a specific networking event participant
-   */
-  export async function sendNetworkingParticipantEmail(
-    participant: NetworkingParticipant,
-    subject: string,
-    htmlContent: string
-  ): Promise<boolean> {
-    try {
-      // Replace template variables with actual participant data
-      let personalizedContent = htmlContent;
-      
-      // Replace known variables with participant data
-      personalizedContent = personalizedContent
-        .replace(/{{name}}/g, participant.name || '')
-        .replace(/{{whatsappNumber}}/g, participant.whatsappNumber || '')
-        .replace(/{{membershipStatus}}/g, 
-          participant.membershipStatus === 'FUNGSIONARIS' ? 'Fungsionaris' : 'Non-Fungsionaris')
-        .replace(/{{position}}/g, participant.position || '')
-        .replace(/{{businessName}}/g, participant.business?.name || 'N/A')
-        .replace(/{{registrationDate}}/g, 
-          participant.registrationDate ? new Date(participant.registrationDate).toLocaleDateString() : 'N/A')
-        .replace(/{{paymentAmount}}/g, 
-          participant.paymentAmount ? participant.paymentAmount.toLocaleString() : 'N/A')
-        .replace(/{{hipmiPtOrigin}}/g, participant.hipmiPtOrigin || 'N/A');
-      
-      // Call the email sending API
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: participant.whatsappNumber, // Using whatsappNumber as it's the contact method
-          subject: subject,
-          html: personalizedContent,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to send email to ${participant.name}`);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`Error sending email to ${participant.name}:`, error);
-      return false;
+}
+
+/**
+ * Send a confirmation email to a user who just registered for Networking Event
+ */
+export async function sendNetworkingEventConfirmationEmail(formData: any, registrationId: string) {
+  try {
+    // Construct data for the membership status
+    const membershipStatus = formData.membershipStatus === 'FUNGSIONARIS' ? 
+      'HIPMI PT UI Fungsionaris' : 'Non-Fungsionaris';
+    
+    // Format position display
+    let positionDisplay;
+    switch (formData.position) {
+      case 'PENGURUS_INTI':
+        positionDisplay = 'Pengurus Inti';
+        break;
+      case 'KEPALA_WAKIL_KEPALA_BIDANG':
+        positionDisplay = 'Kepala/Wakil Kepala Bidang';
+        break;
+      case 'STAF':
+        positionDisplay = 'Staf';
+        break;
+      case 'ANGGOTA':
+        positionDisplay = 'Anggota';
+        break;
+      default:
+        positionDisplay = formData.position;
     }
+    
+    // Format business information if available
+    const businessInfo = formData.hasBusiness ? 
+      `${formData.businessName || 'N/A'} (${formData.businessField || 'N/A'})` : 
+      'No business';
+    
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: formData.email,
+        subject: 'Registration Confirmation - HIPMI UI Networking Night',
+        html: `
+          <p>Dear ${formData.name},</p>
+          
+          <p>Thank you for registering for the HIPMI UI Networking Night event. Your registration has been successfully received.</p>
+          
+          <p><strong>Registration Details:</strong></p>
+          <ul>
+            <li><strong>Registration ID:</strong> ${registrationId}</li>
+            <li><strong>Name:</strong> ${formData.name}</li>
+            <li><strong>WhatsApp Number:</strong> ${formData.whatsappNumber}</li>
+            <li><strong>Membership Status:</strong> ${membershipStatus}</li>
+            <li><strong>Position:</strong> ${positionDisplay}</li>
+            ${formData.hasBusiness ? `<li><strong>Business:</strong> ${businessInfo}</li>` : ''}
+          </ul>
+          
+          <p>Please stay connected with our WhatsApp group for immediate updates and announcements regarding the event. We will also send important information to your registered email address.</p>
+          
+          <p>If you have any questions or need assistance, please don't hesitate to contact us by replying to this email.</p>
+          
+          <p>We look forward to seeing you at the Networking Night event!</p>
+          
+          <p>Best regards,<br>HIPMI UI Networking Night Team</p>
+        `
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to send confirmation email');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
+    return false;
   }
-  
-  /**
-   * Send a payment verification email to a participant
-   */
-  export async function sendPaymentVerificationEmail(participant: NetworkingParticipant): Promise<boolean> {
-    const subject = 'Payment Verification - HIPMI UI Networking Night';
-    
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-        <h2 style="color: #2a9d8f; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">Payment Verified</h2>
-        
-        <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-          Dear ${participant.name},
-        </p>
-        
-        <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-          We're pleased to confirm that your payment for the HIPMI UI Networking Night has been verified.
-        </p>
-        
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-          <h3 style="color: #264653; margin-top: 0;">Your Registration Details:</h3>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd; width: 40%;"><strong>Name:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;">${participant.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>WhatsApp Number:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;">${participant.whatsappNumber}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Membership Status:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;">
-                ${participant.membershipStatus === 'FUNGSIONARIS' ? 'Fungsionaris' : 'Non-Fungsionaris'}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Payment Amount:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;">Rp ${participant.paymentAmount?.toLocaleString() || 'N/A'}</td>
-            </tr>
-          </table>
-        </div>
-        
-        <div style="background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #2e7d32;">
-          <p style="font-size: 16px; color: #2e7d32; margin: 0;">
-            <strong>Your participation is confirmed!</strong>
-          </p>
-          <p style="font-size: 14px; color: #333; margin-top: 10px;">
-            Event details will be sent closer to the date. Please make sure to keep this email for your records.
-          </p>
-        </div>
-        
-        <p style="font-size: 14px; color: #666; margin-top: 30px; text-align: center; border-top: 1px solid #eee; padding-top: 10px;">
-          This is an automated notification from HIPMI UI Networking Night system. If you have any questions, please reply to this email or contact us through our official channels.
-        </p>
-      </div>
-    `;
-    
-    return await sendNetworkingParticipantEmail(participant, subject, htmlContent);
-  }
-  
-  /**
-   * Send a payment reminder email to a participant
-   */
-  export async function sendPaymentReminderEmail(participant: NetworkingParticipant): Promise<boolean> {
-    const subject = 'Payment Reminder - HIPMI UI Networking Night';
-    
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-        <h2 style="color: #2a9d8f; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">Payment Reminder</h2>
-        
-        <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-          Dear ${participant.name},
-        </p>
-        
-        <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-          This is a friendly reminder that we haven't received your payment for the upcoming HIPMI UI Networking Night event.
-        </p>
-        
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-          <h3 style="color: #264653; margin-top: 0;">Your Registration Details:</h3>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd; width: 40%;"><strong>Name:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;">${participant.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>WhatsApp Number:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;">${participant.whatsappNumber}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Membership Status:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;">
-                ${participant.membershipStatus === 'FUNGSIONARIS' ? 'Fungsionaris' : 'Non-Fungsionaris'}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Payment Amount:</strong></td>
-              <td style="padding: 8px; border-bottom: 1px solid #ddd;">Rp ${participant.paymentAmount?.toLocaleString() || 'N/A'}</td>
-            </tr>
-          </table>
-        </div>
-        
-        <div style="background-color: #fff3e0; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #e65100;">
-          <p style="font-size: 16px; color: #e65100; margin: 0;">
-            <strong>Action Required: Please complete your payment</strong>
-          </p>
-          <p style="font-size: 14px; color: #333; margin-top: 10px;">
-            To secure your spot, please make your payment and upload the payment proof through your participant dashboard as soon as possible.
-          </p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px;">
-          <a href="${process.env.NEXT_PUBLIC_BASE_URL || ''}/dashboard/networking" 
-             style="background-color: #2a9d8f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-            Go to Participant Dashboard
-          </a>
-        </div>
-        
-        <p style="font-size: 14px; color: #666; margin-top: 30px; text-align: center; border-top: 1px solid #eee; padding-top: 10px;">
-          This is an automated notification from HIPMI UI Networking Night system. If you have any questions or have already made the payment, please reply to this email or contact us through our official channels.
-        </p>
-      </div>
-    `;
-    
-    return await sendNetworkingParticipantEmail(participant, subject, htmlContent);
-  }
+}

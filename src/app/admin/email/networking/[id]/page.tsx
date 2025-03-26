@@ -33,7 +33,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { NetworkingParticipant, MembershipStatus } from '@/models/NetworkParticipant';
-import { sendPaymentVerificationEmail, sendPaymentReminderEmail } from '@/lib/emailUtils';
 import { format } from 'date-fns';
 import { 
   ArrowLeft, 

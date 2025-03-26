@@ -23,7 +23,7 @@ import {
   Position, 
   NetworkingParticipant,
 } from '@/models/NetworkParticipant';
-import { sendNetworkingEventUpdateEmail } from '@/lib/emailUtils';
+import { sendNetworkingEventUpdateEmail, sendNetworkingEventConfirmationEmail } from '@/lib/emailUtils';
 
 interface FormData {
     // Personal Information
@@ -547,15 +547,21 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
           throw new Error('Payment proof is required for new registrations');
         }
 
-        await networkingEventService.registerParticipant(
+        const newRegistration = await networkingEventService.registerParticipant(
           user.uid,
           participantData,
           formData.paymentProofFile
         );
+        
+        // Send confirmation email to user for new registrations
+        if (typeof sendNetworkingEventConfirmationEmail === 'function') {
+          sendNetworkingEventConfirmationEmail(formData, newRegistration.id)
+            .catch(error => console.error('Error sending confirmation email:', error));
+        }
 
         toast({
           title: "Registration Successful",
-          description: "Your registration has been submitted. Please wait for confirmation.",
+          description: "Your registration has been submitted. Please check your email for confirmation.",
         });
       }
 

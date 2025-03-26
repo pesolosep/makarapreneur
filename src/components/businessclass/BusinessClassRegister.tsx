@@ -21,7 +21,7 @@ import {
   InformationSource,
   BusinessClassParticipant
 } from '@/models/BusinessClassParticipant';
-import { sendBusinessClassUpdateEmail } from '@/lib/emailUtils';
+import { sendBusinessClassUpdateEmail, sendBusinessClassConfirmationEmail } from '@/lib/emailUtils';
 
 interface FormData {
   // Personal details
@@ -382,10 +382,16 @@ const BusinessClassRegistrationForm: React.FC<BusinessClassRegistrationFormProps
           participantData,
           formData.proofZipFile
         );
+        
+        // Send confirmation email to user for new registrations
+        if (typeof sendBusinessClassConfirmationEmail === 'function') {
+          sendBusinessClassConfirmationEmail(formData, newRegistration.id)
+            .catch(error => console.error('Error sending confirmation email:', error));
+        }
   
         toast({
           title: "Registration Successful",
-          description: "Your registration has been submitted. Please wait for confirmation.",
+          description: "Your registration has been submitted. Please check your email for confirmation.",
         });
       }
   

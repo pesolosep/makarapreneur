@@ -171,40 +171,49 @@ const BusinessClassParticipantsPage: React.FC = () => {
   // Email templates
   const emailTemplates: EmailTemplate[] = [
     {
-      id: 'welcome-template',
+      id: 'welcome',
       name: 'Welcome to Business Class',
-      subject: 'Welcome to HIPMI UI Business Class!',
+      subject: 'Welcome to HIPMI UI Business Class',
       content: `
-        <p>Dear {{name}},</p>
-        <p>Welcome to HIPMI UI Business Class! We're excited to have you join our community of entrepreneurs.</p>
-        <p>Event details:</p>
-        <ul>
-          <li><strong>Date:</strong> [Event Date]</li>
-          <li><strong>Time:</strong> [Event Time]</li>
-          <li><strong>Venue:</strong> [Event Venue]</li>
-        </ul>
-        <p>As a {{participantLevel}} level participant, you'll have access to all our resources tailored for your experience level.</p>
-        <p>Feel free to reach out if you have any questions!</p>
-        <p>Best regards,<br>HIPMI UI Business Class Team</p>
+      <p>Dear {{name}},</p>
+      <p>Welcome to HIPMI UI Business Class! We're excited to have you join us as a <strong>{{participantLevel}}</strong> level participant.</p>
+      
+      <p>Here are the details for our upcoming sessions:</p>
+      <ul>
+        <li><strong>Date:</strong> [Event Date]</li>
+        <li><strong>Time:</strong> [Event Time]</li>
+        <li><strong>Venue:</strong> [Event Venue]</li>
+        <li><strong>Topic:</strong> [Session Topic]</li>
+      </ul>
+      
+      <p><strong>Important:</strong> Please make sure to arrive on time and bring any necessary materials for the session.</p>
+      
+      <p>If you have any questions, feel free to reply to this email.</p>
+      
+      <p>Best regards,<br>HIPMI UI Business Class Team</p>
       `,
     },
     {
       id: 'event-reminder',
       name: 'Event Reminder',
-      subject: 'Reminder: HIPMI UI Business Class Session',
+      subject: 'Reminder: Upcoming HIPMI UI Business Class Session',
       content: `
-        <p>Dear {{name}},</p>
-        <p>This is a friendly reminder about our upcoming HIPMI UI Business Class session:</p>
-        <p><strong>Session details:</strong></p>
-        <ul>
-          <li><strong>Date:</strong> [Event Date]</li>
-          <li><strong>Time:</strong> [Event Time]</li>
-          <li><strong>Venue:</strong> [Event Venue]</li>
-          <li><strong>Topic:</strong> [Session Topic]</li>
-        </ul>
-        <p>Please arrive 15 minutes early for registration. Don't forget to bring your laptop and business materials if required.</p>
-        <p>We look forward to seeing you at the session!</p>
-        <p>Best regards,<br>HIPMI UI Business Class Team</p>
+      <p>Dear {{name}},</p>
+      <p>This is a friendly reminder about our upcoming HIPMI UI Business Class session.</p>
+      
+      <p><strong>Event details:</strong></p>
+      <ul>
+        <li><strong>Date:</strong> [Event Date]</li>
+        <li><strong>Time:</strong> [Event Time]</li>
+        <li><strong>Venue:</strong> [Event Venue]</li>
+        <li><strong>Topic:</strong> [Session Topic]</li>
+      </ul>
+      
+      <p><strong>Important:</strong> Please arrive 15 minutes early for registration. Don't forget to bring your laptop and business materials if required.</p>
+      
+      <p>We look forward to seeing you at the session!</p>
+      
+      <p>Best regards,<br>HIPMI UI Business Class Team</p>
       `,
     },
     {
@@ -212,17 +221,27 @@ const BusinessClassParticipantsPage: React.FC = () => {
       name: 'Schedule Change',
       subject: 'Important: Schedule Change - HIPMI UI Business Class',
       content: `
-        <p>Dear {{name}},</p>
-        <p>We're writing to inform you about a change in the schedule for the upcoming HIPMI UI Business Class session.</p>
-        <p><strong>Updated session details:</strong></p>
-        <ul>
-          <li><strong>New Date:</strong> [New Event Date]</li>
-          <li><strong>New Time:</strong> [New Event Time]</li>
-          <li><strong>Venue:</strong> [Event Venue] (unchanged)</li>
-        </ul>
-        <p>We apologize for any inconvenience this change may cause. If you're unable to attend due to this schedule change, please let us know.</p>
-        <p>Thank you for your understanding.</p>
-        <p>Best regards,<br>HIPMI UI Business Class Team</p>
+      <p>Dear {{name}},</p>
+      <p>We're writing to inform you about a change in the schedule for the upcoming HIPMI UI Business Class session.</p>
+      
+      <p><strong>Previous schedule:</strong></p>
+      <ul>
+        <li><strong>Date:</strong> [Previous Date]</li>
+        <li><strong>Time:</strong> [Previous Time]</li>
+      </ul>
+      
+      <p><strong>New schedule:</strong></p>
+      <ul>
+        <li><strong>Date:</strong> [New Date]</li>
+        <li><strong>Time:</strong> [New Time]</li>
+        <li><strong>Venue:</strong> [Venue] (unchanged)</li>
+      </ul>
+      
+      <p>We apologize for any inconvenience this change may cause. Please update your calendar accordingly.</p>
+      
+      <p>If you have any questions, please don't hesitate to contact us.</p>
+      
+      <p>Best regards,<br>HIPMI UI Business Class Team</p>
       `,
     }
   ];
