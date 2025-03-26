@@ -93,6 +93,9 @@ export const networkingEventService = {
         participantData.business = null;
       }
       
+      // Add email as an optional field if provided
+      const email = participantData.email || null;
+      
       // Calculate payment amount based on membership status
       const paymentAmount = calculatePaymentAmount(participantData.membershipStatus);
       
@@ -131,17 +134,11 @@ export const networkingEventService = {
       // Clean the object to remove any undefined values
       const cleanedParticipant = cleanObject(participant);
       
-      // Debug logs
-      console.log("Debug - hasBusiness value:", participantData.hasBusiness);
-      console.log("Debug - business object before cleaning:", participant.business);
-      console.log("Debug - business object after cleaning:", cleanedParticipant.business);
-      
       // Use a flat collection structure instead of nested subcollections
       await setDoc(doc(db, 'networkingEventParticipants', participantId), convertDatesToTimestamps(cleanedParticipant));
       
       return participant;
     } catch (error) {
-      console.error('Error registering participant:', error);
       throw new Error('Failed to register participant: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   },
@@ -188,11 +185,14 @@ export const networkingEventService = {
         updateFields.business = null;
       }
       
+      // If email is being updated, include it
+      if (updateData.email !== undefined) {
+        updateFields.email = updateData.email;
+      }
+      
       // If membership status is changing, recalculate payment amount
       if (updateData.membershipStatus && updateData.membershipStatus !== participantData.membershipStatus) {
         updateFields.paymentAmount = calculatePaymentAmount(updateData.membershipStatus);
-        
-   
       }
       
       // If payment proof file is provided, process it
@@ -215,9 +215,7 @@ export const networkingEventService = {
             // Extract the path from the URL to delete the file
             const oldFileRef = ref(storage, decodeURIComponent(participantData.paymentProofURL.split('?')[0].split('/o/')[1]));
             await deleteObject(oldFileRef);
-            console.log('Previous payment proof deleted successfully');
           } catch (deleteError) {
-            console.error('Error deleting previous payment proof:', deleteError);
             // Continue with upload even if deletion fails
           }
         }
@@ -232,10 +230,6 @@ export const networkingEventService = {
       // Clean the object to remove any undefined values
       const cleanedUpdateFields = cleanObject(updateFields);
       
-      // Debug logs
-      console.log("Debug - update fields before cleaning:", updateFields);
-      console.log("Debug - update fields after cleaning:", cleanedUpdateFields);
-      
       // Convert dates to timestamps
       const convertedData = convertDatesToTimestamps(cleanedUpdateFields);
       
@@ -249,7 +243,6 @@ export const networkingEventService = {
         ...convertTimestampsToDates(updatedParticipantDoc.data())
       } as NetworkingParticipant;
     } catch (error) {
-      console.error('Error editing registration:', error);
       throw error;
     }
   },
@@ -269,7 +262,6 @@ export const networkingEventService = {
         ...convertTimestampsToDates(data)
       } as NetworkingParticipant;
     } catch (error) {
-      console.error('Error fetching participant:', error);
       throw new Error('Failed to fetch participant');
     }
   },
@@ -295,8 +287,32 @@ export const networkingEventService = {
         ...convertTimestampsToDates(participantDoc.data())
       } as NetworkingParticipant;
     } catch (error) {
-      console.error('Error fetching participant by user ID:', error);
       throw new Error('Failed to fetch participant');
+    }
+  },
+  
+  // Get participant by email
+  async getParticipantByEmail(email: string): Promise<NetworkingParticipant | null> {
+    try {
+      const participantsQuery = query(
+        collection(db, 'networkingEventParticipants'),
+        where('email', '==', email),
+        limit(1)
+      );
+      
+      const participantsSnapshot = await getDocs(participantsQuery);
+      
+      if (participantsSnapshot.empty) {
+        return null;
+      }
+      
+      const participantDoc = participantsSnapshot.docs[0];
+      return {
+        id: participantDoc.id,
+        ...convertTimestampsToDates(participantDoc.data())
+      } as NetworkingParticipant;
+    } catch (error) {
+      throw new Error('Failed to fetch participant by email');
     }
   }
 };
@@ -313,7 +329,6 @@ export const networkingEventAdminService = {
         ...convertTimestampsToDates(doc.data())
       })) as NetworkingParticipant[];
     } catch (error) {
-      console.error('Error fetching all participants:', error);
       throw new Error('Failed to fetch participants');
     }
   },
@@ -333,18 +348,16 @@ export const networkingEventAdminService = {
         ...convertTimestampsToDates(doc.data())
       })) as NetworkingParticipant[];
     } catch (error) {
-      console.error(`Error fetching participants by membership status (${membershipStatus}):`, error);
       throw new Error('Failed to fetch participants by membership status');
     }
   },
-  
-
 
   // Export participants data (e.g., for generating name badges, attendance lists)
   async exportParticipantsData(): Promise<Array<{
     id: string;
     name: string;
     whatsappNumber: string;
+    email?: string;
     membershipStatus: MembershipStatus;
     hipmiPtOrigin?: string;
     position: string;
@@ -361,6 +374,7 @@ export const networkingEventAdminService = {
           id: doc.id,
           name: data.name,
           whatsappNumber: data.whatsappNumber,
+          email: data.email || undefined,  // Include email in exported data
           membershipStatus: data.membershipStatus,
           hipmiPtOrigin: data.hipmiPtOrigin?.toString() || undefined,
           position: data.position.toString(),
@@ -370,7 +384,6 @@ export const networkingEventAdminService = {
         };
       });
     } catch (error) {
-      console.error('Error exporting participants data:', error);
       throw new Error('Failed to export participants data');
     }
   }

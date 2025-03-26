@@ -88,6 +88,7 @@ export interface NetworkingParticipant {
   name: string;
   whatsappNumber: string;
   position: Position;
+  email: string;
   
   // Membership Information
   membershipStatus: MembershipStatus;

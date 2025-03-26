@@ -26,30 +26,31 @@ import {
 import { sendNetworkingEventUpdateEmail } from '@/lib/emailUtils';
 
 interface FormData {
-  // Personal Information
-  name: string;
-  whatsappNumber: string;
-  position: string;
-  
-  // Membership Information
-  membershipStatus: MembershipStatus;
-  hipmiPtOrigin?: string;
-  otherOrigin?: string;
-  
-  // Event Expectations
-  expectations: string[];
-  otherExpectation?: string;
-  
-  // Business Information
-  hasBusiness: boolean;
-  businessName?: string;
-  businessField?: string;
-  businessDescription?: string;
-  businessSocial?: string;
-  
-  // Payment
-  paymentProofFile: File | null;
-}
+    // Personal Information
+    name: string;
+    whatsappNumber: string;
+    email: string;
+    position: string;
+    
+    // Membership Information
+    membershipStatus: MembershipStatus;
+    hipmiPtOrigin?: string;
+    otherOrigin?: string;
+    
+    // Event Expectations
+    expectations: string[];
+    otherExpectation?: string;
+    
+    // Business Information
+    hasBusiness: boolean;
+    businessName?: string;
+    businessField?: string;
+    businessDescription?: string;
+    businessSocial?: string;
+    
+    // Payment
+    paymentProofFile: File | null;
+  }
 
 interface FormErrors {
   [key: string]: string;
@@ -147,6 +148,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
   const [formData, setFormData] = useState<FormData>({
     name: '',
     whatsappNumber: '',
+    email: '',
     position: '',
     
     membershipStatus: MembershipStatus.FUNGSIONARIS,
@@ -182,6 +184,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
       setFormData({
         name: existingData.name || '',
         whatsappNumber: existingData.whatsappNumber || '',
+        email: existingData.email || '', // Load email from existing data
         position: existingData.position || '',
         
         membershipStatus: existingData.membershipStatus || MembershipStatus.FUNGSIONARIS,
@@ -210,6 +213,24 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
     }
   }, [editMode, existingData]);
 
+  // Add email pre-filling
+  useEffect(() => {
+    if (loading) return;
+    
+    if (!user) {
+      router.push('/authentication/login?redirect=/event/register/networking');
+      return;
+    }
+
+    // Pre-fill email if available from user
+    if (user.email && !editMode) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || ''
+      }));
+    }
+  }, [user, loading, router, editMode]);
+
   useEffect(() => {
     if (loading) return;
     
@@ -223,6 +244,11 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
     return /^08\d{3,}$/.test(phone);
   };
 
+  // Add email validation
+  const validateEmail = (email: string) => {
+    return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email);
+  };
+
   const validateStep = (step: number) => {
     const newErrors: FormErrors = {};
 
@@ -233,6 +259,12 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
         newErrors.whatsappNumber = 'WhatsApp number is required';
       } else if (!validatePhoneNumber(formData.whatsappNumber)) {
         newErrors.whatsappNumber = 'Phone number must be in format 08xxx';
+      }
+
+      if (!formData.email) {
+        newErrors.email = 'Email is required';
+      } else if (!validateEmail(formData.email)) {
+        newErrors.email = 'Invalid email address';
       }
       
       if (!formData.position) newErrors.position = 'Position is required';
@@ -481,6 +513,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
       // Create participant data structure
       const participantData = {
         name: formData.name,
+        email: formData.email,
         whatsappNumber: formData.whatsappNumber,
         position: formData.position as Position, // Convert string to Position enum
         membershipStatus: formData.membershipStatus,
@@ -531,7 +564,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
         fileInputRef.current.value = '';
       }
 
-      router.push('/networking');
+      router.push('/event');
     } catch (error) {
       toast({
         variant: "destructive",
@@ -634,6 +667,22 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
                     />
                     {errors.name && (
                       <p className="text-red-400 text-sm mt-1">{errors.name}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Email Address</label>
+                    <Input
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Enter your email"
+                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
+                      disabled={editMode}
+                    />
+                    {errors.email && (
+                      <p className="text-red-400 text-sm mt-1">{errors.email}</p>
                     )}
                   </div>
                   
@@ -891,9 +940,9 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
                     </div>
                     <p className="text-sm mb-3">Please transfer the registration fee to:</p>
                     <div className="bg-black/30 rounded-lg p-3 mb-3">
-                      <p className="font-medium">Bank BCA</p>
-                      <p>Account Number: 1234567890</p>
-                      <p>Account Name: HIPMI PT UI</p>
+                      <p className="font-medium">Bank BLU</p>
+                      <p>Account Number: 007033578200</p>
+                      <p>Account Name: Cherien Stevie</p>
                     </div>
                     <p className="text-sm">After making the payment, please upload your payment proof below.</p>
                   </AlertDescription>
