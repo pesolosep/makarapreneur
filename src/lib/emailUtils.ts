@@ -1,5 +1,7 @@
 // lib/emailUtils.ts
 
+import { NetworkingParticipant } from "@/models/NetworkParticipant";
+
 /**
  * Utility functions for sending email notifications
  */
@@ -325,3 +327,133 @@ export async function sendBusinessClassUpdateEmail(formData: any, registrationId
       return false;
     }
   }
+
+/**
+ * Send a confirmation email to a user who just registered for Business Class
+ */
+export async function sendBusinessClassConfirmationEmail(formData: any, registrationId: string) {
+  try {
+    // Get the level for display
+    const levelDisplay = formData.participantLevel === 'BEGINNER' ? 'Beginner' : 'Advanced';
+    
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: formData.email,
+        subject: 'Registration Confirmation - HIPMI UI Business Class',
+        html: `
+          <p>Dear ${formData.name},</p>
+          
+          <p>Thank you for registering for the HIPMI UI Business Class as a <strong>${levelDisplay}</strong> level participant. Your registration has been successfully received.</p>
+          
+          <p><strong>Registration Details:</strong></p>
+          <ul>
+            <li><strong>Registration ID:</strong> ${registrationId}</li>
+            <li><strong>Name:</strong> ${formData.name}</li>
+            <li><strong>Email:</strong> ${formData.email}</li>
+            <li><strong>Institution:</strong> ${formData.institution}</li>
+            <li><strong>Level:</strong> ${levelDisplay}</li>
+          </ul>
+          
+          <p>Please stay connected with our WhatsApp group for immediate updates and announcements. We will also send important information to your registered email address.</p>
+          
+          <p>If you have any questions or need assistance, please don't hesitate to contact us by replying to this email.</p>
+          
+          <p>We look forward to your participation in the HIPMI UI Business Class program.</p>
+          
+          <p>Best regards,<br>HIPMI UI Business Class Team</p>
+        `
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to send confirmation email');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
+    return false;
+  }
+}
+
+/**
+ * Send a confirmation email to a user who just registered for Networking Event
+ */
+export async function sendNetworkingEventConfirmationEmail(formData: any, registrationId: string) {
+  try {
+    // Construct data for the membership status
+    const membershipStatus = formData.membershipStatus === 'FUNGSIONARIS' ? 
+      'HIPMI PT UI Fungsionaris' : 'Non-Fungsionaris';
+    
+    // Format position display
+    let positionDisplay;
+    switch (formData.position) {
+      case 'PENGURUS_INTI':
+        positionDisplay = 'Pengurus Inti';
+        break;
+      case 'KEPALA_WAKIL_KEPALA_BIDANG':
+        positionDisplay = 'Kepala/Wakil Kepala Bidang';
+        break;
+      case 'STAF':
+        positionDisplay = 'Staf';
+        break;
+      case 'ANGGOTA':
+        positionDisplay = 'Anggota';
+        break;
+      default:
+        positionDisplay = formData.position;
+    }
+    
+    // Format business information if available
+    const businessInfo = formData.hasBusiness ? 
+      `${formData.businessName || 'N/A'} (${formData.businessField || 'N/A'})` : 
+      'No business';
+    
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: formData.email,
+        subject: 'Registration Confirmation - HIPMI UI Networking Night',
+        html: `
+          <p>Dear ${formData.name},</p>
+          
+          <p>Thank you for registering for the HIPMI UI Networking Night event. Your registration has been successfully received.</p>
+          
+          <p><strong>Registration Details:</strong></p>
+          <ul>
+            <li><strong>Registration ID:</strong> ${registrationId}</li>
+            <li><strong>Name:</strong> ${formData.name}</li>
+            <li><strong>WhatsApp Number:</strong> ${formData.whatsappNumber}</li>
+            <li><strong>Membership Status:</strong> ${membershipStatus}</li>
+            <li><strong>Position:</strong> ${positionDisplay}</li>
+            ${formData.hasBusiness ? `<li><strong>Business:</strong> ${businessInfo}</li>` : ''}
+          </ul>
+          
+          <p>Please stay connected with our WhatsApp group for immediate updates and announcements regarding the event. We will also send important information to your registered email address.</p>
+          
+          <p>If you have any questions or need assistance, please don't hesitate to contact us by replying to this email.</p>
+          
+          <p>We look forward to seeing you at the Networking Night event!</p>
+          
+          <p>Best regards,<br>HIPMI UI Networking Night Team</p>
+        `
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to send confirmation email');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
+    return false;
+  }
+}

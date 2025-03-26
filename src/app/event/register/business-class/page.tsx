@@ -68,6 +68,9 @@ export default function BusinessClassRegistrationPage() {
                 You have already registered for the HIPMI UI Business Class. Your registration has been recorded.
               </p>
               <p className="mb-4 text-juneBud">
+                If you need previously registered for a previous episode, you can use the button below to redo your submission.
+              </p>
+              <p className="mb-4 text-juneBud">
                 If you need to update your registration details, you can use the button below to edit your submission.
               </p>
               <p className="mb-4 text-white">
@@ -92,7 +95,7 @@ export default function BusinessClassRegistrationPage() {
               asChild
               className="w-full py-6 text-base font-medium border-2 border-juneBud/30 bg-transparent text-juneBud hover:bg-juneBud/10 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
             >
-              <a href="/event">
+              <a href="/event/internal">
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Back to Event Page
               </a>

@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// lib/networkingEventService.ts
-
 import { db, storage } from './firebase';
 import { Timestamp, limit, query, collection, doc, setDoc, updateDoc, getDoc, getDocs, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -39,6 +36,7 @@ function cleanObject(obj: any): any {
   return result;
 }
 
+// Main service for networking event
 export const networkingEventService = {
   // Register a new participant with optional payment proof
   async registerParticipant(
@@ -96,15 +94,18 @@ export const networkingEventService = {
       // Calculate payment amount based on membership status
       const paymentAmount = calculatePaymentAmount(participantData.membershipStatus);
       
+      // Create date objects that will be converted to Timestamps
+      const now = new Date();
+      
       // Create participant document
       const participant: NetworkingParticipant = {
         id: participantId,
         userId,
         ...participantData,
         paymentAmount,
-        registrationDate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date()
+        registrationDate: now,
+        createdAt: now,
+        updatedAt: now
       };
       
       // Process payment proof if provided
@@ -125,28 +126,34 @@ export const networkingEventService = {
         const storageRef = ref(storage, `networkingEvent/paymentProofs/${participantId}/${paymentProofFile.name}`);
         await uploadBytes(storageRef, paymentProofFile);
         participant.paymentProofURL = await getDownloadURL(storageRef);
-        participant.paymentDate = new Date();
+        participant.paymentDate = now; // Use the same timestamp for consistency
       }
       
       // Clean the object to remove any undefined values
       const cleanedParticipant = cleanObject(participant);
       
-      // Debug logs
-      console.log("Debug - hasBusiness value:", participantData.hasBusiness);
-      console.log("Debug - business object before cleaning:", participant.business);
-      console.log("Debug - business object after cleaning:", cleanedParticipant.business);
+      // Convert dates to timestamps before saving to Firestore
+      const firestoreData = convertDatesToTimestamps(cleanedParticipant);
+      
+      // Explicit conversion of date fields to Firestore Timestamps as a fallback
+      const firestoreDataWithDates = {
+        ...firestoreData,
+        registrationDate: Timestamp.fromDate(now),
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now),
+        ...(participant.paymentDate ? { paymentDate: Timestamp.fromDate(participant.paymentDate) } : {})
+      };
       
       // Use a flat collection structure instead of nested subcollections
-      await setDoc(doc(db, 'networkingEventParticipants', participantId), convertDatesToTimestamps(cleanedParticipant));
+      await setDoc(doc(db, 'networkingEventParticipants', participantId), firestoreDataWithDates);
       
       return participant;
     } catch (error) {
-      console.error('Error registering participant:', error);
       throw new Error('Failed to register participant: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   },
   
-  // Edit registration and/or submit payment proof
+  // Edit participant registration and/or submit payment proof
   async editRegistration(
     participantId: string,
     updateData: Partial<NetworkingParticipant>,
@@ -161,10 +168,13 @@ export const networkingEventService = {
       
       const participantData = convertTimestampsToDates(participantDoc.data()) as NetworkingParticipant;
       
+      // Create date for timestamp fields
+      const now = new Date();
+      
       // Prepare update fields
       const updateFields: any = {
         ...updateData,
-        updatedAt: new Date()
+        updatedAt: now
       };
       
       // Handle business field explicitly
@@ -188,11 +198,14 @@ export const networkingEventService = {
         updateFields.business = null;
       }
       
+      // If email is being updated, include it
+      if (updateData.email !== undefined) {
+        updateFields.email = updateData.email;
+      }
+      
       // If membership status is changing, recalculate payment amount
       if (updateData.membershipStatus && updateData.membershipStatus !== participantData.membershipStatus) {
         updateFields.paymentAmount = calculatePaymentAmount(updateData.membershipStatus);
-        
-   
       }
       
       // If payment proof file is provided, process it
@@ -215,9 +228,7 @@ export const networkingEventService = {
             // Extract the path from the URL to delete the file
             const oldFileRef = ref(storage, decodeURIComponent(participantData.paymentProofURL.split('?')[0].split('/o/')[1]));
             await deleteObject(oldFileRef);
-            console.log('Previous payment proof deleted successfully');
           } catch (deleteError) {
-            console.error('Error deleting previous payment proof:', deleteError);
             // Continue with upload even if deletion fails
           }
         }
@@ -226,21 +237,24 @@ export const networkingEventService = {
         const storageRef = ref(storage, `networkingEvent/paymentProofs/${participantId}/${paymentProofFile.name}`);
         await uploadBytes(storageRef, paymentProofFile);
         updateFields.paymentProofURL = await getDownloadURL(storageRef);
-        updateFields.paymentDate = new Date();
+        updateFields.paymentDate = now; // Use the same timestamp for consistency
       }
       
       // Clean the object to remove any undefined values
       const cleanedUpdateFields = cleanObject(updateFields);
       
-      // Debug logs
-      console.log("Debug - update fields before cleaning:", updateFields);
-      console.log("Debug - update fields after cleaning:", cleanedUpdateFields);
+      // Convert dates to timestamps before saving to Firestore
+      const firestoreData = convertDatesToTimestamps(cleanedUpdateFields);
       
-      // Convert dates to timestamps
-      const convertedData = convertDatesToTimestamps(cleanedUpdateFields);
+      // Explicit conversion of date fields to Firestore Timestamps as a fallback
+      const firestoreDataWithDates = {
+        ...firestoreData,
+        updatedAt: Timestamp.fromDate(now),
+        ...(updateFields.paymentDate ? { paymentDate: Timestamp.fromDate(updateFields.paymentDate) } : {})
+      };
       
       // Update in participants collection
-      await updateDoc(doc(db, 'networkingEventParticipants', participantId), convertedData);
+      await updateDoc(doc(db, 'networkingEventParticipants', participantId), firestoreDataWithDates);
       
       // Return the updated participant data
       const updatedParticipantDoc = await getDoc(doc(db, 'networkingEventParticipants', participantId));
@@ -249,7 +263,6 @@ export const networkingEventService = {
         ...convertTimestampsToDates(updatedParticipantDoc.data())
       } as NetworkingParticipant;
     } catch (error) {
-      console.error('Error editing registration:', error);
       throw error;
     }
   },
@@ -269,7 +282,6 @@ export const networkingEventService = {
         ...convertTimestampsToDates(data)
       } as NetworkingParticipant;
     } catch (error) {
-      console.error('Error fetching participant:', error);
       throw new Error('Failed to fetch participant');
     }
   },
@@ -295,8 +307,32 @@ export const networkingEventService = {
         ...convertTimestampsToDates(participantDoc.data())
       } as NetworkingParticipant;
     } catch (error) {
-      console.error('Error fetching participant by user ID:', error);
       throw new Error('Failed to fetch participant');
+    }
+  },
+  
+  // Get participant by email
+  async getParticipantByEmail(email: string): Promise<NetworkingParticipant | null> {
+    try {
+      const participantsQuery = query(
+        collection(db, 'networkingEventParticipants'),
+        where('email', '==', email),
+        limit(1)
+      );
+      
+      const participantsSnapshot = await getDocs(participantsQuery);
+      
+      if (participantsSnapshot.empty) {
+        return null;
+      }
+      
+      const participantDoc = participantsSnapshot.docs[0];
+      return {
+        id: participantDoc.id,
+        ...convertTimestampsToDates(participantDoc.data())
+      } as NetworkingParticipant;
+    } catch (error) {
+      throw new Error('Failed to fetch participant by email');
     }
   }
 };
@@ -313,7 +349,6 @@ export const networkingEventAdminService = {
         ...convertTimestampsToDates(doc.data())
       })) as NetworkingParticipant[];
     } catch (error) {
-      console.error('Error fetching all participants:', error);
       throw new Error('Failed to fetch participants');
     }
   },
@@ -333,24 +368,30 @@ export const networkingEventAdminService = {
         ...convertTimestampsToDates(doc.data())
       })) as NetworkingParticipant[];
     } catch (error) {
-      console.error(`Error fetching participants by membership status (${membershipStatus}):`, error);
       throw new Error('Failed to fetch participants by membership status');
     }
   },
-  
 
-
-  // Export participants data (e.g., for generating name badges, attendance lists)
+  // Export participants data (e.g., for generating name badges, attendance lists
   async exportParticipantsData(): Promise<Array<{
     id: string;
     name: string;
     whatsappNumber: string;
+    email?: string;
     membershipStatus: MembershipStatus;
     hipmiPtOrigin?: string;
     position: string;
     hasBusiness: boolean;
     businessName?: string;
     businessField?: string;
+    businessDescription?: string;
+    paymentProofURL?: string;
+    paymentDate?: Date;
+    paymentAmount?: number;
+    registrationDate?: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
+
   }>> {
     try {
       const participantsSnapshot = await getDocs(collection(db, 'networkingEventParticipants'));
@@ -361,16 +402,24 @@ export const networkingEventAdminService = {
           id: doc.id,
           name: data.name,
           whatsappNumber: data.whatsappNumber,
+          email: data.email || undefined,  // Include email in exported data
           membershipStatus: data.membershipStatus,
           hipmiPtOrigin: data.hipmiPtOrigin?.toString() || undefined,
           position: data.position.toString(),
           hasBusiness: data.hasBusiness,
           businessName: data.business?.name,
           businessField: data.business?.field?.toString(),
+          businessDescription: data.business?.description,
+          paymentProofURL: data.paymentProofURL,
+          paymentDate: data.paymentDate,
+          paymentAmount: data.paymentAmount,
+          registrationDate: data.registrationDate,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+
         };
       });
     } catch (error) {
-      console.error('Error exporting participants data:', error);
       throw new Error('Failed to export participants data');
     }
   }

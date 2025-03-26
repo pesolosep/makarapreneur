@@ -107,9 +107,9 @@ export default function NetworkingEventRegistrationPage() {
                 asChild
                 className="w-full py-6 text-base font-medium border-2 border-juneBud/30 bg-transparent text-juneBud hover:bg-juneBud/10 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
               >
-                <a href="/networking">
+                <a href="/event/networkingnight">
                   <ArrowLeft className="w-5 h-5 mr-2" />
-                  Back to Networking Page
+                  Back to Event Page
                 </a>
               </Button>
             </div>

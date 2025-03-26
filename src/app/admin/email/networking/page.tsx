@@ -1,1016 +1,1061 @@
-// "use client";
+'use client';
 
-// import React, { useState, useEffect, useMemo } from 'react';
-// import { useEditor, EditorContent } from '@tiptap/react';
-// import StarterKit from '@tiptap/starter-kit';
-// import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-// import { Input } from '@/components/ui/input';
-// import { Button } from '@/components/ui/button';
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import { Alert, AlertDescription } from '@/components/ui/alert';
-// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-// import { Checkbox } from "@/components/ui/checkbox";
-// import { Badge } from "@/components/ui/badge";
-// import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-// import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-// import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-// import { Label } from "@/components/ui/label";
-// import { Textarea } from "@/components/ui/textarea";
-// import { 
-//   Bold, Italic, List, ListOrdered, Heading1, Heading2, Undo, Redo, Search, 
-//   Download, Filter, Mail, CheckCircle, XCircle, Edit, Eye, FileText,
-//   ArrowUpDown, ChevronDown, FileX, RefreshCw, Trash2, Send, MailX
-// } from 'lucide-react';
-// import { networkingEventAdminService } from '@/lib/networkingEventService';
-// import type { NetworkingParticipant, MembershipStatus } from '@/models/NetworkParticipant';
-// import { useAuth } from '@/contexts/AuthContext';
-// import { useRouter } from 'next/navigation';
-// import AdminNavbar from '@/components/admin/NavbarAdmin';
-// import { toast } from 'sonner';
-// import {
-//   DropdownMenu,
-//   DropdownMenuCheckboxItem,
-//   DropdownMenuContent,
-//   DropdownMenuItem,
-//   DropdownMenuLabel,
-//   DropdownMenuSeparator,
-//   DropdownMenuTrigger,
-// } from "@/components/ui/dropdown-menu";
-// import Papa from 'papaparse';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { networkingEventAdminService } from '@/lib/firebase/networkNightService';
+import AdminNavbar from '@/components/admin/NavbarAdmin';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { NetworkingParticipant, MembershipStatus } from '@/models/NetworkParticipant';
 
-// // Types for the Dashboard
-// interface FilterOptions {
-//   membershipStatus: MembershipStatus | 'ALL';
-//   hasBusiness: boolean | 'ALL';
-//   searchQuery: string;
-//   attendanceStatus: 'ALL' | 'CONFIRMED' | 'ATTENDED' | 'ABSENT' | 'NOT_CONFIRMED';
-// }
+// TipTap imports
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Bold from '@tiptap/extension-bold';
+import Italic from '@tiptap/extension-italic';
+import Heading from '@tiptap/extension-heading';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import Link from '@tiptap/extension-link';
 
-// export default function NetworkingEventDashboard() {
-//   const { user, isAdmin, loading } = useAuth();
-//   const router = useRouter();
+import { 
+  DownloadIcon, 
+  FilterIcon, 
+  MailIcon, 
+  MoreHorizontal, 
+  RefreshCcw, 
+  Trash2,
+  Bold as BoldIcon, 
+  Italic as ItalicIcon, 
+  List, 
+  ListOrdered, 
+  Heading1, 
+  Heading2, 
+  Undo, 
+  Redo, 
+  Link as LinkIcon, 
+  Send
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Define the filter options interface
+interface FilterOptions {
+  searchTerm: string;
+  membershipStatus: string;
+  paymentStatus: string;
+  hasBusinessOnly: boolean;
+  position: string;
+  origin: string;
+}
+
+// Define email template interface
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+}
+
+const NetworkingParticipantsPage: React.FC = () => {
+  const [participants, setParticipants] = useState<NetworkingParticipant[]>([]);
+  const [loadingPage, setloadingPage] = useState<boolean>(true);
+  const [sendingEmail, setSendingEmail] = useState<boolean>(false);
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState<boolean>(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    searchTerm: '',
+    membershipStatus: '',
+    paymentStatus: '',
+    hasBusinessOnly: false,
+    position: '',
+    origin: '',
+  });
+  const [emailDialogOpen, setEmailDialogOpen] = useState<boolean>(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [emailSubject, setEmailSubject] = useState<string>('');
+  const [emailTemplateType, setEmailTemplateType] = useState<string>('custom');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const router = useRouter();
+  const { loading, user, isAdmin } = useAuth();
+  useEffect(() => {
+    if(loading){
+      return;
+    }
+    if (!isAdmin) {
+      router.push('/');
+      return;
+    }
+    
+
+  }, [user, isAdmin, router]);
+
   
-//   // State for participants data
-//   const [participants, setParticipants] = useState<NetworkingParticipant[]>([]);
-//   const [loading, setLoading] = useState<boolean>(true);
-//   const [error, setError] = useState<string | null>(null);
-  
-//   // State for filters
-//   const [filters, setFilters] = useState<FilterOptions>({
-//     membershipStatus: 'ALL',
-//     hasBusiness: 'ALL',
-//     searchQuery: '',
-//     attendanceStatus: 'ALL',
-//   });
+  // Set up TipTap editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Bold,
+      Italic,
+      Heading.configure({
+        levels: [1, 2]
+      }),
+      BulletList,
+      OrderedList,
+      Link.configure({
+        openOnClick: false,
+      }),
+    ],
+    content: '',
+  });
 
-//   // State for selected participants (for bulk actions)
-//   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
-//   const [selectAll, setSelectAll] = useState<boolean>(false);
-  
-//   // State for email sending
-//   const [emailDialogOpen, setEmailDialogOpen] = useState<boolean>(false);
-//   const [emailSubject, setEmailSubject] = useState<string>('');
-//   const [sendingEmail, setSendingEmail] = useState<boolean>(false);
+  // Email templates
+  const emailTemplates: EmailTemplate[] = [
+    {
+      id: 'payment-reminder',
+      name: 'Payment Reminder',
+      subject: 'Payment Reminder - HIPMI UI Networking Night',
+      content: `
+        <p>Dear {{name}},</p>
+        <p>This is a friendly reminder that we haven't received your payment for the upcoming HIPMI UI Networking Night event.</p>
+        <p>Event details:</p>
+        <ul>
+          <li><strong>Date:</strong> [Event Date]</li>
+          <li><strong>Time:</strong> [Event Time]</li>
+          <li><strong>Venue:</strong> [Event Venue]</li>
+          <li><strong>Payment Amount:</strong> Rp {{paymentAmount}}</li>
+        </ul>
+        <p>Please complete your payment as soon as possible to secure your participation. You can upload your payment proof through your participant dashboard.</p>
+        <p>If you've already made the payment, please disregard this message.</p>
+        <p>Best regards,<br>HIPMI UI Team</p>
+      `,
+    },
+    {
+      id: 'event-confirmation',
+      name: 'Event Confirmation',
+      subject: 'Confirmation - HIPMI UI Networking Night',
+      content: `
+        <p>Dear {{name}},</p>
+        <p>We're pleased to confirm your registration for the HIPMI UI Networking Night event!</p>
+        <p><strong>Event details:</strong></p>
+        <ul>
+          <li><strong>Date:</strong> [Event Date]</li>
+          <li><strong>Time:</strong> [Event Time]</li>
+          <li><strong>Venue:</strong> [Event Venue]</li>
+        </ul>
+        <p>Please arrive 15-30 minutes early for registration. Don't forget to bring your ID card and show this email confirmation.</p>
+        <p>We look forward to seeing you at the event!</p>
+        <p>Best regards,<br>HIPMI UI Team</p>
+      `,
+    },
+    {
+      id: 'schedule-change',
+      name: 'Schedule Change',
+      subject: 'Important: Schedule Change - HIPMI UI Networking Night',
+      content: `
+        <p>Dear {{name}},</p>
+        <p>We're writing to inform you about a change in the schedule for the upcoming HIPMI UI Networking Night event.</p>
+        <p><strong>Updated event details:</strong></p>
+        <ul>
+          <li><strong>New Date:</strong> [New Event Date]</li>
+          <li><strong>New Time:</strong> [New Event Time]</li>
+          <li><strong>Venue:</strong> [Event Venue] (unchanged)</li>
+        </ul>
+        <p>We apologize for any inconvenience this change may cause. If you're unable to attend due to this schedule change, please let us know.</p>
+        <p>Thank you for your understanding.</p>
+        <p>Best regards,<br>HIPMI UI Team</p>
+      `,
+    }
+  ];
 
-//   // Email editor
-//   const editor = useEditor({
-//     extensions: [StarterKit],
-//     content: '<p>Enter your email content here...</p>',
-//   });
+  useEffect(() => {
+    fetchParticipants();
+  }, []);
 
-//   // Fetch participants data
-//   useEffect(() => {
-//     if (!isAdmin && !loading) {
-//       router.push('/');
-//       return;
-//     }
+  useEffect(() => {
+    // Update selected participants when tab changes
+    setSelectedParticipants([]);
+    setSelectAll(false);
+  }, [activeTab]);
+
+  const fetchParticipants = async () => {
+    try {
+      setloadingPage(true);
+      const data = await networkingEventAdminService.getAllParticipants();
+      setParticipants(data);
+    } catch (error) {
+      console.error('Failed to fetch participants:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load participants data',
+        variant: 'destructive',
+      });
+    } finally {
+      setloadingPage(false);
+    }
+  };
+
+  const handleSelectAllChange = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedParticipants(filteredParticipants.map(p => p.id));
+    } else {
+      setSelectedParticipants([]);
+    }
+  };
+
+  const handleParticipantSelect = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedParticipants(prev => [...prev, id]);
+    } else {
+      setSelectedParticipants(prev => prev.filter(participantId => participantId !== id));
+      setSelectAll(false);
+    }
+  };
+
+  const handleFilterChange = (key: keyof FilterOptions, value: string | boolean) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      searchTerm: '',
+      membershipStatus: '',
+      paymentStatus: '',
+      hasBusinessOnly: false,
+      position: '',
+      origin: '',
+    });
+  };
+
+  // Filter participants based on current filters and active tab
+  const getFilteredParticipants = () => {
+    return participants.filter(participant => {
+      // First apply tab filter
+      if (activeTab === 'paid' && !participant.paymentProofURL) {
+        return false;
+      }
+      
+      if (activeTab === 'unpaid' && participant.paymentProofURL) {
+        return false;
+      }
+
+      // Then apply detailed filters
+      // Search term filter
+      const searchMatch = !filters.searchTerm || 
+        participant.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        participant.whatsappNumber.includes(filters.searchTerm) ||
+        (participant.hipmiPtOrigin && participant.hipmiPtOrigin.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
+        (participant.business?.name && participant.business.name.toLowerCase().includes(filters.searchTerm.toLowerCase()));
+
+      // Membership status filter
+      const membershipMatch = !filters.membershipStatus || participant.membershipStatus === filters.membershipStatus;
+
+      // Payment status filter
+      const paymentMatch = !filters.paymentStatus || 
+        (filters.paymentStatus === 'PAID' && participant.paymentProofURL) ||
+        (filters.paymentStatus === 'UNPAID' && !participant.paymentProofURL);
+
+      // Business filter
+      const businessMatch = !filters.hasBusinessOnly || participant.hasBusiness;
+
+      // Position filter
+      const positionMatch = !filters.position || participant.position === filters.position;
+
+      // Origin filter (only applicable for NON_FUNGSIONARIS)
+      const originMatch = !filters.origin || 
+        (participant.membershipStatus === MembershipStatus.NON_FUNGSIONARIS && 
+         participant.hipmiPtOrigin === filters.origin);
+
+      return searchMatch && membershipMatch && paymentMatch && businessMatch && positionMatch && originMatch;
+    });
+  };
+
+  const filteredParticipants = getFilteredParticipants();
+
+  const exportToCSV = () => {
+    try {
+      const headers = [
+        'ID',
+        'Name', 
+        'WhatsApp', 
+        'Email',
+        'Membership Status', 
+        'Position', 
+        'HIPMI PT Origin', 
+        'Has Business', 
+        'Business Name', 
+        'Business Field', 
+        'Business Description',
+        'Payment Status',
+        'Payment Proof URL',
+        'Payment Date',
+        'Payment Amount',
+        'Registration Date',
+        'Created At',
+        'Updated At'
+      ];
+      
+      // Prepare CSV content
+      let csvContent = headers.join(',') + '\n';
+      
+      filteredParticipants.forEach(participant => {
+        const row = [
+          `"${participant.id || ''}"`,
+          `"${participant.name || ''}"`,
+          `"${participant.whatsappNumber || ''}"`,
+          `"${participant.email || ''}"`,
+          `"${participant.membershipStatus === MembershipStatus.FUNGSIONARIS ? 'Fungsionaris' : 'Non-Fungsionaris'}"`,
+          `"${participant.position || ''}"`,
+          `"${participant.hipmiPtOrigin || ''}"`,
+          participant.hasBusiness ? 'Yes' : 'No',
+          `"${participant.business?.name || ''}"`,
+          `"${participant.business?.field || ''}"`,
+          `"${participant.business?.description || ''}"`,
+          participant.paymentProofURL ? 'Verified' : 'Unpaid',
+          `"${participant.paymentProofURL || ''}"`,
+          participant.paymentDate ? new Date(participant.paymentDate).toLocaleDateString() : '',
+          participant.paymentAmount ? participant.paymentAmount.toString() : '0',
+          participant.registrationDate ? new Date(participant.registrationDate).toLocaleDateString() : '',
+          participant.createdAt ? new Date(participant.createdAt).toLocaleDateString() : '',
+          participant.updatedAt ? new Date(participant.updatedAt).toLocaleDateString() : ''
+        ];
+        csvContent += row.join(',') + '\n';
+      });
+      
+      // Create a blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `networking_participants_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: 'Export Successful',
+        description: `Exported ${filteredParticipants.length} participants to CSV`,
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'There was an error exporting the data',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      // In a real implementation, you'd call an API endpoint to delete participants
+      // This is just a mock implementation
+      toast({
+        title: 'Deleting participants...',
+        description: `Deleting ${selectedParticipants.length} participants`,
+      });
+      
+      // Mock API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Remove deleted participants from state
+      setParticipants(prev => 
+        prev.filter(p => !selectedParticipants.includes(p.id))
+      );
+      
+      toast({
+        title: 'Success',
+        description: `${selectedParticipants.length} participants deleted`,
+      });
+      
+      // Reset selected participants
+      setSelectedParticipants([]);
+      setBulkDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to delete participants:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete participants',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSendEmails = async () => {
+    if (!emailSubject.trim()) {
+      setEmailError('Email subject is required');
+      return;
+    }
+
+    if (!editor?.getHTML() || editor.getHTML() === '<p></p>') {
+      setEmailError('Email content is required');
+      return;
+    }
+
+    if (selectedParticipants.length === 0) {
+      setEmailError('Please select at least one participant');
+      return;
+    }
+
+    try {
+      setEmailError(null);
+      setSendingEmail(true);
+      
+      toast({
+        title: 'Sending emails...',
+        description: `Sending to ${selectedParticipants.length} participants`,
+      });
+
+      // Get selected participants' data
+      const selectedParticipantsData = participants.filter(p => selectedParticipants.includes(p.id));
+      
+      // Send emails to each participant
+      for (const participant of selectedParticipantsData) {
+        let emailContent = editor.getHTML();
+        
+        // Replace variables in the content
+        emailContent = emailContent
+          .replace(/{{name}}/g, participant.name)
+          .replace(/{{whatsappNumber}}/g, participant.whatsappNumber)
+          .replace(/{{businessName}}/g, participant.business?.name || '')
+          .replace(/{{registrationDate}}/g, participant.registrationDate ? new Date(participant.registrationDate).toLocaleDateString() : '')
+          .replace(/{{membershipStatus}}/g, participant.membershipStatus === MembershipStatus.FUNGSIONARIS ? 'Fungsionaris' : 'Non-Fungsionaris');
+
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: participant.email,
+            subject: emailSubject,
+            html: emailContent,
+          }),
+        });
+      }
+
+      toast({
+        title: 'Success',
+        description: `Emails sent to ${selectedParticipants.length} participants`,
+      });
+
+      // Close dialog and reset
+      setEmailDialogOpen(false);
+      setEmailSubject('');
+      editor?.commands.setContent('');
+    } catch (error) {
+      console.error('Failed to send emails:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send emails',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const applyEmailTemplate = (templateType: string) => {
+    setEmailTemplateType(templateType);
     
-//     const fetchParticipants = async () => {
-//       try {
-//         setLoading(true);
-//         const data = await networkingEventAdminService.getAllParticipants();
-//         setParticipants(data);
-//         setError(null);
-//       } catch (err) {
-//         console.error('Error fetching participants:', err);
-//         setError('Failed to load participants data. Please try again.');
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
+    // Find the selected template
+    const template = emailTemplates.find(t => t.id === templateType);
     
-//     fetchParticipants();
-//   }, [isAdmin, loading, router]);
+    if (template) {
+      setEmailSubject(template.subject);
+      editor?.commands.setContent(template.content);
+    } else {
+      // Reset for custom emails
+      setEmailSubject('');
+      editor?.commands.setContent('');
+    }
+  };
 
-//   // Handle select all checkbox
-//   useEffect(() => {
-//     if (selectAll) {
-//       setSelectedParticipants(filteredParticipants.map(p => p.id));
-//     } else if (selectedParticipants.length === filteredParticipants.length) {
-//       setSelectedParticipants([]);
-//     }
-//   }, [selectAll]);
+  const insertVariable = (variable: string) => {
+    editor?.commands.insertContent(`{{${variable}}}`);
+    editor?.commands.focus();
+  };
 
-//   // Update selectAll state when individual selections change
-//   useEffect(() => {
-//     if (filteredParticipants.length > 0 && selectedParticipants.length === filteredParticipants.length) {
-//       setSelectAll(true);
-//     } else {
-//       setSelectAll(false);
-//     }
-//   }, [selectedParticipants, filteredParticipants]);
+  // Calculate statistics for the dashboard
+  const totalParticipants = participants.length;
+  const fungsionarisCount = participants.filter(p => p.membershipStatus === MembershipStatus.FUNGSIONARIS).length;
+  const nonFungsionarisCount = participants.filter(p => p.membershipStatus === MembershipStatus.NON_FUNGSIONARIS).length;
+  const businessOwners = participants.filter(p => p.hasBusiness).length;
 
-//   // Apply filters to participants data
-//   const filteredParticipants = useMemo(() => {
-//     return participants.filter(participant => {
-//       // Filter by membership status
-//       if (filters.membershipStatus !== 'ALL' && participant.membershipStatus !== filters.membershipStatus) {
-//         return false;
-//       }
+  // Get unique HIPMI PT origins for the filter dropdown
+  const uniqueOrigins = Array.from(
+    new Set(
+      participants
+        .filter(p => p.membershipStatus === MembershipStatus.NON_FUNGSIONARIS && p.hipmiPtOrigin)
+        .map(p => p.hipmiPtOrigin)
+    )
+  );
+
+  // Get unique positions for the filter dropdown
+  const uniquePositions = Array.from(
+    new Set(
+      participants
+        .filter(p => p.position)
+        .map(p => p.position)
+    )
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <AdminNavbar />
       
-//       // Filter by business status
-//       if (filters.hasBusiness !== 'ALL' && participant.hasBusiness !== filters.hasBusiness) {
-//         return false;
-//       }
-      
-//       // Filter by attendance status
-//       if (filters.attendanceStatus !== 'ALL') {
-//         if (filters.attendanceStatus === 'NOT_CONFIRMED' && participant.attendanceStatus) {
-//           return false;
-//         }
-//         if (filters.attendanceStatus !== 'NOT_CONFIRMED' && participant.attendanceStatus !== filters.attendanceStatus) {
-//           return false;
-//         }
-//       }
-      
-//       // Search query (case insensitive)
-//       if (filters.searchQuery) {
-//         const query = filters.searchQuery.toLowerCase();
-//         // Search in multiple fields
-//         return (
-//           participant.name.toLowerCase().includes(query) ||
-//           participant.whatsappNumber.toLowerCase().includes(query) ||
-//           (participant.hipmiPtOrigin && participant.hipmiPtOrigin.toLowerCase().includes(query)) ||
-//           (participant.business?.name && participant.business.name.toLowerCase().includes(query)) ||
-//           (participant.business?.field && participant.business.field.toLowerCase().includes(query))
-//         );
-//       }
-      
-//       return true;
-//     });
-//   }, [participants, filters]);
-
-//   // Toggle participant selection
-//   const toggleParticipantSelection = (participantId: string) => {
-//     setSelectedParticipants(prev => {
-//       if (prev.includes(participantId)) {
-//         return prev.filter(id => id !== participantId);
-//       } else {
-//         return [...prev, participantId];
-//       }
-//     });
-//   };
-
-//   // Reset all filters
-//   const resetFilters = () => {
-//     setFilters({
-//       membershipStatus: 'ALL',
-//       hasBusiness: 'ALL',
-//       searchQuery: '',
-//       attendanceStatus: 'ALL',
-//     });
-//   };
-
-//   // Export filtered participants as CSV
-//   const exportToCSV = () => {
-//     const dataToExport = filteredParticipants.map(p => ({
-//       ID: p.id,
-//       Name: p.name,
-//       WhatsApp: p.whatsappNumber,
-//       MembershipStatus: getMembershipStatusLabel(p.membershipStatus),
-//       Position: getPositionLabel(p.position),
-//       HIPMIPTOrigin: p.hipmiPtOrigin || 'N/A',
-//       HasBusiness: p.hasBusiness ? 'Yes' : 'No',
-//       BusinessName: p.business?.name || 'N/A',
-//       BusinessField: p.business?.field || 'N/A',
-//       RegistrationDate: formatDate(p.registrationDate),
-//       PaymentStatus: p.paymentProofURL ? 'Submitted' : 'Not Submitted',
-//       PaymentDate: p.paymentDate ? formatDate(p.paymentDate) : 'N/A',
-//       AttendanceStatus: p.attendanceStatus || 'Not Confirmed',
-//     }));
-    
-//     const csv = Papa.unparse(dataToExport);
-//     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-//     const url = URL.createObjectURL(blob);
-//     const link = document.createElement('a');
-//     link.href = url;
-//     link.setAttribute('download', `networking-participants-${new Date().toISOString().split('T')[0]}.csv`);
-//     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
-    
-//     toast.success(`Exported ${dataToExport.length} participants to CSV`);
-//   };
-
-//   // Send email to selected participants
-//   const sendEmail = async () => {
-//     if (selectedParticipants.length === 0) {
-//       toast.error('Please select at least one participant to send an email');
-//       return;
-//     }
-    
-//     if (!emailSubject) {
-//       toast.error('Please enter an email subject');
-//       return;
-//     }
-    
-//     if (!editor?.getText() || editor?.getText().trim() === '') {
-//       toast.error('Please enter email content');
-//       return;
-//     }
-    
-//     try {
-//       setSendingEmail(true);
-      
-//       // Get selected participants' data
-//       const selectedParticipantsData = participants.filter(p => 
-//         selectedParticipants.includes(p.id)
-//       );
-      
-//       // Create email recipients array
-//       const emailData = {
-//         subject: emailSubject,
-//         html: editor?.getHTML() || '',
-//         recipients: selectedParticipantsData.map(p => ({
-//           id: p.id,
-//           name: p.name,
-//           whatsappNumber: p.whatsappNumber,
-//           membershipStatus: p.membershipStatus,
-//         })),
-//       };
-      
-//       // Call API to send emails
-//       const response = await fetch('/api/admin/networking/send-email', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify(emailData),
-//       });
-      
-//       if (!response.ok) {
-//         throw new Error('Failed to send emails');
-//       }
-      
-//       // Reset form and close dialog
-//       setEmailDialogOpen(false);
-//       setEmailSubject('');
-//       editor?.commands.setContent('<p>Enter your email content here...</p>');
-      
-//       toast.success(`Emails sent to ${selectedParticipantsData.length} participants`);
-//     } catch (error) {
-//       console.error('Error sending emails:', error);
-//       toast.error('Failed to send emails. Please try again.');
-//     } finally {
-//       setSendingEmail(false);
-//     }
-//   };
-
-//   // Update attendance status
-//   const updateAttendanceStatus = async (participantId: string, status: 'CONFIRMED' | 'ATTENDED' | 'ABSENT') => {
-//     try {
-//       await networkingEventAdminService.updateAttendanceStatus(participantId, status);
-      
-//       // Update local state
-//       setParticipants(prev => 
-//         prev.map(p => 
-//           p.id === participantId ? { ...p, attendanceStatus: status } : p
-//         )
-//       );
-      
-//       toast.success(`Attendance status updated to ${status}`);
-//     } catch (error) {
-//       console.error('Error updating attendance status:', error);
-//       toast.error('Failed to update attendance status');
-//     }
-//   };
-
-//   // Verify payment
-//   const verifyPayment = async (participantId: string, isVerified: boolean, notes?: string) => {
-//     try {
-//       await networkingEventAdminService.verifyPayment(participantId, isVerified, notes);
-      
-//       // Update local state
-//       setParticipants(prev => 
-//         prev.map(p => 
-//           p.id === participantId ? { ...p, paymentVerified: isVerified, notes } : p
-//         )
-//       );
-      
-//       toast.success(`Payment ${isVerified ? 'verified' : 'rejected'}`);
-//     } catch (error) {
-//       console.error('Error verifying payment:', error);
-//       toast.error('Failed to verify payment');
-//     }
-//   };
-
-//   // Helper functions
-//   const formatDate = (date: Date | undefined) => {
-//     if (!date) return 'N/A';
-//     return new Date(date).toLocaleDateString('en-US', {
-//       year: 'numeric',
-//       month: 'short',
-//       day: 'numeric',
-//       hour: '2-digit',
-//       minute: '2-digit',
-//     });
-//   };
-
-//   const getMembershipStatusLabel = (status: MembershipStatus) => {
-//     switch (status) {
-//       case 'FUNGSIONARIS':
-//         return 'Fungsionaris';
-//       case 'NON_FUNGSIONARIS':
-//         return 'Non-Fungsionaris';
-//       default:
-//         return status;
-//     }
-//   };
-
-//   const getPositionLabel = (position: string) => {
-//     switch (position) {
-//       case 'PENGURUS_INTI':
-//         return 'Pengurus Inti';
-//       case 'KEPALA_WAKIL_KEPALA_BIDANG':
-//         return 'Kepala/Wakil Kepala Bidang';
-//       case 'STAF':
-//         return 'Staf';
-//       case 'ANGGOTA':
-//         return 'Anggota';
-//       default:
-//         return position;
-//     }
-//   };
-
-//   const getStatusBadgeColor = (status: string | undefined) => {
-//     switch (status) {
-//       case 'CONFIRMED':
-//         return 'bg-yellow-500';
-//       case 'ATTENDED':
-//         return 'bg-green-500';
-//       case 'ABSENT':
-//         return 'bg-red-500';
-//       default:
-//         return 'bg-gray-500';
-//     }
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="min-h-screen bg-zinc-950 text-white">
-//         <AdminNavbar />
-//         <div className="container mx-auto pt-24 px-4">
-//           <div className="flex items-center justify-center h-64">
-//             <RefreshCw className="animate-spin h-8 w-8 mr-2" />
-//             <span>Loading participants data...</span>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="min-h-screen bg-zinc-950 text-white">
-//         <AdminNavbar />
-//         <div className="container mx-auto pt-24 px-4">
-//           <Alert variant="destructive">
-//             <AlertDescription>
-//               {error}
-//               <Button variant="outline" className="ml-4" onClick={() => window.location.reload()}>
-//                 <RefreshCw className="h-4 w-4 mr-2" />
-//                 Retry
-//               </Button>
-//             </AlertDescription>
-//           </Alert>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-zinc-950 text-white">
-//       <AdminNavbar />
-//       <div className="container mx-auto pt-24 px-4 pb-12">
-//         <div className="flex flex-col gap-6">
-//           {/* Dashboard Header */}
-//           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-//             <div>
-//               <h1 className="text-2xl font-bold">Networking Event Participants</h1>
-//               <p className="text-gray-400">Manage and communicate with all networking event participants</p>
-//             </div>
-//             <div className="flex flex-wrap gap-2">
-//               <Button
-//                 variant="outline"
-//                 onClick={exportToCSV}
-//                 disabled={filteredParticipants.length === 0}
-//               >
-//                 <Download className="h-4 w-4 mr-2" />
-//                 Export to CSV ({filteredParticipants.length})
-//               </Button>
-//               <Button
-//                 variant="default"
-//                 onClick={() => setEmailDialogOpen(true)}
-//                 disabled={selectedParticipants.length === 0}
-//               >
-//                 <Mail className="h-4 w-4 mr-2" />
-//                 Email Selected ({selectedParticipants.length})
-//               </Button>
-//             </div>
-//           </div>
-
-//           {/* Search and Filters */}
-//           <Card className="bg-zinc-900 border-zinc-800">
-//             <CardHeader className="pb-2">
-//               <CardTitle className="text-lg flex items-center">
-//                 <Filter className="h-5 w-5 mr-2" />
-//                 Search & Filters
-//               </CardTitle>
-//             </CardHeader>
-//             <CardContent>
-//               <div className="flex flex-col gap-4">
-//                 <div className="flex flex-col md:flex-row gap-4">
-//                   {/* Search Bar */}
-//                   <div className="flex-1 relative">
-//                     <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-//                     <Input
-//                       placeholder="Search by name, WhatsApp, business..."
-//                       className="pl-10 bg-zinc-800 border-zinc-700"
-//                       value={filters.searchQuery}
-//                       onChange={(e) => setFilters({...filters, searchQuery: e.target.value})}
-//                     />
-//                   </div>
-
-//                   {/* Filter by Membership Status */}
-//                   <div className="w-full md:w-56">
-//                     <Select
-//                       value={filters.membershipStatus}
-//                       onValueChange={(value) => setFilters({...filters, membershipStatus: value as any})}
-//                     >
-//                       <SelectTrigger className="bg-zinc-800 border-zinc-700">
-//                         <SelectValue placeholder="Membership Status" />
-//                       </SelectTrigger>
-//                       <SelectContent className="bg-zinc-800 border-zinc-700">
-//                         <SelectItem value="ALL">All Statuses</SelectItem>
-//                         <SelectItem value="FUNGSIONARIS">Fungsionaris</SelectItem>
-//                         <SelectItem value="NON_FUNGSIONARIS">Non-Fungsionaris</SelectItem>
-//                       </SelectContent>
-//                     </Select>
-//                   </div>
-
-//                   {/* Filter by Business Status */}
-//                   <div className="w-full md:w-56">
-//                     <Select
-//                       value={String(filters.hasBusiness)}
-//                       onValueChange={(value) => setFilters({...filters, hasBusiness: value === 'ALL' ? 'ALL' : value === 'true'})}
-//                     >
-//                       <SelectTrigger className="bg-zinc-800 border-zinc-700">
-//                         <SelectValue placeholder="Business Status" />
-//                       </SelectTrigger>
-//                       <SelectContent className="bg-zinc-800 border-zinc-700">
-//                         <SelectItem value="ALL">All Business Statuses</SelectItem>
-//                         <SelectItem value="true">Has Business</SelectItem>
-//                         <SelectItem value="false">No Business</SelectItem>
-//                       </SelectContent>
-//                     </Select>
-//                   </div>
-
-//                   {/* Filter by Attendance Status */}
-//                   <div className="w-full md:w-56">
-//                     <Select
-//                       value={filters.attendanceStatus}
-//                       onValueChange={(value) => setFilters({...filters, attendanceStatus: value as any})}
-//                     >
-//                       <SelectTrigger className="bg-zinc-800 border-zinc-700">
-//                         <SelectValue placeholder="Attendance Status" />
-//                       </SelectTrigger>
-//                       <SelectContent className="bg-zinc-800 border-zinc-700">
-//                         <SelectItem value="ALL">All Attendance Statuses</SelectItem>
-//                         <SelectItem value="NOT_CONFIRMED">Not Confirmed</SelectItem>
-//                         <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-//                         <SelectItem value="ATTENDED">Attended</SelectItem>
-//                         <SelectItem value="ABSENT">Absent</SelectItem>
-//                       </SelectContent>
-//                     </Select>
-//                   </div>
-//                 </div>
-
-//                 {/* Applied Filters & Reset */}
-//                 <div className="flex items-center justify-between">
-//                   <div className="flex flex-wrap gap-2">
-//                     {filters.membershipStatus !== 'ALL' && (
-//                       <Badge variant="secondary" className="flex items-center gap-1">
-//                         Membership: {getMembershipStatusLabel(filters.membershipStatus as MembershipStatus)}
-//                         <XCircle 
-//                           className="h-3.5 w-3.5 cursor-pointer ml-1" 
-//                           onClick={() => setFilters({...filters, membershipStatus: 'ALL'})} 
-//                         />
-//                       </Badge>
-//                     )}
-//                     {filters.hasBusiness !== 'ALL' && (
-//                       <Badge variant="secondary" className="flex items-center gap-1">
-//                         Business: {filters.hasBusiness ? 'Yes' : 'No'}
-//                         <XCircle 
-//                           className="h-3.5 w-3.5 cursor-pointer ml-1" 
-//                           onClick={() => setFilters({...filters, hasBusiness: 'ALL'})} 
-//                         />
-//                       </Badge>
-//                     )}
-//                     {filters.attendanceStatus !== 'ALL' && (
-//                       <Badge variant="secondary" className="flex items-center gap-1">
-//                         Attendance: {filters.attendanceStatus === 'NOT_CONFIRMED' ? 'Not Confirmed' : filters.attendanceStatus}
-//                         <XCircle 
-//                           className="h-3.5 w-3.5 cursor-pointer ml-1" 
-//                           onClick={() => setFilters({...filters, attendanceStatus: 'ALL'})} 
-//                         />
-//                       </Badge>
-//                     )}
-//                     {filters.searchQuery && (
-//                       <Badge variant="secondary" className="flex items-center gap-1">
-//                         Search: {filters.searchQuery}
-//                         <XCircle 
-//                           className="h-3.5 w-3.5 cursor-pointer ml-1" 
-//                           onClick={() => setFilters({...filters, searchQuery: ''})} 
-//                         />
-//                       </Badge>
-//                     )}
-//                   </div>
-//                   <Button 
-//                     variant="ghost" 
-//                     onClick={resetFilters}
-//                     disabled={
-//                       filters.membershipStatus === 'ALL' && 
-//                       filters.hasBusiness === 'ALL' && 
-//                       filters.attendanceStatus === 'ALL' && 
-//                       !filters.searchQuery
-//                     }
-//                   >
-//                     <RefreshCw className="h-4 w-4 mr-2" />
-//                     Reset Filters
-//                   </Button>
-//                 </div>
-//               </div>
-//             </CardContent>
-//           </Card>
-
-//           {/* Participants Table */}
-//           <Card className="bg-zinc-900 border-zinc-800">
-//             <CardHeader className="pb-2">
-//               <CardTitle className="text-lg flex items-center justify-between">
-//                 <span>Participants ({filteredParticipants.length})</span>
-//                 {selectedParticipants.length > 0 && (
-//                   <div className="flex items-center">
-//                     <Badge variant="outline" className="mr-2">
-//                       {selectedParticipants.length} selected
-//                     </Badge>
-//                     <Button 
-//                       variant="ghost" 
-//                       size="sm"
-//                       onClick={() => setSelectedParticipants([])}
-//                     >
-//                       Clear
-//                     </Button>
-//                   </div>
-//                 )}
-//               </CardTitle>
-//             </CardHeader>
-//             <CardContent>
-//               {filteredParticipants.length > 0 ? (
-//                 <div className="overflow-x-auto">
-//                   <Table>
-//                     <TableHeader>
-//                       <TableRow>
-//                         <TableHead className="w-[40px]">
-//                           <Checkbox 
-//                             checked={selectAll} 
-//                             onCheckedChange={() => setSelectAll(!selectAll)}
-//                           />
-//                         </TableHead>
-//                         <TableHead>Name</TableHead>
-//                         <TableHead>WhatsApp</TableHead>
-//                         <TableHead>Status</TableHead>
-//                         <TableHead>Business</TableHead>
-//                         <TableHead>Payment</TableHead>
-//                         <TableHead>Attendance</TableHead>
-//                         <TableHead className="text-right">Actions</TableHead>
-//                       </TableRow>
-//                     </TableHeader>
-//                     <TableBody>
-//                       {filteredParticipants.map((participant) => (
-//                         <TableRow key={participant.id}>
-//                           <TableCell>
-//                             <Checkbox 
-//                               checked={selectedParticipants.includes(participant.id)} 
-//                               onCheckedChange={() => toggleParticipantSelection(participant.id)}
-//                             />
-//                           </TableCell>
-//                           <TableCell className="font-medium">
-//                             {participant.name}
-//                             <div className="text-xs text-gray-400">
-//                               {getPositionLabel(participant.position)}
-//                             </div>
-//                           </TableCell>
-//                           <TableCell>{participant.whatsappNumber}</TableCell>
-//                           <TableCell>
-//                             <Badge variant={participant.membershipStatus === 'FUNGSIONARIS' ? "default" : "secondary"}>
-//                               {getMembershipStatusLabel(participant.membershipStatus)}
-//                             </Badge>
-//                             {participant.membershipStatus === 'NON_FUNGSIONARIS' && participant.hipmiPtOrigin && (
-//                               <div className="text-xs text-gray-400 mt-1">
-//                                 {participant.hipmiPtOrigin}
-//                               </div>
-//                             )}
-//                           </TableCell>
-//                           <TableCell>
-//                             {participant.hasBusiness ? (
-//                               <div>
-//                                 <Badge variant="outline" className="bg-green-950 text-green-400 border-green-700">
-//                                   Yes
-//                                 </Badge>
-//                                 <div className="text-xs mt-1">
-//                                   {participant.business?.name}
-//                                 </div>
-//                                 <div className="text-xs text-gray-400">
-//                                   {participant.business?.field}
-//                                 </div>
-//                               </div>
-//                             ) : (
-//                               <Badge variant="outline" className="bg-zinc-800 text-zinc-400 border-zinc-700">
-//                                 No
-//                               </Badge>
-//                             )}
-//                           </TableCell>
-//                           <TableCell>
-//                             {participant.paymentProofURL ? (
-//                               <div className="flex flex-col gap-1">
-//                                 <Badge 
-//                                   variant="outline" 
-//                                   className={
-//                                     participant.paymentVerified === true 
-//                                       ? "bg-green-950 text-green-400 border-green-700" 
-//                                       : participant.paymentVerified === false
-//                                         ? "bg-red-950 text-red-400 border-red-700"
-//                                         : "bg-yellow-950 text-yellow-400 border-yellow-700"
-//                                   }
-//                                 >
-//                                   {participant.paymentVerified === true 
-//                                     ? "Verified" 
-//                                     : participant.paymentVerified === false
-//                                       ? "Rejected"
-//                                       : "Pending"
-//                                   }
-//                                 </Badge>
-//                                 <div className="text-xs text-gray-400">
-//                                   {participant.paymentDate ? formatDate(participant.paymentDate) : 'N/A'}
-//                                 </div>
-//                               </div>
-//                             ) : (
-//                               <Badge variant="outline" className="bg-red-950 text-red-400 border-red-700">
-//                                 Not Submitted
-//                               </Badge>
-//                             )}
-//                           </TableCell>
-//                           <TableCell>
-//                             {participant.attendanceStatus ? (
-//                               <Badge 
-//                                 className={getStatusBadgeColor(participant.attendanceStatus)}
-//                               >
-//                                 {participant.attendanceStatus}
-//                               </Badge>
-//                             ) : (
-//                               <Badge variant="outline">
-//                                 Not Confirmed
-//                               </Badge>
-//                             )}
-//                           </TableCell>
-//                           <TableCell>
-//                             <div className="flex justify-end gap-2">
-//                               <TooltipProvider>
-//                                 <DropdownMenu>
-//                                   <Tooltip>
-//                                     <TooltipTrigger asChild>
-//                                       <DropdownMenuTrigger asChild>
-//                                         <Button variant="ghost" size="icon">
-//                                           <ChevronDown className="h-4 w-4" />
-//                                         </Button>
-//                                       </DropdownMenuTrigger>
-//                                     </TooltipTrigger>
-//                                     <TooltipContent>
-//                                       <p>Actions</p>
-//                                     </TooltipContent>
-//                                   </Tooltip>
-//                                   <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-zinc-800">
-//                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-//                                     <DropdownMenuSeparator />
-                                    
-//                                     {/* View Details */}
-//                                     <DropdownMenuItem>
-//                                       <Eye className="mr-2 h-4 w-4" />
-//                                       <span>View Details</span>
-//                                     </DropdownMenuItem>
-                                    
-//                                     {/* Payment Actions */}
-//                                     {participant.paymentProofURL && !participant.paymentVerified && (
-//                                       <>
-//                                         <DropdownMenuSeparator />
-//                                         <DropdownMenuLabel>Payment</DropdownMenuLabel>
-//                                         <DropdownMenuItem onClick={() => verifyPayment(participant.id, true)}>
-//                                           <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-//                                           <span>Verify Payment</span>
-//                                         </DropdownMenuItem>
-//                                         <DropdownMenuItem onClick={() => verifyPayment(participant.id, false)}>
-//                                           <XCircle className="mr-2 h-4 w-4 text-red-500" />
-//                                           <span>Reject Payment</span>
-//                                         </DropdownMenuItem>
-//                                       </>
-//                                     )}
-                                    
-//                                     {/* Attendance Actions */}
-//                                     <DropdownMenuSeparator />
-//                                     <DropdownMenuLabel>Attendance</DropdownMenuLabel>
-//                                     <DropdownMenuItem 
-//                                       onClick={() => updateAttendanceStatus(participant.id, 'CONFIRMED')}
-//                                       className={participant.attendanceStatus === 'CONFIRMED' ? "bg-yellow-900/20" : ""}
-//                                     >
-//                                       <CheckCircle className="mr-2 h-4 w-4 text-yellow-500" />
-//                                       <span>Mark as Confirmed</span>
-//                                     </DropdownMenuItem>
-//                                     <DropdownMenuItem 
-//                                       onClick={() => updateAttendanceStatus(participant.id, 'ATTENDED')}
-//                                       className={participant.attendanceStatus === 'ATTENDED' ? "bg-green-900/20" : ""}
-//                                     >
-//                                       <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-//                                       <span>Mark as Attended</span>
-//                                     </DropdownMenuItem>
-//                                     <DropdownMenuItem 
-//                                       onClick={() => updateAttendanceStatus(participant.id, 'ABSENT')}
-//                                       className={participant.attendanceStatus === 'ABSENT' ? "bg-red-900/20" : ""}
-//                                     >
-//                                       <XCircle className="mr-2 h-4 w-4 text-red-500" />
-//                                       <span>Mark as Absent</span>
-//                                     </DropdownMenuItem>
-//                                   </DropdownMenuContent>
-//                                 </DropdownMenu>
-//                               </TooltipProvider>
-//                             </div>
-//                           </TableCell>
-//                         </TableRow>
-//                       ))}
-//                     </TableBody>
-//                   </Table>
-//                 </div>
-//               ) : (
-//                 <div className="text-center py-8">
-//                   <FileX className="h-12 w-12 mx-auto text-gray-500 mb-3" />
-//                   <h3 className="text-lg font-medium">No participants found</h3>
-//                   <p className="text-sm text-gray-400">
-//                     {participants.length > 0 
-//                       ? "Try adjusting your filters to see more results." 
-//                       : "There are no registered participants yet."}
-//                   </p>
-//                   {participants.length > 0 && (
-//                     <Button variant="outline" className="mt-4" onClick={resetFilters}>
-//                       <RefreshCw className="h-4 w-4 mr-2" />
-//                       Reset Filters
-//                     </Button>
-//                   )}
-//                 </div>
-//               )}
-//             </CardContent>
-//             <CardFooter className="flex justify-between border-t border-zinc-800 pt-4">
-//               <div className="text-sm text-gray-400">
-//                 Showing {filteredParticipants.length} of {participants.length} participants
-//               </div>
-//               <div className="flex items-center gap-2">
-//                 <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-//                   <RefreshCw className="h-4 w-4 mr-2" />
-//                   Refresh Data
-//                 </Button>
-//               </div>
-//             </CardFooter>
-//           </Card>
-//         </div>
-//       </div>
-      
-//       {/* Email Dialog */}
-//       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-//         <DialogContent className="bg-zinc-900 border-zinc-800 text-white sm:max-w-2xl">
-//           <DialogHeader>
-//             <DialogTitle>Send Email to Participants</DialogTitle>
-//             <DialogDescription>
-//               You are about to send an email to {selectedParticipants.length} selected participants.
-//             </DialogDescription>
-//           </DialogHeader>
+      <div className="container mx-auto py-8">
+      <div className="py-8"></div>
+      <div className="py-8"></div>
+        {/* Main Content Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center py-8">
+              <div>
+                <CardTitle>Networking Event Participants</CardTitle>
+                <CardDescription>Manage all networking event participants</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={fetchParticipants}
+                >
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                
+                <Button 
+                  onClick={exportToCSV} 
+                  variant="outline"
+                  size="sm"
+                >
+                  <DownloadIcon className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+                
+                <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+                  <Button 
+                    disabled={selectedParticipants.length === 0}
+                    variant="default"
+                    size="sm"
+                    onClick={() => setEmailDialogOpen(true)}
+                  >
+                    <MailIcon className="h-4 w-4 mr-2" />
+                    Email ({selectedParticipants.length})
+                  </Button>
+                  <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                      <DialogTitle>Send Email to Participants</DialogTitle>
+                      <DialogDescription>
+                        Send an email to {selectedParticipants.length} selected participants
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                      <Tabs defaultValue="editor" className="w-full">
+                        <TabsList className="mb-4">
+                          <TabsTrigger value="editor">Editor</TabsTrigger>
+                          <TabsTrigger value="templates">Templates</TabsTrigger>
+                          <TabsTrigger value="variables">Variables</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="editor" className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="emailSubject">Subject</Label>
+                            <Input
+                              id="emailSubject"
+                              value={emailSubject}
+                              onChange={(e) => setEmailSubject(e.target.value)}
+                              placeholder="Email subject"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Email Content</Label>
+                            <div className="border rounded-md">
+                              <div className="flex flex-wrap gap-1 p-1 border-b">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editor?.chain().focus().toggleBold().run()}
+                                  className={editor?.isActive('bold') ? 'bg-slate-200' : ''}
+                                >
+                                  <BoldIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editor?.chain().focus().toggleItalic().run()}
+                                  className={editor?.isActive('italic') ? 'bg-slate-200' : ''}
+                                >
+                                  <ItalicIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+                                  className={editor?.isActive('heading', { level: 1 }) ? 'bg-slate-200' : ''}
+                                >
+                                  <Heading1 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+                                  className={editor?.isActive('heading', { level: 2 }) ? 'bg-slate-200' : ''}
+                                >
+                                  <Heading2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                                  className={editor?.isActive('bulletList') ? 'bg-slate-200' : ''}
+                                >
+                                  <List className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                                  className={editor?.isActive('orderedList') ? 'bg-slate-200' : ''}
+                                >
+                                  <ListOrdered className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const url = window.prompt('URL');
+                                    if (url) {
+                                      editor?.chain().focus().setLink({ href: url }).run();
+                                    }
+                                  }}
+                                  className={editor?.isActive('link') ? 'bg-slate-200' : ''}
+                                >
+                                  <LinkIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editor?.chain().focus().undo().run()}
+                                  disabled={!editor?.can().undo()}
+                                >
+                                  <Undo className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editor?.chain().focus().redo().run()}
+                                  disabled={!editor?.can().redo()}
+                                >
+                                  <Redo className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <div className="p-4 bg-white min-h-[200px]">
+                                <EditorContent editor={editor} />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {emailError && (
+                            <Alert variant="destructive">
+                              <AlertDescription>{emailError}</AlertDescription>
+                            </Alert>
+                          )}
+                        </TabsContent>
+                        
+                        <TabsContent value="templates" className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {emailTemplates.map((template) => (
+                              <Card key={template.id} 
+                                className={`cursor-pointer hover:shadow-md ${template.id === emailTemplateType ? 'border-primary' : ''}`}
+                                onClick={() => applyEmailTemplate(template.id)}
+                              >
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="text-base">{template.name}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <p className="text-sm font-medium">{template.subject}</p>
+                                  <div className="mt-2 text-xs text-gray-500 line-clamp-2">
+                                    {template.content.replace(/<[^>]*>/g, ' ')}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                          
+                          <div className="text-center text-sm text-gray-500 mt-4">
+                            Click on a template to use it in your email.
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="variables" className="space-y-4">
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button variant="outline" onClick={() => insertVariable('name')}>
+                              Insert Name
+                            </Button>
+                            <Button variant="outline" onClick={() => insertVariable('whatsappNumber')}>
+                              Insert WhatsApp
+                            </Button>
+                            <Button variant="outline" onClick={() => insertVariable('businessName')}>
+                              Insert Business Name
+                            </Button>
+                            <Button variant="outline" onClick={() => insertVariable('registrationDate')}>
+                              Insert Registration Date
+                            </Button>
+                            <Button variant="outline" onClick={() => insertVariable('paymentAmount')}>
+                              Insert Payment Amount
+                            </Button>
+                            <Button variant="outline" onClick={() => insertVariable('membershipStatus')}>
+                              Insert Membership Status
+                            </Button>
+                          </div>
+                          
+                          <div className="mt-4 text-sm text-gray-500">
+                            <p>Variables will be replaced with actual participant data when the email is sent.</p>
+                            <p className="mt-2">Example: Hello {'{{name}}'}, thank you for registering!</p>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                    
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleSendEmails}
+                        className="flex items-center"
+                        disabled={sendingEmail}
+                      >
+                        {sendingEmail ? (
+                          <>
+                            <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            Send Email
+                            <Send className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      disabled={selectedParticipants.length === 0}
+                      onClick={() => setBulkDeleteDialogOpen(true)}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Selected
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </CardHeader>
           
-//           <div className="space-y-4">
-//             <div className="space-y-2">
-//               <Label htmlFor="email-subject">Subject</Label>
-//               <Input
-//                 id="email-subject"
-//                 placeholder="Email subject"
-//                 className="bg-zinc-800 border-zinc-700"
-//                 value={emailSubject}
-//                 onChange={(e) => setEmailSubject(e.target.value)}
-//               />
-//             </div>
-            
-//             <div className="space-y-2">
-//               <Label>Content</Label>
+          <CardContent>
+            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="all">
+                  All Participants
+                  <Badge variant="outline" className="ml-2 rounded-full py-0 px-2">{participants.length}</Badge>
+                </TabsTrigger>
+              </TabsList>
               
-//               {/* TipTap Editor Toolbar */}
-//               <div className="bg-zinc-800 border border-zinc-700 rounded-t-md p-2 flex flex-wrap gap-1">
-//                 <Button
-//                   variant="ghost"
-//                   size="icon"
-//                   onClick={() => editor?.chain().focus().toggleBold().run()}
-//                   data-active={editor?.isActive('bold')}
-//                   className={editor?.isActive('bold') ? 'bg-zinc-700' : ''}
-//                 >
-//                   <Bold className="h-4 w-4" />
-//                 </Button>
-//                 <Button
-//                   variant="ghost"
-//                   size="icon"
-//                   onClick={() => editor?.chain().focus().toggleItalic().run()}
-//                   data-active={editor?.isActive('italic')}
-//                   className={editor?.isActive('italic') ? 'bg-zinc-700' : ''}
-//                 >
-//                   <Italic className="h-4 w-4" />
-//                 </Button>
-//                 <Button
-//                   variant="ghost"
-//                   size="icon"
-//                   onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
-//                   data-active={editor?.isActive('heading', { level: 1 })}
-//                   className={editor?.isActive('heading', { level: 1 }) ? 'bg-zinc-700' : ''}
-//                 >
-//                   <Heading1 className="h-4 w-4" />
-//                 </Button>
-//                 <Button
-//                   variant="ghost"
-//                   size="icon"
-//                   onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-//                   data-active={editor?.isActive('heading', { level: 2 })}
-//                   className={editor?.isActive('heading', { level: 2 }) ? 'bg-zinc-700' : ''}
-//                 >
-//                   <Heading2 className="h-4 w-4" />
-//                 </Button>
-//                 <Button
-//                   variant="ghost"
-//                   size="icon"
-//                   onClick={() => editor?.chain().focus().toggleBulletList().run()}
-//                   data-active={editor?.isActive('bulletList')}
-//                   className={editor?.isActive('bulletList') ? 'bg-zinc-700' : ''}
-//                 >
-//                   <List className="h-4 w-4" />
-//                 </Button>
-//                 <Button
-//                   variant="ghost"
-//                   size="icon"
-//                   onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-//                   data-active={editor?.isActive('orderedList')}
-//                   className={editor?.isActive('orderedList') ? 'bg-zinc-700' : ''}
-//                 >
-//                   <ListOrdered className="h-4 w-4" />
-//                 </Button>
-//                 <Button
-//                   variant="ghost"
-//                   size="icon"
-//                   onClick={() => editor?.chain().focus().undo().run()}
-//                 >
-//                   <Undo className="h-4 w-4" />
-//                 </Button>
-//                 <Button
-//                   variant="ghost"
-//                   size="icon"
-//                   onClick={() => editor?.chain().focus().redo().run()}
-//                 >
-//                   <Redo className="h-4 w-4" />
-//                 </Button>
-//               </div>
-              
-//               {/* TipTap Editor Content */}
-//               <div className="min-h-[200px] bg-zinc-800 border border-zinc-700 border-t-0 rounded-b-md p-4">
-//                 <EditorContent editor={editor} className="prose prose-invert max-w-none" />
-//               </div>
-//             </div>
-            
-//             {/* Template Selector */}
-//             <div className="space-y-2">
-//               <Label>Templates</Label>
-//               <Select onValueChange={(value) => {
-//                 // Set predefined templates based on value
-//                 if (value === 'confirmation') {
-//                   setEmailSubject('Networking Event - Registration Confirmation');
-//                   editor?.commands.setContent(`
-//                     <h2>Registration Confirmation</h2>
-//                     <p>Dear Participant,</p>
-//                     <p>Thank you for registering for our upcoming Networking Night event. Your registration has been received and is being processed.</p>
-//                     <p>Event details:</p>
-//                     <ul>
-//                       <li><strong>Date:</strong> [Event Date]</li>
-//                       <li><strong>Time:</strong> [Event Time]</li>
-//                       <li><strong>Venue:</strong> [Event Venue]</li>
-//                     </ul>
-//                     <p>Please make sure to complete your payment if you haven't already. We look forward to seeing you!</p>
-//                     <p>Best regards,<br>HIPMI PT UI Team</p>
-//                   `);
-//                 } else if (value === 'reminder') {
-//                   setEmailSubject('Networking Event - Important Reminder');
-//                   editor?.commands.setContent(`
-//                     <h2>Event Reminder</h2>
-//                     <p>Dear Participant,</p>
-//                     <p>This is a friendly reminder about our upcoming Networking Night event. We are excited to have you join us!</p>
-//                     <p>Event details:</p>
-//                     <ul>
-//                       <li><strong>Date:</strong> [Event Date]</li>
-//                       <li><strong>Time:</strong> [Event Time]</li>
-//                       <li><strong>Venue:</strong> [Event Venue]</li>
-//                     </ul>
-//                     <p>Please don't forget to bring your ID and confirmation email for smooth check-in.</p>
-//                     <p>If you have any questions, feel free to contact us.</p>
-//                     <p>Best regards,<br>HIPMI PT UI Team</p>
-//                   `);
-//                 } else if (value === 'payment') {
-//                   setEmailSubject('Networking Event - Payment Confirmation Required');
-//                   editor?.commands.setContent(`
-//                     <h2>Payment Confirmation Required</h2>
-//                     <p>Dear Participant,</p>
-//                     <p>We noticed that we haven't received your payment confirmation for the upcoming Networking Night event.</p>
-//                     <p>To secure your spot, please complete the payment and upload your payment proof through your registration account.</p>
-//                     <p>Payment details:</p>
-//                     <ul>
-//                       <li><strong>Bank Account:</strong> [Bank Account]</li>
-//                       <li><strong>Account Number:</strong> [Account Number]</li>
-//                       <li><strong>Account Name:</strong> [Account Name]</li>
-//                       <li><strong>Amount:</strong> [Amount]</li>
-//                     </ul>
-//                     <p>The deadline for payment is [Payment Deadline]. Please ensure your payment is completed before then.</p>
-//                     <p>Best regards,<br>HIPMI PT UI Team</p>
-//                   `);
-//                 } else if (value === 'thank-you') {
-//                   setEmailSubject('Thank You for Attending Our Networking Event');
-//                   editor?.commands.setContent(`
-//                     <h2>Thank You for Attending</h2>
-//                     <p>Dear Participant,</p>
-//                     <p>Thank you for attending our Networking Night event. We hope you had a great time and made valuable connections.</p>
-//                     <p>We would love to hear your feedback about the event. Please take a moment to fill out our feedback form [link to feedback form].</p>
-//                     <p>Stay connected with us on social media for updates on future events:</p>
-//                     <ul>
-//                       <li>Instagram: @hipmiui</li>
-//                       <li>Twitter: @hipmiui</li>
-//                       <li>LinkedIn: HIPMI PT UI</li>
-//                     </ul>
-//                     <p>Best regards,<br>HIPMI PT UI Team</p>
-//                   `);
-//                 }
-//               }}>
-//                 <SelectTrigger className="bg-zinc-800 border-zinc-700">
-//                   <SelectValue placeholder="Select a template" />
-//                 </SelectTrigger>
-//                 <SelectContent className="bg-zinc-800 border-zinc-700">
-//                   <SelectItem value="confirmation">Registration Confirmation</SelectItem>
-//                   <SelectItem value="reminder">Event Reminder</SelectItem>
-//                   <SelectItem value="payment">Payment Reminder</SelectItem>
-//                   <SelectItem value="thank-you">Thank You Message</SelectItem>
-//                 </SelectContent>
-//               </Select>
-//             </div>
-//           </div>
+              <div className="space-y-4">
+                {/* Filters */}
+                <Card className="border-dashed">
+                  <CardContent className="p-4">
+                    <div className="flex items-center mb-2">
+                      <FilterIcon className="h-4 w-4 mr-2" />
+                      <h3 className="font-medium">Filters</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="searchTerm" className="text-xs">Search</Label>
+                        <Input
+                          id="searchTerm"
+                          placeholder="Search by name, WhatsApp, or business"
+                          value={filters.searchTerm}
+                          onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="membershipStatus" className="text-xs">Membership</Label>
+                        <Select 
+                          value={filters.membershipStatus || "all"} 
+                          onValueChange={(value) => handleFilterChange('membershipStatus', value === "all" ? "" : value)}
+                        >
+                          <SelectTrigger id="membershipStatus">
+                            <SelectValue placeholder="All Statuses" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value={MembershipStatus.FUNGSIONARIS}>Fungsionaris</SelectItem>
+                            <SelectItem value={MembershipStatus.NON_FUNGSIONARIS}>Non-Fungsionaris</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="position" className="text-xs">Position</Label>
+                        <Select 
+                          value={filters.position || "all"} 
+                          onValueChange={(value) => handleFilterChange('position', value === "all" ? "" : value)}
+                        >
+                          <SelectTrigger id="position">
+                            <SelectValue placeholder="All Positions" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Positions</SelectItem>
+                            {uniquePositions.map((position) => (
+                              <SelectItem key={position} value={position}>
+                                {position}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {filters.membershipStatus === MembershipStatus.NON_FUNGSIONARIS && (
+                        <div>
+                          <Label htmlFor="origin" className="text-xs">HIPMI PT Origin</Label>
+                          <Select 
+                            value={filters.origin || "all"} 
+                            onValueChange={(value) => handleFilterChange('origin', value === "all" ? "" : value)}
+                          >
+                            <SelectTrigger id="origin">
+                              <SelectValue placeholder="All Origins" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Origins</SelectItem>
+                              {uniqueOrigins.filter((origin): origin is string => typeof origin === 'string').map((origin) => (
+                                <SelectItem key={origin} value={origin}>
+                                  {origin}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="hasBusinessOnly" 
+                          checked={filters.hasBusinessOnly}
+                          onCheckedChange={(checked) => 
+                            handleFilterChange('hasBusinessOnly', checked === true)
+                          }
+                        />
+                        <Label htmlFor="hasBusinessOnly">Has Business Only</Label>
+                      </div>
+                      
+                      <div className="md:col-span-3 flex justify-end">
+                        <Button variant="outline" size="sm" onClick={resetFilters}>
+                          Reset Filters
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Participants Table */}
+                <div className="rounded-md border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">
+                          <Checkbox 
+                            checked={
+                              filteredParticipants.length > 0 && 
+                              selectedParticipants.length === filteredParticipants.length
+                            }
+                            onCheckedChange={handleSelectAllChange}
+                          />
+                        </TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>WhatsApp</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Position</TableHead>
+                        <TableHead>Origin</TableHead>
+                        <TableHead>Business</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loadingPage ? (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-10">
+                            loadingPage participants...
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredParticipants.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-10">
+                            No participants found. Try adjusting your filters.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredParticipants.map((participant) => (
+                          <TableRow key={participant.id}>
+                            <TableCell>
+                              <Checkbox 
+                                checked={selectedParticipants.includes(participant.id)}
+                                onCheckedChange={(checked) => 
+                                  handleParticipantSelect(participant.id, checked === true)
+                                }
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{participant.name}</TableCell>
+                            <TableCell>{participant.whatsappNumber}</TableCell>
+                            <TableCell>
+                              <Badge variant={participant.membershipStatus === MembershipStatus.FUNGSIONARIS ? "default" : "secondary"}>
+                                {participant.membershipStatus === MembershipStatus.FUNGSIONARIS 
+                                  ? 'Fungsionaris' 
+                                  : 'Non-Fungsionaris'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{participant.position}</TableCell>
+                            <TableCell>
+                              {participant.membershipStatus === MembershipStatus.NON_FUNGSIONARIS 
+                                ? participant.hipmiPtOrigin 
+                                : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {participant.hasBusiness ? (
+                                <Badge variant="outline" className="bg-green-50 hover:bg-green-100" title={participant.business?.name || 'Has Business'}>
+                                  {participant.business?.name 
+                                    ? (participant.business.name.length > 15 
+                                        ? participant.business.name.substring(0, 12) + '...' 
+                                        : participant.business.name)
+                                    : 'Yes'}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline">No</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => router.push(`/admin/email/networking/${participant.id}`)}
+                              >
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div>
+                    Showing {filteredParticipants.length} of {participants.length} participants
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <span className="mr-2">Selected: {selectedParticipants.length}</span>
+                    {selectedParticipants.length > 0 && (
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedParticipants([])}>
+                        Clear Selection
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedParticipants.length} participants? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
           
-//           <DialogFooter>
-//             <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
-//               Cancel
-//             </Button>
-//             <Button 
-//               disabled={!emailSubject || !editor?.getText() || sendingEmail}
-//               onClick={sendEmail}
-//             >
-//               {sendingEmail ? (
-//                 <>
-//                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-//                   Sending...
-//                 </>
-//               ) : (
-//                 <>
-//                   <Send className="h-4 w-4 mr-2" />
-//                   Send Email
-//                 </>
-//               )}
-//             </Button>
-//           </DialogFooter>
-//         </DialogContent>
-//       </Dialog>
-//     </div>
-//   );
-// }
+          <div className="py-4">
+            <p className="text-sm text-gray-500">
+              This will permanently remove the selected participants from the system, including all their registration data and payment information.
+            </p>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleBulkDelete}>
+              Delete {selectedParticipants.length} Participants
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default NetworkingParticipantsPage;

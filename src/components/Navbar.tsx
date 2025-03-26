@@ -113,7 +113,7 @@ export default function Navbar({ notTransparent }: NavbarProps) {
                         {isAdmin && (
                             <>
                                 <DropdownMenuItem
-                                    onClick={() => router.push("/admin/competition")}
+                                    onClick={() => router.push("/admin/article")}
                                     className="text-juneBud hover:bg-white/10 cursor-pointer"
                                 >
                                     <Shield className="mr-2 h-4 w-4" />
@@ -162,7 +162,7 @@ export default function Navbar({ notTransparent }: NavbarProps) {
                     </div>
                     {isAdmin && (
                         <Link
-                            href="/admin/competition"
+                            href="/admin/article"
                             className="bg-zinc-800 text-juneBud rounded-full px-4 py-3 font-poppins text-base font-medium hover:bg-zinc-700 transition-colors text-center flex items-center justify-center gap-2"
                         >
                             <Shield className="h-4 w-4" />
