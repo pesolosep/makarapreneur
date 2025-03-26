@@ -39,6 +39,51 @@ function cleanObject(obj: any): any {
   return result;
 }
 
+// Helper functions for converting between Dates and Timestamps
+const convertDatesToTimestamps = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (obj instanceof Date) {
+    return Timestamp.fromDate(obj);
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertDatesToTimestamps(item));
+  }
+
+  const converted: any = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      converted[key] = convertDatesToTimestamps(obj[key]);
+    }
+  }
+  return converted;
+};
+
+const convertTimestampsToDates = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (obj instanceof Timestamp) {
+    return obj.toDate();
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertTimestampsToDates(item));
+  }
+
+  const converted: any = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      converted[key] = convertTimestampsToDates(obj[key]);
+    }
+  }
+  return converted;
+};
+
 export const businessClassService = {
   // Register a new participant with proof file upload integrated
   async registerParticipant(
@@ -83,22 +128,26 @@ export const businessClassService = {
       await uploadBytes(storageRef, proofZipFile);
       const socialMediaProofURL = await getDownloadURL(storageRef);
       
-      // Create participant document
+      // Create participant document with explicit dates
+      const now = new Date();
       const participant: BusinessClassParticipant = {
         id: participantId,
         ...participantData,
         socialMediaProofURL,
-        registrationDate: new Date(),
+        registrationDate: now,
         assignedEmailSent: false,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: now,
+        updatedAt: now
       };
       
       // Clean the object to remove any undefined values
       const cleanedParticipant = cleanObject(participant);
       
+      // Convert dates to timestamps before saving to Firestore
+      const firestoreData = convertDatesToTimestamps(cleanedParticipant);
+      
       // Store in a flat collection structure
-      await setDoc(doc(db, 'businessClassParticipants', participantId), convertDatesToTimestamps(cleanedParticipant));
+      await setDoc(doc(db, 'businessClassParticipants', participantId), firestoreData);
       
       return participant;
     } catch (error) {
@@ -218,8 +267,11 @@ export const businessClassService = {
       // Clean the object to remove any undefined values
       const cleanedUpdateFields = cleanObject(updateFields);
       
+      // Convert dates to timestamps before saving to Firestore
+      const firestoreData = convertDatesToTimestamps(cleanedUpdateFields);
+      
       // Update participant document
-      await updateDoc(doc(db, 'businessClassParticipants', participantId), convertDatesToTimestamps(cleanedUpdateFields));
+      await updateDoc(doc(db, 'businessClassParticipants', participantId), firestoreData);
       
       // Return updated participant data
       const updatedParticipantDoc = await getDoc(doc(db, 'businessClassParticipants', participantId));
@@ -245,7 +297,7 @@ export const businessClassAdminService = {
       // This is a placeholder function - in a real app, you would integrate with an email service
       // For now, we'll just update the assignedEmailSent flag
       
-      // Update in participants collection
+      // Update in participants collection with explicit Timestamp
       await updateDoc(doc(db, 'businessClassParticipants', participantId), {
         assignedEmailSent: true,
         updatedAt: Timestamp.fromDate(new Date())
@@ -319,49 +371,4 @@ export const businessClassAdminService = {
       throw error;
     }
   }
-};
-
-// Helper functions for converting between Dates and Timestamps
-const convertDatesToTimestamps = (obj: any): any => {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
-
-  if (obj instanceof Date) {
-    return Timestamp.fromDate(obj);
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map(item => convertDatesToTimestamps(item));
-  }
-
-  const converted: any = {};
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      converted[key] = convertDatesToTimestamps(obj[key]);
-    }
-  }
-  return converted;
-};
-
-const convertTimestampsToDates = (obj: any): any => {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
-
-  if (obj instanceof Timestamp) {
-    return obj.toDate();
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map(item => convertTimestampsToDates(item));
-  }
-
-  const converted: any = {};
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      converted[key] = convertTimestampsToDates(obj[key]);
-    }
-  }
-  return converted;
 };

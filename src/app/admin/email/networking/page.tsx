@@ -74,6 +74,7 @@ import {
   Send
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Define the filter options interface
 interface FilterOptions {
@@ -95,7 +96,7 @@ interface EmailTemplate {
 
 const NetworkingParticipantsPage: React.FC = () => {
   const [participants, setParticipants] = useState<NetworkingParticipant[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingPage, setloadingPage] = useState<boolean>(true);
   const [sendingEmail, setSendingEmail] = useState<boolean>(false);
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState<boolean>(false);
@@ -115,7 +116,20 @@ const NetworkingParticipantsPage: React.FC = () => {
   const [emailError, setEmailError] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const { loading, user, isAdmin } = useAuth();
+  useEffect(() => {
+    if(loading){
+      return;
+    }
+    if (!isAdmin) {
+      router.push('/');
+      return;
+    }
+    
 
+  }, [user, isAdmin, router]);
+
+  
   // Set up TipTap editor
   const editor = useEditor({
     extensions: [
@@ -205,7 +219,7 @@ const NetworkingParticipantsPage: React.FC = () => {
 
   const fetchParticipants = async () => {
     try {
-      setLoading(true);
+      setloadingPage(true);
       const data = await networkingEventAdminService.getAllParticipants();
       setParticipants(data);
     } catch (error) {
@@ -216,7 +230,7 @@ const NetworkingParticipantsPage: React.FC = () => {
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setloadingPage(false);
     }
   };
 
@@ -301,15 +315,24 @@ const NetworkingParticipantsPage: React.FC = () => {
   const exportToCSV = () => {
     try {
       const headers = [
+        'ID',
         'Name', 
         'WhatsApp', 
+        'Email',
         'Membership Status', 
         'Position', 
         'HIPMI PT Origin', 
         'Has Business', 
         'Business Name', 
         'Business Field', 
-        'Registration Date'
+        'Business Description',
+        'Payment Status',
+        'Payment Proof URL',
+        'Payment Date',
+        'Payment Amount',
+        'Registration Date',
+        'Created At',
+        'Updated At'
       ];
       
       // Prepare CSV content
@@ -317,15 +340,24 @@ const NetworkingParticipantsPage: React.FC = () => {
       
       filteredParticipants.forEach(participant => {
         const row = [
+          `"${participant.id || ''}"`,
           `"${participant.name || ''}"`,
           `"${participant.whatsappNumber || ''}"`,
+          `"${participant.email || ''}"`,
           `"${participant.membershipStatus === MembershipStatus.FUNGSIONARIS ? 'Fungsionaris' : 'Non-Fungsionaris'}"`,
           `"${participant.position || ''}"`,
           `"${participant.hipmiPtOrigin || ''}"`,
           participant.hasBusiness ? 'Yes' : 'No',
           `"${participant.business?.name || ''}"`,
           `"${participant.business?.field || ''}"`,
-          participant.registrationDate ? new Date(participant.registrationDate).toLocaleDateString() : ''
+          `"${participant.business?.description || ''}"`,
+          participant.paymentProofURL ? 'Verified' : 'Unpaid',
+          `"${participant.paymentProofURL || ''}"`,
+          participant.paymentDate ? new Date(participant.paymentDate).toLocaleDateString() : '',
+          participant.paymentAmount ? participant.paymentAmount.toString() : '0',
+          participant.registrationDate ? new Date(participant.registrationDate).toLocaleDateString() : '',
+          participant.createdAt ? new Date(participant.createdAt).toLocaleDateString() : '',
+          participant.updatedAt ? new Date(participant.updatedAt).toLocaleDateString() : ''
         ];
         csvContent += row.join(',') + '\n';
       });
@@ -909,10 +941,10 @@ const NetworkingParticipantsPage: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {loading ? (
+                      {loadingPage ? (
                         <TableRow>
                           <TableCell colSpan={9} className="text-center py-10">
-                            Loading participants...
+                            loadingPage participants...
                           </TableCell>
                         </TableRow>
                       ) : filteredParticipants.length === 0 ? (
