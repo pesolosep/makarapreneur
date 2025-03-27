@@ -224,7 +224,7 @@ export default function RegisterForm() {
               <p className="text-center text-gray-600 text-sm md:text-base pt-4 font-medium">
                 Already have an account?{' '}
                 <Link 
-                  href="/login" 
+                  href="/authentication/login" 
                   className="text-cornflowerBlue hover:text-cornflowerBlue/80 transition-colors duration-200 
                            hover:underline font-semibold"
                 >
