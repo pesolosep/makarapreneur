@@ -35,4 +35,4 @@ jobs:
     - run: npm run build --if-present
     - name: Change directory
       run: cd /home/pesolosep/actions-runner/_work/makarapreneur/makarapreneur
-    - run: pm2 restart 1
+    - run: pm2 restart nextjs
