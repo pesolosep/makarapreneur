@@ -8,7 +8,8 @@ import {
   sendEmailVerification,
   setPersistence,
   browserLocalPersistence,
-  signOut
+  signOut,
+  sendPasswordResetEmail
 } from './firebase';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
@@ -95,6 +96,17 @@ export async function registerUser(email: string, password: string) {
     };
   } catch (error: any) {
     console.error('Registration Error:', error);
+    throw error;
+  }
+}
+
+// Password reset function
+export async function resetPassword(email: string) {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { message: 'Password reset email sent successfully' };
+  } catch (error: any) {
+    console.error('Password Reset Error:', error);
     throw error;
   }
 }

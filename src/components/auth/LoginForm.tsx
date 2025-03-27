@@ -159,16 +159,16 @@ export default function LoginForm() {
                   </div>
                 </div>
               </div>
-{/* 
+
               <div className="flex items-center justify-between pt-2">
                 <Link 
-                  href="/forgot-password" 
+                  href="/authentication/forgot-password" 
                   className="text-sm md:text-base text-cornflowerBlue hover:text-cornflowerBlue/80 
                            transition-colors duration-200 hover:underline font-medium"
                 >
                   Forgot your password?
                 </Link>
-              </div> */}
+              </div>
 
               {error && (
                 <Alert variant="destructive" className="bg-red-50 border border-red-100 rounded-none animate-in fade-in duration-300">
