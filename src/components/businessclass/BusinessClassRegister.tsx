@@ -400,7 +400,7 @@ const BusinessClassRegistrationForm: React.FC<BusinessClassRegistrationFormProps
         fileInputRef.current.value = '';
       }
   
-      router.push('/event/internal');
+      router.push('/event/internalbusinessclass');
     } catch (error) {
       toast({
         variant: "destructive",
