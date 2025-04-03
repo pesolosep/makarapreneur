@@ -304,8 +304,8 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
         <InformationCard
           competition={competition}
           team={team}
-          onRegister={() => router.push(`/competition/${competition.id}/semifinals/register`)}
-          onEdit={() => router.push(`/competition/${competition.id}/semifinals/edit`)}
+          onRegister={() => router.push(`/competition/${competition.id}/register`)}
+          onEdit={() => router.push(`/competition/${competition.id}/edit`)}
         />
 <div className='py-8'>
 
