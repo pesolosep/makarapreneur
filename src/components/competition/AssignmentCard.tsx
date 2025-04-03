@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { Clock, Download, Upload, ChevronDown, Eye, AlertTriangle, Loader2 } from 'lucide-react';
 import { Stage } from '@/models/Competition';
-import { TeamStageSubmission, Team } from '@/models/Team';
+import { TeamStageSubmission, Team } from '@/models/SemifinalTeam';
 import { Timestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -116,11 +116,8 @@ export function AssignmentCard({ assignment, onDownload, onUpload, team }: Assig
     if (!team) return true;
     
     switch (assignment.stageNumber) {
-      case 1:
-        return assignment.submission?.status == 'cleared';
       case 2:
-        return team.stages[1]?.status !== 'cleared' || 
-               assignment.submission?.status === 'cleared' ;
+        return assignment.submission?.status == 'cleared';
       case 3:
         return team.stages[2]?.status !== 'cleared'|| 
         assignment.submission?.status === 'cleared';
@@ -133,10 +130,8 @@ export function AssignmentCard({ assignment, onDownload, onUpload, team }: Assig
     if (!team) return true;
 
     switch (assignment.stageNumber) {
-      case 1:
-        return team.registrationStatus !== 'approved' ;
       case 2:
-        return team.stages[1]?.status !== 'cleared' || team.paidStatus !== true; ;
+        return team.registrationStatus !== 'approved' ;
       case 3:
         return team.stages[2]?.status !== 'cleared';
       default:

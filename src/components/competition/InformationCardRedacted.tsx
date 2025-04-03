@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Competition } from '@/models/Competition';
-import { Team } from '@/models/Team';
+import { Team } from '@/models/SemifinalTeam';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Users, Timer, Target, Check, ChevronRight, AlertCircle, Calendar } from 'lucide-react';
@@ -66,8 +66,8 @@ const determineCurrentStage = (team: Team, competition: Competition) => {
   if (team.registrationStatus === 'approved' && 
       (!teamStages || Object.keys(teamStages).length === 0)) {
     return {
-      stageNumber: '1',
-      stageInfo: competitionStages['1'],
+      stageNumber: '2', // Default to stage 2 for semifinal
+      stageInfo: competitionStages['2'],
       statusText: 'Awaiting Submission',
       statusColor: 'text-linen/60',
       statusBg: 'bg-muted'
@@ -78,8 +78,10 @@ const determineCurrentStage = (team: Team, competition: Competition) => {
   let lastClearedStage: string | null = null;
   let nextStage: string | null = null;
   
-  // Sort stage keys numerically
-  const stageKeys = Object.keys(teamStages).sort((a, b) => parseInt(a) - parseInt(b));
+  // Sort stage keys numerically - only handle stages 2 and 3
+  const stageKeys = Object.keys(teamStages)
+    .filter(key => parseInt(key) >= 2 && parseInt(key) <= 3) // Only consider stages 2 and 3
+    .sort((a, b) => parseInt(a) - parseInt(b));
   
   for (const stageKey of stageKeys) {
     const stage = teamStages[parseInt(stageKey)];
@@ -92,47 +94,20 @@ const determineCurrentStage = (team: Team, competition: Competition) => {
   // Determine the next stage
   if (lastClearedStage) {
     const nextStageNumber = (parseInt(lastClearedStage) + 1).toString();
-    if (competitionStages[parseInt(nextStageNumber)]) {
+    if (competitionStages[parseInt(nextStageNumber)] && parseInt(nextStageNumber) <= 3) {
       nextStage = nextStageNumber;
     }
   } else if (Object.keys(teamStages).length > 0) {
-    // If no stages are cleared, use the first stage
-    nextStage = '1';
+    // If no stages are cleared, default to stage 2
+    nextStage = '2';
   }
   
   // Check current stage status
   if (nextStage) {
     const currentStageSubmission = teamStages[parseInt(nextStage)];
     
-    // Handle semifinal stage payment status
-    if (nextStage === '2' && currentStageSubmission) {
-      if (currentStageSubmission.status === 'cleared') {
-        return {
-          stageNumber: nextStage,
-          stageInfo: competitionStages[parseInt(nextStage)],
-          statusText: 'Stage Cleared',
-          statusColor: 'text-juneBud',
-          statusBg: 'bg-juneBud'
-        };
-      } else if (!team.paidStatus) {
-        return {
-          stageNumber: nextStage,
-          stageInfo: competitionStages[parseInt(nextStage)],
-          statusText: 'Awaiting Payment',
-          statusColor: 'text-linen/60',
-          statusBg: 'bg-muted'
-        };
-      } else if (team.paidStatus && currentStageSubmission.status === 'pending') {
-        return {
-          stageNumber: nextStage,
-          stageInfo: competitionStages[parseInt(nextStage)],
-          statusText: 'Under Review',
-          statusColor: 'text-linen/60',
-          statusBg: 'bg-muted'
-        };
-      }
-    } else if (currentStageSubmission) {
-      // Handle other stages
+    // Handle stage status
+    if (currentStageSubmission) {
       switch (currentStageSubmission.status) {
         case 'pending':
           return {
@@ -181,7 +156,7 @@ const determineCurrentStage = (team: Team, competition: Competition) => {
   }
   
   // If all stages are cleared or no next stage is found
-  if (lastClearedStage && lastClearedStage === Object.keys(competitionStages).length.toString()) {
+  if (lastClearedStage && lastClearedStage === '3') {
     return {
       stageNumber: lastClearedStage,
       stageInfo: competitionStages[parseInt(lastClearedStage)],
@@ -191,15 +166,16 @@ const determineCurrentStage = (team: Team, competition: Competition) => {
     };
   }
   
-  // Default fallback
+  // Default fallback to stage 2
   return {
-    stageNumber: '1',
-    stageInfo: competitionStages['1'],
+    stageNumber: '2',
+    stageInfo: competitionStages['2'],
     statusText: 'Awaiting Submission',
     statusColor: 'text-linen/60',
     statusBg: 'bg-muted'
   };
 };
+
 
 // Helper function to determine application status display
 const getApplicationStatus = (team: Team, currentStageInfo: { stageNumber: string; stageInfo: any; statusText: string; statusColor: string; statusBg: string; } | null) => {
