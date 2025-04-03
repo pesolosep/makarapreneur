@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import BusinessCaseContent from '@/components/competition/BusinessCaseContent';
+import BusinessCaseContent from '@/components/competition/BusinessCaseContentRedacted';
 import { competitionService } from '@/lib/firebase/competitionService';
 
 // Define the correct props type for Next.js app router pages

@@ -38,14 +38,14 @@ type NavItem = {
 // Define admin navigation items
 const adminNavigationItems: NavItem[] = [
   { name: "Articles", href: "/admin/article", icon: "📝" },
-  // { name: "Competitions", href: "/admin/competition", icon: "🏆" },
+  { name: "Competitions", href: "/admin/competition", icon: "🏆" },
   // Email dropdown replaced the single item
   { 
     name: "Email Manager", 
     icon: "📧",
     isDropdown: true,
     items: [
-      // { name: "Competition", href: "/admin/email/competition" },
+      { name: "Competition", href: "/admin/email/competition" },
       { name: "Business Case Class", href: "/admin/email/businesscaseclass" },
       { name: "Networking", href: "/admin/email/networking" },
     ]

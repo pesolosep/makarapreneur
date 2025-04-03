@@ -5,18 +5,18 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserCircle2, Users, FileText, ChevronRight, ChevronLeft, Check, Archive, X, Eye } from 'lucide-react';
+import { Loader2, UserCircle2, Users, FileText, ChevronRight, ChevronLeft, Check, X, Eye, Image } from 'lucide-react';
+import { semifinalTeamService } from '@/lib/firebase/semifinalTeamService';
 import { competitionService } from '@/lib/firebase/competitionService';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
 import { Competition } from '@/models/Competition';
-import { Team } from '@/models/Team';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Team } from '@/models/SemifinalTeam';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface EditRegistrationProps {
+interface EditSemifinalRegistrationProps {
   competitionId: string;
 }
 
@@ -26,28 +26,16 @@ interface FormData {
   // Team Leader fields
   leaderName: string;
   leaderEmail: string;
-  leaderPhone: string;
-  leaderInstitution: string;
-  leaderMajor: string;
-  leaderBatchYear: string;
   
   // Member 1 fields
   member1Name: string;
   member1Email: string;
-  member1Phone: string;
-  member1Institution: string;
-  member1Major: string;
-  member1BatchYear: string;
   
   // Member 2 fields
   member2Name: string;
   member2Email: string;
-  member2Phone: string;
-  member2Institution: string;
-  member2Major: string;
-  member2BatchYear: string;
   
-  // Single registration file (ZIP)
+  // Registration file (Image or PDF)
   registrationFile: File | null;
 }
 
@@ -77,7 +65,7 @@ const Step = ({ title, icon, isCompleted, isActive }: StepProps) => (
   </div>
 );
 
-export default function EditRegistration({ competitionId }: EditRegistrationProps) {
+export default function EditSemifinalRegistration({ competitionId }: EditSemifinalRegistrationProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { userId, loading } = useAuth(); 
@@ -91,29 +79,15 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
     teamName: '',
     leaderName: '',
     leaderEmail: '',
-    leaderPhone: '',
-    leaderInstitution: '',
-    leaderMajor: '',
-    leaderBatchYear: '',
     member1Name: '',
     member1Email: '',
-    member1Phone: '',
-    member1Institution: '',
-    member1Major: '',
-    member1BatchYear: '',
     member2Name: '',
     member2Email: '',
-    member2Phone: '',
-    member2Institution: '',
-    member2Major: '',
-    member2BatchYear: '',
     registrationFile: null
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [canChangeDocuments, setCanChangeDocuments] = useState<boolean>(true);
   const [originalDocURL, setOriginalDocURL] = useState<string | null>(null);
-
-  const batchYears = ['2024', '2023', '2022', '2021'];
 
   // Fetch team and competition data
   useEffect(() => {
@@ -142,11 +116,11 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
         setCompetition(competitionData);
         
         // Use userId to get the team for this competition
-        const teamData = await competitionService.getTeamByUserAndCompetition(userId, competitionId);
+        const teamData = await semifinalTeamService.getSemifinalTeamByUserAndCompetition(userId, competitionId);
         
         if (!teamData) {
           // No team found for this user and competition
-          router.push(`/competition/${competitionId}/register`);
+          router.push(`/competition/${competitionId}/semifinals/register`);
           return;
         }
         
@@ -189,24 +163,12 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
           
           leaderName: teamData.teamLeader.name || '',
           leaderEmail: teamData.teamLeader.email || '',
-          leaderPhone: teamData.teamLeader.phone || '',
-          leaderInstitution: teamData.teamLeader.institution || '',
-          leaderMajor: teamData.teamLeader.major || '',
-          leaderBatchYear: teamData.teamLeader.batchYear || '',
           
           member1Name: teamData.members.member1?.name || '',
           member1Email: teamData.members.member1?.email || '',
-          member1Phone: teamData.members.member1?.phone || '',
-          member1Institution: teamData.members.member1?.institution || '',
-          member1Major: teamData.members.member1?.major || '',
-          member1BatchYear: teamData.members.member1?.batchYear || '',
           
           member2Name: teamData.members.member2?.name || '',
           member2Email: teamData.members.member2?.email || '',
-          member2Phone: teamData.members.member2?.phone || '',
-          member2Institution: teamData.members.member2?.institution || '',
-          member2Major: teamData.members.member2?.major || '',
-          member2BatchYear: teamData.members.member2?.batchYear || '',
           
           registrationFile: null
         });
@@ -230,10 +192,6 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
     return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email);
   };
 
-  const validatePhone = (phone: string) => {
-    return /^08\d{3,}$/.test(phone);
-  };
-
   const validateStep = (step: number) => {
     const newErrors: FormErrors = {};
 
@@ -245,14 +203,6 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
       } else if (!validateEmail(formData.leaderEmail)) {
         newErrors.leaderEmail = 'Invalid email address';
       }
-      if (!formData.leaderPhone) {
-        newErrors.leaderPhone = 'Leader phone number is required';
-      } else if (!validatePhone(formData.leaderPhone)) {
-        newErrors.leaderPhone = 'Phone number must be in format 08xxx';
-      }
-      if (!formData.leaderInstitution) newErrors.leaderInstitution = 'Institution is required';
-      if (!formData.leaderMajor) newErrors.leaderMajor = 'Major is required';
-      if (!formData.leaderBatchYear) newErrors.leaderBatchYear = 'Batch year is required';
     }
 
     if (step === 2) {
@@ -262,17 +212,9 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
       } else if (!validateEmail(formData.member1Email)) {
         newErrors.member1Email = 'Invalid email address';
       }
-      if (!formData.member1Phone) {
-        newErrors.member1Phone = 'Member 1 phone number is required';
-      } else if (!validatePhone(formData.member1Phone)) {
-        newErrors.member1Phone = 'Phone number must be in format 08xxx';
-      }
-      if (!formData.member1Institution) newErrors.member1Institution = 'Institution is required';
-      if (!formData.member1Major) newErrors.member1Major = 'Major is required';
-      if (!formData.member1BatchYear) newErrors.member1BatchYear = 'Batch year is required';
       
       // Member 2 validation only if any field is filled
-      const hasMember2Info = formData.member2Name || formData.member2Email || formData.member2Phone;
+      const hasMember2Info = formData.member2Name || formData.member2Email;
       
       if (hasMember2Info) {
         if (!formData.member2Name) newErrors.member2Name = 'Member 2 name is required';
@@ -281,30 +223,21 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
         } else if (!validateEmail(formData.member2Email)) {
           newErrors.member2Email = 'Invalid email address';
         }
-        if (!formData.member2Phone) {
-          newErrors.member2Phone = 'Member 2 phone number is required';
-        } else if (!validatePhone(formData.member2Phone)) {
-          newErrors.member2Phone = 'Phone number must be in format 08xxx';
-        }
-        if (!formData.member2Institution) newErrors.member2Institution = 'Institution is required';
-        if (!formData.member2Major) newErrors.member2Major = 'Major is required';
-        if (!formData.member2BatchYear) newErrors.member2BatchYear = 'Batch year is required';
       }
     }
 
     if (step === 3 && canChangeDocuments) {
       if (formData.registrationFile) {
-        // Validate file type (must be ZIP)
-        if (formData.registrationFile.type !== 'application/zip' && 
-            formData.registrationFile.type !== 'application/x-zip-compressed' && 
-            !formData.registrationFile.name.endsWith('.zip')) {
-          newErrors.registrationFile = 'Registration file must be a ZIP file';
+        // Validate file type (must be image or PDF)
+        const validFileTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+        if (!validFileTypes.includes(formData.registrationFile.type)) {
+          newErrors.registrationFile = 'Payment proof must be an image (JPEG, PNG) or PDF file';
         }
         
-        // Validate file size (max 30MB)
-        const maxSizeInBytes = 30 * 1024 * 1024; // 30MB
+        // Validate file size (max 5MB)
+        const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
         if (formData.registrationFile.size > maxSizeInBytes) {
-          newErrors.registrationFile = 'Registration file must be less than 30MB';
+          newErrors.registrationFile = 'Payment proof must be less than 5MB';
         }
       }
     }
@@ -329,37 +262,20 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
     }
   };
 
-  const handleSelectChange = (value: string, fieldName: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [fieldName]: value
-    }));
-    
-    if (errors[fieldName]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[fieldName];
-        return newErrors;
-      });
-    }
-  };
-
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     
     // Validate the file before setting it in formData
     if (file) {
-      // Basic validation for file type and size
-      const isZipFile = file.type === 'application/zip' || 
-                        file.type === 'application/x-zip-compressed' || 
-                        file.name.endsWith('.zip');
-                      
-      const isValidSize = file.size <= 30 * 1024 * 1024; // 30MB
+      // Validate file type (must be image or PDF)
+      const validFileTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      const isValidType = validFileTypes.includes(file.type);
+      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
       
-      if (!isZipFile) {
+      if (!isValidType) {
         setErrors(prev => ({
           ...prev,
-          registrationFile: 'Registration file must be a ZIP file'
+          registrationFile: 'Payment proof must be an image (JPEG, PNG) or PDF file'
         }));
         // Clear the input so the user can try again
         if (fileInputRef.current) {
@@ -371,7 +287,7 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
       if (!isValidSize) {
         setErrors(prev => ({
           ...prev,
-          registrationFile: 'Registration file must be less than 30MB'
+          registrationFile: 'Payment proof must be less than 5MB'
         }));
         // Clear the input so the user can try again
         if (fileInputRef.current) {
@@ -424,91 +340,78 @@ export default function EditRegistration({ competitionId }: EditRegistrationProp
     }
   };
 
-// Updated onSubmit function that can be called both from form submission and button click
-const onSubmit = async (e?: FormEvent) => {
-  // Prevent default form submission if called from form submit event
-  if (e) {
-    e.preventDefault();
-  }
-  
-  if (!validateStep(currentStep)) {
-    return;
-  }
-
-  try {
-    setIsSubmitting(true);
-
-    if (!userId || !team) {
-      throw new Error('You must be logged in to update your registration');
-    }
-
-    // Create team data structure that matches the Team model
-    const updatedTeamData = {
-      teamName: formData.teamName,
-      teamLeader: {
-        name: formData.leaderName,
-        email: formData.leaderEmail,
-        phone: formData.leaderPhone,
-        institution: formData.leaderInstitution,
-        major: formData.leaderMajor,
-        batchYear: formData.leaderBatchYear
-      },
-      members: {
-        member1: {
-          name: formData.member1Name,
-          email: formData.member1Email,
-          phone: formData.member1Phone,
-          institution: formData.member1Institution,
-          major: formData.member1Major,
-          batchYear: formData.member1BatchYear
-        },
-        member2: formData.member2Name ? {
-          name: formData.member2Name,
-          email: formData.member2Email,
-          phone: formData.member2Phone,
-          institution: formData.member2Institution,
-          major: formData.member2Major,
-          batchYear: formData.member2BatchYear
-        } : undefined,
-      },
-      updatedAt: new Date(),
-    };
-
-    // Update team with new data
-    await competitionService.updateTeamInfo(
-      team.id,
-      updatedTeamData,
-      canChangeDocuments && formData.registrationFile ? formData.registrationFile : null
-    );
-
-    // Clear the file input after successful submission
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  // Updated onSubmit function
+  const onSubmit = async (e?: FormEvent) => {
+    // Prevent default form submission if called from form submit event
+    if (e) {
+      e.preventDefault();
     }
     
-    // Reset the file in formData
-    setFormData(prev => ({
-      ...prev,
-      registrationFile: null
-    }));
+    if (!validateStep(currentStep)) {
+      return;
+    }
 
-    toast({
-      title: "Update Successful",
-      description: "Your team information has been updated successfully.",
-    });
+    try {
+      setIsSubmitting(true);
 
-    router.push('/competition/' + competitionId);
-  } catch (error) {
-    toast({
-      variant: "destructive",
-      title: "Update Failed",
-      description: error instanceof Error ? error.message : "Failed to update team information",
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      if (!userId || !team) {
+        throw new Error('You must be logged in to update your registration');
+      }
 
+      // Create team data structure that matches the simplified Team model
+      const updatedTeamData = {
+        teamName: formData.teamName,
+        teamLeader: {
+          name: formData.leaderName,
+          email: formData.leaderEmail
+        },
+        members: {
+          member1: {
+            name: formData.member1Name,
+            email: formData.member1Email
+          },
+          member2: formData.member2Name ? {
+            name: formData.member2Name,
+            email: formData.member2Email
+          } : undefined,
+        },
+        updatedAt: new Date(),
+      };
+
+      // Update team with new data
+      await semifinalTeamService.updateSemifinalTeamInfo(
+        team.id,
+        updatedTeamData,
+        canChangeDocuments && formData.registrationFile ? formData.registrationFile : null
+      );
+
+      // Clear the file input after successful submission
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Reset the file in formData
+      setFormData(prev => ({
+        ...prev,
+        registrationFile: null
+      }));
+
+      toast({
+        title: "Update Successful",
+        description: "Your semifinal team information has been updated successfully.",
+      });
+
+      router.push('/competition/' + competitionId);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update semifinal team information",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading || isLoading) {
     return (
@@ -530,9 +433,9 @@ const onSubmit = async (e?: FormEvent) => {
       <div className="bg-gradient-to-r from-juneBud to-juneBud/90 text-signalBlack mt-24">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="max-w-3xl">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">Edit Registration: {competition.name}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Edit Semifinal Registration: {competition.name}</h1>
             <p className="text-xl text-signalBlack/80 leading-relaxed">
-              Update your team information for {competition.name}.
+              Update your semifinal team information for {competition.name}.
             </p>
           </div>
         </div>
@@ -632,68 +535,6 @@ const onSubmit = async (e?: FormEvent) => {
                       <p className="text-red-400 text-sm mt-1">{errors.leaderEmail}</p>
                     )}
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
-                    <Input
-                      name="leaderPhone"
-                      value={formData.leaderPhone}
-                      onChange={handleInputChange}
-                      placeholder="Format: 08xxx"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.leaderPhone && (
-                      <p className="text-red-400 text-sm mt-1">{errors.leaderPhone}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Institution (e.g. Universitas Indonesia)</label>
-                    <Input
-                      name="leaderInstitution"
-                      value={formData.leaderInstitution}
-                      onChange={handleInputChange}
-                      placeholder="Enter your institution"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.leaderInstitution && (
-                      <p className="text-red-400 text-sm mt-1">{errors.leaderInstitution}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Major</label>
-                    <Input
-                      name="leaderMajor"
-                      value={formData.leaderMajor}
-                      onChange={handleInputChange}
-                      placeholder="Enter your major"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.leaderMajor && (
-                      <p className="text-red-400 text-sm mt-1">{errors.leaderMajor}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Batch Year</label>
-                    <Select
-                      value={formData.leaderBatchYear}
-                      onValueChange={(value) => handleSelectChange(value, 'leaderBatchYear')}
-                    >
-                      <SelectTrigger className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen">
-                        <SelectValue placeholder="Select batch year" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-700">
-                        {batchYears.map((year) => (
-                          <SelectItem key={year} value={year}>{year}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.leaderBatchYear && (
-                      <p className="text-red-400 text-sm mt-1">{errors.leaderBatchYear}</p>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
@@ -733,68 +574,6 @@ const onSubmit = async (e?: FormEvent) => {
                      <p className="text-red-400 text-sm mt-1">{errors.member1Email}</p>
                     )}
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
-                    <Input
-                      name="member1Phone"
-                      value={formData.member1Phone}
-                      onChange={handleInputChange}
-                      placeholder="Format: 08xxx"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.member1Phone && (
-                      <p className="text-red-400 text-sm mt-1">{errors.member1Phone}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Institution (e.g. Universitas Indonesia)</label>
-                    <Input
-                      name="member1Institution"
-                      value={formData.member1Institution}
-                      onChange={handleInputChange}
-                      placeholder="Enter institution"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.member1Institution && (
-                      <p className="text-red-400 text-sm mt-1">{errors.member1Institution}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Major</label>
-                    <Input
-                      name="member1Major"
-                      value={formData.member1Major}
-                      onChange={handleInputChange}
-                      placeholder="Enter major"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.member1Major && (
-                      <p className="text-red-400 text-sm mt-1">{errors.member1Major}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Batch Year</label>
-                    <Select
-                      value={formData.member1BatchYear}
-                      onValueChange={(value) => handleSelectChange(value, 'member1BatchYear')}
-                    >
-                      <SelectTrigger className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen">
-                        <SelectValue placeholder="Select batch year" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-700">
-                        {batchYears.map((year) => (
-                          <SelectItem key={year} value={year}>{year}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.member1BatchYear && (
-                      <p className="text-red-400 text-sm mt-1">{errors.member1BatchYear}</p>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -832,67 +611,6 @@ const onSubmit = async (e?: FormEvent) => {
                       <p className="text-red-400 text-sm mt-1">{errors.member2Email}</p>
                     )}
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
-                    <Input
-                      name="member2Phone"
-                      value={formData.member2Phone}
-                      onChange={handleInputChange}
-                      placeholder="Format: 08xxx (optional)"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.member2Phone && (
-                      <p className="text-red-400 text-sm mt-1">{errors.member2Phone}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Institution (e.g. Universitas Indonesia)</label>
-                    <Input
-                      name="member2Institution"
-                      value={formData.member2Institution}
-                      onChange={handleInputChange}
-                      placeholder="Enter institution (optional)"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.member2Institution && (
-                      <p className="text-red-400 text-sm mt-1">{errors.member2Institution}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Major</label>
-                    <Input
-                      name="member2Major"
-                      value={formData.member2Major}
-                      onChange={handleInputChange}
-                      placeholder="Enter major (optional)"
-                      className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen placeholder:text-gray-500"
-                    />
-                    {errors.member2Major && (
-                      <p className="text-red-400 text-sm mt-1">{errors.member2Major}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Batch Year</label>
-                    <Select
-                      value={formData.member2BatchYear}
-                      onValueChange={(value) => handleSelectChange(value, 'member2BatchYear')}
-                    >
-                      <SelectTrigger className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen">
-                        <SelectValue placeholder="Select batch year (optional)" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-700">
-                        {batchYears.map((year) => (
-                          <SelectItem key={year} value={year}>{year}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.member2BatchYear && (
-                      <p className="text-red-400 text-sm mt-1">{errors.member2BatchYear}</p>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
@@ -915,26 +633,18 @@ const onSubmit = async (e?: FormEvent) => {
                 {canChangeDocuments && (
                   <Alert className="bg-juneBud/10 border-juneBud/20 text-linen mb-6">
                     <AlertDescription>
-                      <p className="mb-2"><strong>Combine all required documents into a single ZIP file (max 30MB).</strong></p>
-                      <p className="text-sm mb-1">Please include the following documents:</p>
-                      <ol className="list-decimal pl-5 text-sm space-y-2">
-                        <li>
-                          <span className="font-medium">Student ID Cards</span>
-                          <p className="text-xs text-gray-300">Combine all team members' ID cards into a single PDF file (max 10MB)</p>
-                        </li>
-                        <li>
-                          <span className="font-medium">Proof of following @makarapreneur on Instagram</span>
-                          <p className="text-xs text-gray-300">Combine all team members' proofs into a single PDF file (max 10MB)</p>
-                        </li>
-                        <li>
-                          <span className="font-medium">Proof of posting Competition Twibbon and tagging 3 friends</span>
-                          <p className="text-xs text-gray-300">Ensure your Instagram account is public and combine all members' proofs into a single PDF file (max 10MB)</p>
-                        </li>
-                        <li>
-                          <span className="font-medium">Proof of posting Competition poster on SG and tagging @makarapreneur</span>
-                          <p className="text-xs text-gray-300">Combine all members' proofs into a single PDF file (max 10MB)</p>
-                        </li>
-                      </ol>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-semibold">Registration Fee:</span>
+                        <span className="text-xl font-bold text-juneBud">Rp175.000</span>
+                      </div>
+                      <p className="text-sm mb-3">Please transfer the registration fee to:</p>
+                      <div className="bg-black/30 rounded-lg p-3 mb-3">
+                        <p className="font-medium">Bank BLU</p>
+                        <p>Account Number: 007033578200</p>
+                        <p>Account Name: Cherien Stevie</p>
+                      </div>
+                      <p className="text-sm mb-3">After making the payment, please upload your payment proof below.</p>
+                      <p className="text-xs text-gray-400 mt-2">Maximum file size: 5MB</p>
                     </AlertDescription>
                   </Alert>
                 )}
@@ -942,7 +652,7 @@ const onSubmit = async (e?: FormEvent) => {
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-medium text-gray-300">Current Documentation</label>
+                      <label className="block text-sm font-medium text-gray-300">Current Payment Proof</label>
                       {originalDocURL && (
                         <Button 
                           variant="outline"
@@ -951,123 +661,123 @@ const onSubmit = async (e?: FormEvent) => {
                           onClick={viewOriginalDocument}
                         >
                           <Eye className="w-4 h-4 mr-2" />
-                          View Current Document
+                          View Current Proof
                         </Button>
                       )}
                     </div>
                     
                     {canChangeDocuments ? (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Update Registration File</label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-juneBud/30 rounded-lg hover:border-juneBud transition-colors bg-black/50">
-                      <div className="space-y-1 text-center">
-                        <label htmlFor="file-upload" className="cursor-pointer">
-                          <Archive className="mx-auto h-12 w-12 text-juneBud hover:text-juneBud/80 transition-colors" />
-                        </label>
-                        <div className="flex text-sm text-gray-300 justify-center">
-                          <p className="text-gray-400">Upload ZIP file</p>
-                        
-                          <Input
-                            id="file-upload"
-                            name="registrationFile"
-                            type="file"
-                            className="sr-only"
-                            onChange={handleFileChange}
-                            accept=".zip"
-                            ref={fileInputRef}
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">
-                              ZIP file only, maximum 30MB
-                            </p>
-                        <p className="text-xs text-gray-500"></p>
-                            {formData.registrationFile && (
-                              <div className="mt-4 p-3 bg-juneBud/10 rounded border border-juneBud/20 text-sm">
-                                <div className="flex justify-between items-center">
-                                  <p className="font-medium text-linen">Selected file:</p>
-                                  <Button 
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={clearFileSelection}
-                                    className="h-7 w-7 rounded-full p-0 text-gray-400 hover:text-gray-100 hover:bg-red-500/20"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                                <p className="text-sm text-linen/80 mt-1">{formData.registrationFile.name}</p>
-                                <p className="text-xs text-linen/60 mt-1">
-                                  {(formData.registrationFile.size / (1024 * 1024)).toFixed(2)} MB
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Update Payment Proof</label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-juneBud/30 rounded-lg hover:border-juneBud transition-colors bg-black/50">
+                          <div className="space-y-1 text-center">
+                            <label htmlFor="file-upload" className="cursor-pointer">
+                              <Image className="mx-auto h-12 w-12 text-juneBud hover:text-juneBud/80 transition-colors" />
+                            </label>
+                            <div className="flex text-sm text-gray-300 justify-center">
+                              <p className="text-gray-400">Upload image or PDF</p>
+                            
+                              <Input
+                                id="file-upload"
+                                name="registrationFile"
+                                type="file"
+                                className="sr-only"
+                                onChange={handleFileChange}
+                                accept=".jpg,.jpeg,.png,.pdf"
+                                ref={fileInputRef}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                  JPEG, PNG, or PDF only, maximum 5MB
                                 </p>
-                                <div className="mt-2 text-xs text-juneBud/90 bg-juneBud/5 p-2 rounded">
-                                  This file will be uploaded when you click "Save Changes" at the bottom.
-                                </div>
+                            <p className="text-xs text-gray-500"></p>
+                                {formData.registrationFile && (
+                                  <div className="mt-4 p-3 bg-juneBud/10 rounded border border-juneBud/20 text-sm">
+                                    <div className="flex justify-between items-center">
+                                      <p className="font-medium text-linen">Selected file:</p>
+                                      <Button 
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={clearFileSelection}
+                                        className="h-7 w-7 rounded-full p-0 text-gray-400 hover:text-gray-100 hover:bg-red-500/20"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                    <p className="text-sm text-linen/80 mt-1">{formData.registrationFile.name}</p>
+                                    <p className="text-xs text-linen/60 mt-1">
+                                      {(formData.registrationFile.size / (1024 * 1024)).toFixed(2)} MB
+                                    </p>
+                                    <div className="mt-2 text-xs text-juneBud/90 bg-juneBud/5 p-2 rounded">
+                                      This file will be uploaded when you click "Save Changes" at the bottom.
+                                    </div>
+                                  </div>
+                                )}
                               </div>
+                            </div>
+                            {errors.registrationFile && (
+                              <p className="text-red-400 text-sm mt-2">{errors.registrationFile}</p>
                             )}
                           </div>
-                        </div>
-                        {errors.registrationFile && (
-                          <p className="text-red-400 text-sm mt-2">{errors.registrationFile}</p>
+                        ) : (
+                          <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-gray-400">
+                            <p>You cannot update the payment proof at this time.</p>
+                          </div>
                         )}
                       </div>
-                    ) : (
-                      <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 text-gray-400">
-                        <p>You cannot update the documentation at this time.</p>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
+                {currentStep > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    className="flex items-center bg-black/50 border-gray-700 hover:bg-black/80 text-linen"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Previous Step
+                  </Button>
+                )}
+                
+                {currentStep < 3 ? (
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    className="flex items-center ml-auto bg-juneBud hover:bg-juneBud/90 text-signalBlack"
+                  >
+                    Next Step
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="button" 
+                    onClick={onSubmit}
+                    disabled={isSubmitting}
+                    className="flex items-center ml-auto bg-gradient-to-r from-juneBud to-cornflowerBlue hover:opacity-90 text-signalBlack"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        Save Changes
+                        <Check className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
-            </div>
-          )}
+            </form>
+          </div>
 
-       {/* Navigation Buttons */}
-<div className="flex justify-between mt-8 pt-6 border-t border-white/10">
-  {currentStep > 1 && (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={prevStep}
-      className="flex items-center bg-black/50 border-gray-700 hover:bg-black/80 text-linen"
-    >
-      <ChevronLeft className="w-4 h-4 mr-2" />
-      Previous Step
-    </Button>
-  )}
+          <Footer />
+        </div>
+  );}
   
-  {currentStep < 3 ? (
-    <Button
-      type="button"
-      onClick={nextStep}
-      className="flex items-center ml-auto bg-juneBud hover:bg-juneBud/90 text-signalBlack"
-    >
-      Next Step
-      <ChevronRight className="w-4 h-4 ml-2" />
-    </Button>
-  ) : (
-    <Button
-      type="button" 
-      onClick={onSubmit}
-      disabled={isSubmitting}
-      className="flex items-center ml-auto bg-gradient-to-r from-juneBud to-cornflowerBlue hover:opacity-90 text-signalBlack"
-    >
-      {isSubmitting ? (
-        <>
-          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-          Updating...
-        </>
-      ) : (
-        <>
-          Save Changes
-          <Check className="w-4 h-4 ml-2" />
-        </>
-      )}
-    </Button>
-  )}
-</div>
-        </form>
-      </div>
-
-      <Footer />
-    </div>
-  );
-}

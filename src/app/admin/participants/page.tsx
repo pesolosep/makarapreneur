@@ -12,8 +12,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Competition } from '@/models/Competition';
-import { Team } from '@/models/Team';
-import { adminService } from '@/lib/firebase/competitionService';
+import { Team } from '@/models/SemifinalTeam';
+import { adminSemifinalService } from '@/lib/firebase/semifinalTeamService';
 import { db } from '@/lib/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { SubmissionViewer } from '@/components/admin/SubmissionViewer';
@@ -89,7 +89,7 @@ const TeamManagementDashboard: React.FC<TeamManagementDashboardProps> = () => {
       
       try {
         setLoading(true);
-        const teams = await adminService.getTeamsByCompetition(selectedCompetition);
+        const teams = await adminSemifinalService.getSemifinalTeamsByCompetition(selectedCompetition);
         setTeams(teams);
         setFilteredTeams(teams);
       } catch (error) {
@@ -129,18 +129,13 @@ const TeamManagementDashboard: React.FC<TeamManagementDashboardProps> = () => {
           const stageNumber = Number(selectedStage);
           
           switch (stageNumber) {
-            case 1:
+
+            case 2:
               if (team.registrationStatus !== 'approved') return false;
               break;
             
-            case 2:
-              if (team.stages[1]?.status !== 'cleared') return false;
-              break;
-            
             case 3:
-              if (team.stages[1]?.status !== 'cleared' || 
-                  team.stages[2]?.status !== 'cleared' || 
-                  !team?.paidStatus) return false;
+              if ( team.stages[2]?.status !== 'cleared') return false;
               break;
           }
         }
@@ -169,25 +164,8 @@ if (searchTerm.trim()) {
       (team.members.member1?.email || '').toLowerCase().includes(term) ||
       (team.members.member2?.email || '').toLowerCase().includes(term);
       
-    // Extended search in new fields
-    const extendedSearch =
-      // Team leader extended fields
-      (team.teamLeader.phone || '').toLowerCase().includes(term) ||
-      (team.teamLeader.institution || '').toLowerCase().includes(term) ||
-      (team.teamLeader.major || '').toLowerCase().includes(term) ||
-      (team.teamLeader.batchYear || '').toLowerCase().includes(term) ||
-      // Member 1 extended fields
-      (team.members.member1?.phone || '').toLowerCase().includes(term) ||
-      (team.members.member1?.institution || '').toLowerCase().includes(term) ||
-      (team.members.member1?.major || '').toLowerCase().includes(term) ||
-      (team.members.member1?.batchYear || '').toLowerCase().includes(term) ||
-      // Member 2 extended fields
-      (team.members.member2?.phone || '').toLowerCase().includes(term) ||
-      (team.members.member2?.institution || '').toLowerCase().includes(term) ||
-      (team.members.member2?.major || '').toLowerCase().includes(term) ||
-      (team.members.member2?.batchYear || '').toLowerCase().includes(term);
-      
-    return basicSearch || extendedSearch;
+ 
+    return basicSearch;
   });
 }
 
@@ -205,7 +183,7 @@ if (searchTerm.trim()) {
       description: `Are you sure you want to ${status} this team's registration?`,
       action: async () => {
         try {
-          await adminService.updateRegistrationStatus(teamId, status);
+          await adminSemifinalService.updateSemifinalRegistrationStatus(teamId, status);
           
           // Update both teams and filteredTeams directly
           const updatedTeams = teams.map(team => 
@@ -246,7 +224,7 @@ const handleStageClearance = async (
     description: `Are you sure you want to mark this stage as ${status}?`,
     action: async () => {
       try {
-        await adminService.updateStageClearance(teamId, stageNumber, status, feedback);
+        await adminSemifinalService.updateSemifinalStageClearance(teamId, stageNumber, status, feedback);
         
         // Update both teams and filteredTeams states
         const updatedTeams = teams.map(team => {
@@ -459,24 +437,6 @@ const renderStageActions = (team: Team, stageNumber: string | number, submission
         {team.teamLeader.name}
         <br />
         <span className="text-gray-500">{team.teamLeader.email}</span>
-        {team.teamLeader.phone && (
-          <>
-            <br />
-            <span className="text-gray-500">{team.teamLeader.phone|| 'No Phone'}</span>
-          </>
-        )}
-        {team.teamLeader.institution && (
-          <>
-            <br />
-            <span className="text-gray-500 italic">{team.teamLeader.institution|| 'N/A'}</span>
-          </>
-        )}
-        {team.teamLeader.major && (
-          <>
-            <br />
-            <span className="text-gray-500">{team.teamLeader.major} ({team.teamLeader.batchYear || 'N/A'})</span>
-          </>
-        )}
       </div>
     </div>
     {team.members.member1 && (
@@ -488,24 +448,6 @@ const renderStageActions = (team: Team, stageNumber: string | number, submission
             <>
               <br />
               <span className="text-gray-500">{team.members.member1.email}</span>
-            </>
-          )}
-          {team.members.member1.phone && (
-            <>
-              <br />
-              <span className="text-gray-500">{team.members.member1.phone || 'No Phone'}</span>
-            </>
-          )}
-          {team.members.member1.institution && (
-            <>
-              <br />
-              <span className="text-gray-500 italic">{team.members.member1.institution|| 'N/A'}</span>
-            </>
-          )}
-          {team.members.member1.major && (
-            <>
-              <br />
-              <span className="text-gray-500">{team.members.member1.major} ({team.members.member1.batchYear || 'N/A'})</span>
             </>
           )}
         </div>
@@ -522,24 +464,6 @@ const renderStageActions = (team: Team, stageNumber: string | number, submission
               <span className="text-gray-500">{team.members.member2.email}</span>
             </>
           )}
-          {team.members.member2.phone && (
-            <>
-              <br />
-              <span className="text-gray-500">{team.members.member2.phone || 'No phone'}</span>
-            </>
-          )}
-          {team.members.member2.institution && (
-            <>
-              <br />
-              <span className="text-gray-500 italic">{team.members.member2.institution || 'N/A'}</span>
-            </>
-          )}
-          {team.members.member2.major && (
-            <>
-              <br />
-              <span className="text-gray-500">{team.members.member2.major} ({team.members.member2.batchYear || 'N/A'})</span>
-            </>
-          )}
         </div>
       </div>
     )}
@@ -553,10 +477,6 @@ const renderStageActions = (team: Team, stageNumber: string | number, submission
                         </span>
                       </TableCell>
                       <TableCell>Registrated on: {formatDate(team.registrationDate)}
-                        <br/>
-                        Payment status : {team.paidStatus ? 'Paid' : 'Not Paid'}
-
-
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusBadge(team.registrationStatus)}>

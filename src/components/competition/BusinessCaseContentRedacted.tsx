@@ -9,18 +9,18 @@ import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firesto
 import { db } from '@/lib/firebase/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useTeamId } from '@/hooks/useTeamId';
 import { Competition } from '@/models/Competition';
-import { Team } from '@/models/Team';
+import { Team } from '@/models/SemifinalTeam';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InformationCard from "@/components/competition/InformationCardRedacted";
 import { AssignmentList } from "@/components/competition/AssignmentCard";
-import SemifinalPaymentButton from '@/components/competition/SemifinalPaymentButton';
 import AboutUs from '@/components/homepage/AboutUs';
-import { competitionService } from '@/lib/firebase/competitionService';
+import { semifinalTeamService } from '@/lib/firebase/semifinalTeamService';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 interface BusinessCaseContentProps {
   competition: Competition
@@ -33,6 +33,20 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
   const [assignments, setAssignments] = useState<any[]>([]);
   const { user, loading: loadingAuth } = useAuth();
   const [loading, setLoading] = useState(true);
+
+  // Get WhatsApp group link based on competition ID
+  const getWhatsAppGroupLink = (competitionId: string): string => {
+    switch (competitionId) {
+      case 'business-plan':
+        return 'https://bit.ly/GroupSemifinalMKPRBPC-Uni';
+      case 'business-case':
+        return 'https://bit.ly/GroupSemifinalMKPRBCC';
+      case 'highschool-business-plan':
+        return 'https://bit.ly/GroupSemifinalMKPRBPC-SMA';
+      default:
+        return '#';
+    }
+  };
 
   useEffect(() => {
     if (!user && !loadingAuth) {
@@ -56,8 +70,9 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
       if (!user || !competition) return;
 
       try {
+        // Query from semifinalTeams collection
         const teamsQuery = query(
-          collection(db, 'teams'),
+          collection(db, 'semifinalTeams'),
           where('userId', '==', user.uid),
           where('competitionId', '==', competition.id)
         );
@@ -97,7 +112,7 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
                 submission: currentStage,
                 submissionEnabled: 
                   teamData.registrationStatus === 'approved' && 
-                  (stageNumber === 1 || previousStage?.status !== 'rejected') && 
+                  (stageNumber === 2 || previousStage?.status !== 'rejected') && 
                   stage.visibility
               };
             });
@@ -198,8 +213,8 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
         throw new Error('Your team registration must be approved first');
       }
   
-      // Check if previous stage was rejected (except for stage 1)
-      if (stageNumber > 1 && previousStage?.status === 'rejected') {
+      // Check if previous stage was rejected (except for stage 2 which is the first stage for semifinal)
+      if (stageNumber > 2 && previousStage?.status === 'rejected') {
         throw new Error('Previous stage submission was rejected');
       }
   
@@ -214,7 +229,7 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
       }
   
       // Since we already have the file, directly submit it
-      await competitionService.submitStageWork(team.id, stageNumber, file);
+      await semifinalTeamService.submitSemifinalStageWork(team.id, stageNumber, file);
       
       toast({
         title: "Success",
@@ -222,7 +237,7 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
       });
   
       // Refresh team data
-      const teamDoc = await getDoc(doc(db, 'teams', team.id));
+      const teamDoc = await getDoc(doc(db, 'semifinalTeams', team.id));
       if (teamDoc.exists()) {
         const updatedTeam = {
           ...teamDoc.data(),
@@ -264,7 +279,7 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-b from-juneBud to-cornflowerBlue  font-poppins">
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-juneBud to-cornflowerBlue font-poppins">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-juneBud" />
@@ -272,6 +287,9 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
       </div>
     );
   }
+
+  // Get the WhatsApp group link
+  const whatsAppGroupLink = getWhatsAppGroupLink(competition.id);
 
   return (
     <div className="bg-gradient-to-b from-juneBud to-cornflowerBlue font-poppins">
@@ -286,9 +304,37 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
         <InformationCard
           competition={competition}
           team={team}
-          onRegister={() => router.push(`/competition/${competition.id}/register`)}
-          onEdit={() => router.push(`/competition/${competition.id}/edit`)}
+          onRegister={() => router.push(`/competition/${competition.id}/semifinals/register`)}
+          onEdit={() => router.push(`/competition/${competition.id}/semifinals/edit`)}
         />
+<div className='py-8'>
+
+</div>
+        {/* WhatsApp Group Join Alert - Show only if the team exists */}
+        {team && team.registrationStatus === 'approved' && (
+          <div className="max-w-7xl mx-auto px-4 -mt-8 mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <Alert className="bg-juneBud/30 border-juneBud text-signalBlack">
+                <AlertDescription className="flex items-center justify-between">
+                  <div className="font-medium">
+                    Don't forget to join the semifinal WhatsApp group and add your team members!
+                  </div>
+                  <Button
+                    className="bg-juneBud hover:bg-juneBud/80 text-signalBlack"
+                    onClick={() => window.open(whatsAppGroupLink, '_blank')}
+                  >
+                    Join Group
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </motion.div>
+          </div>
+        )}
 
         <motion.section 
           initial={{ opacity: 0 }}
@@ -297,7 +343,7 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
           className="py-12 px-4 bg-linen"
         >
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-2xl lg:text-4xl uppercase font-bold mb-6 text-signalBlack">Competition Stages</h2>
+            <h2 className="text-2xl lg:text-4xl uppercase font-bold mb-6 text-signalBlack">Semifinal Stages</h2>
             <AssignmentList
               assignments={assignments}
               onDownload={handleDownload}
@@ -305,14 +351,6 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
               team={team}
             />
             
-            {team?.stages[1]?.status === 'cleared' && !team?.paidStatus && (
-              <div className="mt-8">
-                <SemifinalPaymentButton 
-                  teamId={team.id} 
-                  disabled={!competition?.stages[3]?.visibility}
-                />
-              </div>
-            )}
           </div>
         </motion.section>
       </motion.main>
