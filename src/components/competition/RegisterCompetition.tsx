@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
 import { Competition } from '@/models/Competition';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TeamMember } from '@/models/SemifinalTeam';
 
 interface RegisterSemifinalProps {
   competition: Competition;
@@ -197,67 +198,97 @@ export default function RegisterSemifinal({ competition }: RegisterSemifinalProp
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateStep(currentStep)) {
-      return;
+ 
+// Modified onSubmit function that properly handles success and failure cases
+
+const onSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  
+  if (!validateStep(currentStep)) {
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
+
+    if (!user) {
+      throw new Error('You must be logged in to register');
     }
 
-    try {
-      setIsSubmitting(true);
-
-      if (!user) {
-        throw new Error('You must be logged in to register');
-      }
-
-      // Create team data structure that matches the simplified Team model
-      const teamData = {
-        teamName: formData.teamName,
-        teamLeader: {
-          name: formData.leaderName,
-          email: formData.leaderEmail
-        },
-        members: {
-          member1: {
-            name: formData.member1Name,
-            email: formData.member1Email
-          },
-          member2: formData.member2Name ? {
-            name: formData.member2Name,
-            email: formData.member2Email
-          } : undefined
-        },
-        registrationDate: new Date()
+    // Create team data with proper typing
+    const teamData: {
+      teamName: string;
+      teamLeader: TeamMember;
+      members: {
+        member1: TeamMember;
+        member2?: TeamMember;
       };
-
-      if (!formData.registrationFile) {
-        throw new Error('Registration file is required');
-      }
-
-      await semifinalTeamService.registerSemifinalTeam(
-        user.uid,
-        competition.id,
-        teamData,
-        formData.registrationFile
-      );
-
-      toast({
-        title: "Semifinal Registration Successful",
-        description: "Your team has been registered for the semifinal. Please wait for admin approval.",
-      });
-
-      router.push('/competition/' + competition.id);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: error instanceof Error ? error.message : "Failed to register semifinal team",
-      });
-    } finally {
-      setIsSubmitting(false);
+      registrationDate: Date;
+    } = {
+      teamName: formData.teamName,
+      teamLeader: {
+        name: formData.leaderName,
+        email: formData.leaderEmail
+      },
+      members: {
+        member1: {
+          name: formData.member1Name,
+          email: formData.member1Email
+        }
+      },
+      registrationDate: new Date()
+    };
+    
+    // Only include member2 if there's a name
+    if (formData.member2Name && formData.member2Name.trim() !== '') {
+      teamData.members.member2 = {
+        name: formData.member2Name,
+        email: formData.member2Email || '' // Use empty string instead of undefined
+      };
     }
-  };
+
+    if (!formData.registrationFile) {
+      throw new Error('Registration file is required');
+    }
+
+    // Try to register the team - if this fails, it will throw an error that gets caught below
+    const registeredTeam = await semifinalTeamService.registerSemifinalTeam(
+      user.uid,
+      competition.id,
+      teamData,
+      formData.registrationFile
+    );
+
+    // If we reached this point, registration was successful and we have the team data
+    if (!registeredTeam || !registeredTeam.id) {
+      throw new Error('Team was not properly created');
+    }
+
+    // Only show success toast and navigate if we get here (no errors thrown)
+    toast({
+      title: "Semifinal Registration Successful",
+      description: "Your team has been registered for the semifinal. Please wait for admin approval.",
+    });
+
+    // Navigate only after confirmed success
+    router.push('/competition/' + competition.id);
+    
+  } catch (error) {
+    // Show error toast but don't navigate
+    toast({
+      variant: "destructive",
+      title: "Registration Failed",
+      description: error instanceof Error ? error.message : "Failed to register semifinal team",
+    });
+    
+    // Log the error for debugging
+    console.error("Registration error:", error);
+    
+    // Stay on the current page - no navigation
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   if (loading) {
     return (
@@ -555,7 +586,7 @@ export default function RegisterSemifinal({ competition }: RegisterSemifinalProp
                   </>
                 ) : (
                   <>
-                    Complete Registration
+                    Complete
                     <Check className="w-4 h-4 ml-2" />
                   </>
                 )}
