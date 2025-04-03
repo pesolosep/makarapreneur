@@ -341,77 +341,116 @@ export default function EditSemifinalRegistration({ competitionId }: EditSemifin
   };
 
   // Updated onSubmit function
-  const onSubmit = async (e?: FormEvent) => {
-    // Prevent default form submission if called from form submit event
-    if (e) {
-      e.preventDefault();
+// Updated onSubmit function with proper TypeScript typing
+const onSubmit = async (e?: FormEvent) => {
+  // Prevent default form submission if called from form submit event
+  if (e) {
+    e.preventDefault();
+  }
+  
+  if (!validateStep(currentStep)) {
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
+
+    if (!userId || !team) {
+      throw new Error('You must be logged in to update your registration');
+    }
+
+    // Create team data structure with proper TypeScript typing
+    type TeamUpdateData = {
+      teamName: string;
+      teamLeader: {
+        name: string;
+        email: string;
+      };
+      members: {
+        member1: {
+          name: string;
+          email: string;
+        };
+        member2?: {
+          name: string;
+          email: string;
+        };
+      };
+      updatedAt: Date;
+    };
+
+    // Initialize with required fields
+    const updatedTeamData: TeamUpdateData = {
+      teamName: formData.teamName,
+      teamLeader: {
+        name: formData.leaderName,
+        email: formData.leaderEmail
+      },
+      members: {
+        member1: {
+          name: formData.member1Name,
+          email: formData.member1Email
+        }
+      },
+      updatedAt: new Date(),
+    };
+    
+    // Only add member2 if there's a name
+    if (formData.member2Name && formData.member2Name.trim() !== '') {
+      updatedTeamData.members.member2 = {
+        name: formData.member2Name,
+        email: formData.member2Email || '' // Use empty string instead of undefined
+      };
+    }
+
+    // Update team with new data
+    const updateResult = await semifinalTeamService.updateSemifinalTeamInfo(
+      team.id,
+      updatedTeamData,
+      canChangeDocuments && formData.registrationFile ? formData.registrationFile : null
+    );
+    
+    // Verify the update was successful
+    if (!updateResult) {
+      throw new Error('Failed to update team information');
+    }
+
+    // Clear the file input after successful submission
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
     
-    if (!validateStep(currentStep)) {
-      return;
-    }
+    // Reset the file in formData
+    setFormData(prev => ({
+      ...prev,
+      registrationFile: null
+    }));
 
-    try {
-      setIsSubmitting(true);
+    // Show success toast
+    toast({
+      title: "Update Successful",
+      description: "Your semifinal team information has been updated successfully.",
+    });
 
-      if (!userId || !team) {
-        throw new Error('You must be logged in to update your registration');
-      }
-
-      // Create team data structure that matches the simplified Team model
-      const updatedTeamData = {
-        teamName: formData.teamName,
-        teamLeader: {
-          name: formData.leaderName,
-          email: formData.leaderEmail
-        },
-        members: {
-          member1: {
-            name: formData.member1Name,
-            email: formData.member1Email
-          },
-          member2: formData.member2Name ? {
-            name: formData.member2Name,
-            email: formData.member2Email
-          } : undefined,
-        },
-        updatedAt: new Date(),
-      };
-
-      // Update team with new data
-      await semifinalTeamService.updateSemifinalTeamInfo(
-        team.id,
-        updatedTeamData,
-        canChangeDocuments && formData.registrationFile ? formData.registrationFile : null
-      );
-
-      // Clear the file input after successful submission
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      
-      // Reset the file in formData
-      setFormData(prev => ({
-        ...prev,
-        registrationFile: null
-      }));
-
-      toast({
-        title: "Update Successful",
-        description: "Your semifinal team information has been updated successfully.",
-      });
-
-      router.push('/competition/' + competitionId);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update semifinal team information",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    // Only navigate on success
+    router.push('/competition/' + competitionId);
+    
+  } catch (error) {
+    // Show error toast but don't navigate
+    toast({
+      variant: "destructive",
+      title: "Update Failed",
+      description: error instanceof Error ? error.message : "Failed to update semifinal team information",
+    });
+    
+    // Log the error for debugging
+    console.error("Update error:", error);
+    
+    // Stay on the current page - no navigation
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   if (loading || isLoading) {
     return (
@@ -767,7 +806,7 @@ export default function EditSemifinalRegistration({ competitionId }: EditSemifin
                       </>
                     ) : (
                       <>
-                        Save Changes
+                        Update
                         <Check className="w-4 h-4 ml-2" />
                       </>
                     )}
@@ -780,4 +819,3 @@ export default function EditSemifinalRegistration({ competitionId }: EditSemifin
           <Footer />
         </div>
   );}
-  
