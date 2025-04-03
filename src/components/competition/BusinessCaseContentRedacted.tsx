@@ -291,6 +291,7 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
   // Get the WhatsApp group link
   const whatsAppGroupLink = getWhatsAppGroupLink(competition.id);
 
+  
   return (
     <div className="bg-gradient-to-b from-juneBud to-cornflowerBlue font-poppins">
       <Navbar notTransparent />
