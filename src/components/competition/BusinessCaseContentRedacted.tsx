@@ -224,7 +224,9 @@ export default function BusinessCaseContent({ competition }: BusinessCaseContent
       }
   
       // Check submission deadline
-      if (new Date() > new Date(stage.deadline)) {
+      const now = new Date();
+      const deadline = new Date(stage.deadline);
+      if (now > deadline) {
         throw new Error('Submission deadline has passed');
       }
   

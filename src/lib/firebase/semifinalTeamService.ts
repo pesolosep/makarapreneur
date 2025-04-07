@@ -75,64 +75,101 @@ export const semifinalTeamService = {
     stageNumber: number,
     submissionFile: File
   ) {
-    const teamDoc = await getDoc(doc(db, 'semifinalTeams', teamId));
-    if (!teamDoc.exists()) {
-      throw new Error('Semifinal team not found');
-    }
-    
-    const teamData = teamDoc.data() as Team;
-    
-    // Check if previous stage is cleared
-    if (stageNumber > 1 && teamData.stages[stageNumber - 1]?.status !== 'cleared') {
-      throw new Error('Previous stage not cleared');
-    }
-    
-    // Check for existing submission file and delete it if it exists
-    if (teamData.stages[stageNumber]?.submissionURL) {
-      try {
-        // Extract the path from the URL to delete the file
-        const oldFileRef = ref(storage, decodeURIComponent(teamData.stages[stageNumber].submissionURL.split('?')[0].split('/o/')[1]));
-        await deleteObject(oldFileRef);
-        console.log('Previous submission file deleted successfully');
-      } catch (deleteError) {
-        console.error('Error deleting previous file:', deleteError);
-        // Continue with upload even if deletion fails
-      }
-    }
-    
-    // Upload new file
-    const storageRef = ref(storage, `competitions/${teamData.competitionId}/semifinal-submissions/${teamId}/stage${stageNumber}/${submissionFile.name}`);
-    await uploadBytes(storageRef, submissionFile);
-    const submissionURL = await getDownloadURL(storageRef);
-    
-    // Update team document with new submission
-    await updateDoc(doc(db, 'semifinalTeams', teamId), {
-      [`stages.${stageNumber}`]: {
-        status: 'pending',
-        submissionURL,
-        submissionDate: new Date()
-      }
-    });
-    
-    // Also update the submission in the competition's semifinalTeams subcollection
     try {
-      await updateDoc(doc(db, 'competitions', teamData.competitionId, 'semifinalTeams', teamId), {
-        [`stages.${stageNumber}`]: {
+      // Validate file type
+      const validFileTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      
+      // If the file extension is correct but the type is not recognized, check the extension
+      if (!validFileTypes.includes(submissionFile.type)) {
+        const fileName = submissionFile.name.toLowerCase();
+        const isValidExtension = fileName.endsWith('.pdf') || fileName.endsWith('.doc') || fileName.endsWith('.docx');
+        
+        if (!isValidExtension) {
+          throw new Error('Submission file must be a PDF or Word document (.pdf, .doc, .docx)');
+        }
+      }
+      
+      // Validate file size (max 10MB)
+      const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+      if (submissionFile.size > maxSizeInBytes) {
+        throw new Error('Submission file must be less than 10MB');
+      }
+
+      const teamDoc = await getDoc(doc(db, 'semifinalTeams', teamId));
+      if (!teamDoc.exists()) {
+        throw new Error('Semifinal team not found');
+      }
+      
+      const teamData = teamDoc.data() as Team;
+      
+      // Check stage requirements
+      if (stageNumber === 2) {
+        // For stage 2, only check if registration is approved
+        if (teamData.registrationStatus !== 'approved') {
+          throw new Error('Team registration must be approved to submit for stage 2');
+        }
+      } else if (stageNumber === 3) {
+        // For stage 3, check if stage 2 is cleared
+        if (teamData.stages[2]?.status !== 'cleared') {
+          throw new Error('Stage 2 must be cleared before submitting for stage 3');
+        }
+      } else {
+        // Invalid stage number
+        throw new Error('Invalid stage number. Only stages 2 and 3 are supported.');
+      }
+      
+      // Check for existing submission file and delete it if it exists
+      if (teamData.stages[stageNumber]?.submissionURL) {
+        try {
+          // Extract the path from the URL to delete the file
+          const oldFileRef = ref(storage, decodeURIComponent(teamData.stages[stageNumber].submissionURL.split('?')[0].split('/o/')[1]));
+          await deleteObject(oldFileRef);
+        } catch (deleteError) {
+          // Continue with upload even if deletion fails
+        }
+      }
+      
+      // Upload new file
+      const storagePath = `competitions/${teamData.competitionId}/semifinal-submissions/${teamId}/stage${stageNumber}/${submissionFile.name}`;
+      
+      try {
+        const storageRef = ref(storage, storagePath);
+        const uploadResult = await uploadBytes(storageRef, submissionFile);
+        const submissionURL = await getDownloadURL(storageRef);
+        
+        // Update team document with new submission
+        const updateData = {
+          [`stages.${stageNumber}`]: {
+            status: 'pending',
+            submissionURL,
+            submissionDate: new Date()
+          }
+        };
+        
+        try {
+          await updateDoc(doc(db, 'semifinalTeams', teamId), updateData);
+        } catch (updateError: unknown) {
+          throw new Error(`Failed to update the submission record: ${updateError instanceof Error ? updateError.message : 'Unknown error'}`);
+        }
+        
+        // Also update the submission in the competition's semifinalTeams subcollection
+        try {
+          await updateDoc(doc(db, 'competitions', teamData.competitionId, 'semifinalTeams', teamId), updateData);
+        } catch (error) {
+          // Continue even if this update fails
+        }
+        
+        return {
           status: 'pending',
           submissionURL,
           submissionDate: new Date()
-        }
-      });
+        };
+      } catch (uploadError: unknown) {
+        throw new Error(`File upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+      }
     } catch (error) {
-      console.error('Error updating competition semifinal team document:', error);
-      // Continue even if this update fails
+      throw error;
     }
-    
-    return {
-      status: 'pending',
-      submissionURL,
-      submissionDate: new Date()
-    };
   },
    
   async updateSemifinalTeamInfo(
@@ -194,9 +231,7 @@ export const semifinalTeamService = {
             // Extract the path from the URL to delete the file
             const oldFileRef = ref(storage, decodeURIComponent(teamData.registrationDocURL.split('?')[0].split('/o/')[1]));
             await deleteObject(oldFileRef);
-            console.log('Previous registration file deleted successfully');
           } catch (deleteError) {
-            console.error('Error deleting previous file:', deleteError);
             // Continue with upload even if deletion fails
           }
         }
