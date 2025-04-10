@@ -12,7 +12,7 @@ const timelineData = [
     {
         title: "NETWORKING NIGHT",
         description: "HIPMI PT UI WITH UI NETWORK",
-        date: "15 March 2024"
+        date: "17 APRIL 2024"
     },
     {
         title: "HIPMI TALKS UI",
