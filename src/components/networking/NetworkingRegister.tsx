@@ -705,38 +705,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
                       <p className="text-red-400 text-sm mt-1">{errors.whatsappNumber}</p>
                     )}
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Position</label>
-                    <Select
-                      value={formData.position}
-                      onValueChange={(value) => handleSelectChange(value, 'position')}
-                    >
-                      <SelectTrigger className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen">
-                        <SelectValue placeholder="Select your position" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-700">
-                        {positionOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.position && (
-                      <p className="text-red-400 text-sm mt-1">{errors.position}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Step 2: Membership and Expectations */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-6 text-juneBud">Membership & Expectations</h2>
-                
-                <div className="space-y-4">
                   <div className="mt-2">
                     <label className="block text-sm font-medium text-gray-300 mb-3">Are you a HIPMI PT UI Fungsionaris?</label>
                     <RadioGroup 
@@ -799,7 +768,37 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
                       )}
                     </div>
                   )}
-                  
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Position & Expectations */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-6 text-juneBud">Background</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Position</label>
+                    <Select
+                      value={formData.position}
+                      onValueChange={(value) => handleSelectChange(value, 'position')}
+                    >
+                      <SelectTrigger className="bg-black/50 border-gray-700 focus:border-juneBud focus:ring-juneBud/20 text-linen">
+                        <SelectValue placeholder="Select your position" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-gray-700">
+                        {positionOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.position && (
+                      <p className="text-red-400 text-sm mt-1">{errors.position}</p>
+                    )}
+                  </div>
+
                   <div className="mt-6">
                     <label className="block text-sm font-medium text-gray-300 mb-3">
                       What do you expect from this networking night?
