@@ -266,14 +266,15 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
       } else if (!validateEmail(formData.email)) {
         newErrors.email = 'Invalid email address';
       }
-      
-      if (!formData.position) newErrors.position = 'Position is required';
-    }
-
-    if (step === 2) {
       if (formData.membershipStatus === MembershipStatus.NON_FUNGSIONARIS && !formData.hipmiPtOrigin) {
         newErrors.hipmiPtOrigin = 'HIPMI PT origin is required for non-fungsionaris';
       }
+      
+    }
+
+    if (step === 2) {
+
+      if (!formData.position) newErrors.position = 'Position is required';
       
       if (formData.hipmiPtOrigin === 'other' && !formData.otherOrigin) {
         newErrors.otherOrigin = 'Please specify your HIPMI PT origin';
@@ -780,7 +781,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
                 <h2 className="text-xl font-semibold mb-6 text-juneBud">Background</h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Position</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">What is your position in your functionary?</label>
                     <Select
                       value={formData.position}
                       onValueChange={(value) => handleSelectChange(value, 'position')}
