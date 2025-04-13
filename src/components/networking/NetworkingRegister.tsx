@@ -584,7 +584,7 @@ const NetworkingEventRegistrationForm: React.FC<NetworkRegistrationFormProps> = 
   };
 
   // Calculate payment amount based on membership status
-  const paymentAmount = formData.membershipStatus === MembershipStatus.FUNGSIONARIS ? 75000 : 145000;
+  const paymentAmount = formData.membershipStatus === MembershipStatus.FUNGSIONARIS ? 75000 : 150000;
 
   if (loading) {
     return (

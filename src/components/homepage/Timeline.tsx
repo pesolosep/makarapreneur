@@ -7,11 +7,6 @@ const timelineData = [
     {
         title: "NETWORKING NIGHT",
         description: "HIPMI PT UI WITH HIPMI NETWORK",
-        date: "4 March 2025"
-    },
-    {
-        title: "NETWORKING NIGHT",
-        description: "HIPMI PT UI WITH UI NETWORK",
         date: "17 APRIL 2024"
     },
     {
@@ -20,17 +15,17 @@ const timelineData = [
         date: "17 APRIL 2025"
     },
     {
-        title: "HIPMI BUSINESS CLASS",
+        title: "HIPMI UI CLASS",
         description: "EPISODE 1",
         date: "2nd & 3rd week of April"
     },
     {
-        title: "HIPMI BUSINESS CLASS",
+        title: "HIPMI UI CLASS",
         description: "EPISODE 2",
         date: "4th & 5th week of April"
     },
     {
-        title: "HIPMI BUSINESS CLASS",
+        title: "HIPMI UI CLASS",
         description: "EPISODE 3",
         date: "1st & 2nd week of May"
     },
