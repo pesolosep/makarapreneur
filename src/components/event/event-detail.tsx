@@ -86,12 +86,12 @@ export default function EventDetail({ event }: EventDetailProps) {
                         <Button
                             size="lg"
                             className=""
-                            disabled={event.link === "disabled" || event.id === "internalbusinessclass"}
+                            disabled={event.link === "disabled" || event.id === "placeholder"}
                             onClick={handleRegisterClick}
                         >
                             {event.link === "disabled"
                                 ? "Coming Soon"
-                                : event.id === "internalbusinessclass"
+                                : event.id === "placeholder"
                                 ? "Closed"
                                 : "Daftar Sekarang"}
                         </Button>
@@ -209,12 +209,12 @@ export default function EventDetail({ event }: EventDetailProps) {
                 <Button
                     size="lg"
                     className="min-w-[200px]"
-                    disabled={event.link === "disabled" || event.id === "internalbusinessclass"}
+                    disabled={event.link === "disabled" || event.id === "placeholder"}
                     onClick={handleRegisterClick}
                 >
                     {event.link === "disabled"
                         ? "Coming Soon"
-                        : event.id === "internalbusinessclass"
+                        : event.id === "placeholder"
                         ? "Closed"
                         : "Daftar Sekarang"}
                 </Button>
