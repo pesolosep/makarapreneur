@@ -77,22 +77,22 @@ export const semifinalTeamService = {
   ) {
     try {
       // Validate file type
-      const validFileTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      const validFileTypes = ['application/pdf'];
       
       // If the file extension is correct but the type is not recognized, check the extension
       if (!validFileTypes.includes(submissionFile.type)) {
         const fileName = submissionFile.name.toLowerCase();
-        const isValidExtension = fileName.endsWith('.pdf') || fileName.endsWith('.doc') || fileName.endsWith('.docx');
+        const isValidExtension = fileName.endsWith('.pdf') ;
         
         if (!isValidExtension) {
-          throw new Error('Submission file must be a PDF or Word document (.pdf, .doc, .docx)');
+          throw new Error('Submission file must be a PDF document');
         }
       }
       
-      // Validate file size (max 30MB)
-      const maxSizeInBytes = 30 * 1024 * 1024; // 30MB
+      // Validate file size (max 50MB)
+      const maxSizeInBytes = 50 * 1024 * 1024; // 30MB
       if (submissionFile.size > maxSizeInBytes) {
-        throw new Error('Submission file must be less than 10MB');
+        throw new Error('Submission file must be less than 50MB');
       }
 
       const teamDoc = await getDoc(doc(db, 'semifinalTeams', teamId));
