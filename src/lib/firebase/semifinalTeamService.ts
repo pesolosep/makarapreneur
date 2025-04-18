@@ -89,8 +89,8 @@ export const semifinalTeamService = {
         }
       }
       
-      // Validate file size (max 10MB)
-      const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+      // Validate file size (max 30MB)
+      const maxSizeInBytes = 30 * 1024 * 1024; // 30MB
       if (submissionFile.size > maxSizeInBytes) {
         throw new Error('Submission file must be less than 10MB');
       }
