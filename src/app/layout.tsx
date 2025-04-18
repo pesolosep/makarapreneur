@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Poppins } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 import NextTopLoader from 'nextjs-toploader';
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default function RootLayout({
         />
         <AuthProvider>
           {children}
+          <Toaster/>
         </AuthProvider>
       </body>
     </html>
