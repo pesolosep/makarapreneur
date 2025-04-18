@@ -355,6 +355,14 @@ export function AssignmentCard({ assignment, onDownload, onUpload, team }: Assig
                     : 'Are you sure you want to submit this file? Please ensure all information is correct.'}
                 </p>
                 
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="text-destructive text-sm font-medium">File Requirements:</p>
+                  <ul className="list-disc list-inside text-destructive/80 text-sm mt-1">
+                    <li>Maximum file size: 50MB</li>
+                    <li>Only PDF file format is allowed</li>
+                  </ul>
+                </div>
+                
                 {fileToSubmit && (
                   <div className="p-4 rounded-lg bg-accent/5 border border-border space-y-2">
                     <p className="font-medium text-card-foreground">Selected file:</p>
